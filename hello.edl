@@ -1,6 +1,7 @@
 enclave {
   from "openenclave/edl/syscall.edl" import *;
-  from "platform.edl" import *;
+  from "openenclave/edl/sgx/platform.edl" import *;
+
   trusted {
     public oe_result_t enclave_hello(
       char *this_is_a_string

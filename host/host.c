@@ -1,10 +1,11 @@
-#include <host.h>
+#include <openenclave/host.h>
 #include <stdio.h>
 
 #include "hello_u.h"
 
 oe_result_t host_hello(char* this_is_a_string) {
-  fprintf(stdout, this_is_a_string);
+  fprintf(stdout, "%s", this_is_a_string);
+  return OE_OK;
 }
 
 int main(int argc, const char* argv[]) {
