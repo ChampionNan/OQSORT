@@ -4,15 +4,13 @@ enclave {
 
   trusted {
     public oe_result_t enclave_hello(
-      char *this_is_a_string
-      // cbndef a
+      [string, in] char *this_is_a_string
       );
   };
 
   untrusted {
     oe_result_t host_hello(
-      char *this_is_a_string
-      // cbndef2 a
+      [string, in] char *this_is_a_string
       );
   };
 };

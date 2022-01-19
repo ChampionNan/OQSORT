@@ -4,7 +4,7 @@
 #include "hello_u.h"
 
 oe_result_t host_hello(char* this_is_a_string) {
-  fprintf(stdout, "%s", this_is_a_string);
+  fprintf(stdout, "This is output from host called from enclave: %s\n", this_is_a_string);
   return OE_OK;
 }
 
@@ -29,10 +29,10 @@ int main(int argc, const char* argv[]) {
   // Call into the enclave
   result = enclave_hello(enclave,
                          &method_return,
-                         "this is  string");
+                         "this is string");
   if (result != OE_OK) {
     fprintf(stderr,
-            "Calling into enclave_hello failed: result=%u (%s\n",
+            "Calling into enclave_hello failed: result=%u (%s)\n",
             result,
             oe_result_str(result));
     goto exit;

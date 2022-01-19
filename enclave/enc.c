@@ -3,7 +3,9 @@
 
 oe_result_t enclave_hello(char* this_is_a_string) {
   oe_result_t oe_result_value, method_result_value;
-  oe_result_value = host_hello(&method_result_value, "this is a string");
+  fprintf(stdout, "This is oputput from enclave called from host: %s\n", this_is_a_string);
+  char string[20] = {"this is string"};
+  oe_result_value = host_hello(&method_result_value, string);
   if (oe_result_value != OE_OK) {
     fprintf(stderr,
             "Call to host_hello failed: result=%u (%s)\n",
