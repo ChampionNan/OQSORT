@@ -1,7 +1,10 @@
 #include <openenclave/host.h>
 #include <stdio.h>
+#include <time.h>
 
 #include "hello_u.h"
+
+const int SIZE = 100000;
 
 oe_result_t host_hello(char* this_is_a_string) {
   fprintf(stdout, "This is output from host called from enclave: %s\n", this_is_a_string);
@@ -27,9 +30,13 @@ int main(int argc, const char* argv[]) {
     goto exit;
   }
   // Call into the enclave
+  clock_t start, end;
+  char string[SIZE] = {"abc"};
+  start = clock();
   result = enclave_hello(enclave,
                          &method_return,
-                         "this is string");
+                         string);
+  end = clock();
   if (result != OE_OK) {
     fprintf(stderr,
             "Calling into enclave_hello failed: result=%u (%s)\n",
@@ -43,7 +50,7 @@ int main(int argc, const char* argv[]) {
   }
 
   ret = 0;
-  
+  fprintf(stdout, "Passing 4 * %d bytes size using %f time\n", SIZE, (double)(end-start)/CLOCKS_PER_SEC);
   exit:
     if (enclave) 
       oe_terminate_enclave(enclave);
