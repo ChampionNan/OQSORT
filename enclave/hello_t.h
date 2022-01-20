@@ -11,7 +11,7 @@
 OE_EXTERNC_BEGIN
 
 /**** ECALL prototypes. ****/
-oe_result_t enclave_hello(char* this_is_a_string);
+oe_result_t enclave_hello(int* arg1);
 
 oe_result_t oe_get_sgx_report_ecall(
     const void* opt_params,
@@ -39,7 +39,7 @@ void oe_sgx_switchless_enclave_worker_thread_ecall(oe_enclave_worker_context_t* 
 /**** OCALL prototypes. ****/
 oe_result_t host_hello(
     oe_result_t* _retval,
-    char* this_is_a_string);
+    int* arg2);
 
 oe_result_t oe_syscall_epoll_create1_ocall(
     oe_host_fd_t* _retval,

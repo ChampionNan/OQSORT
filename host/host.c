@@ -4,10 +4,11 @@
 
 #include "hello_u.h"
 
-const int SIZE = 100000;
+const int SIZE = 10;
+const int TIMES = 5000;
 
-oe_result_t host_hello(char* this_is_a_string) {
-  fprintf(stdout, "This is output from host called from enclave: %s\n", this_is_a_string);
+oe_result_t host_hello(int* number) {
+  fprintf(stdout, "This is output from host called from enclave: %d\n", number[0]);
   return OE_OK;
 }
 
@@ -16,6 +17,7 @@ int main(int argc, const char* argv[]) {
   oe_result_t method_return;
   int ret = 1;
   oe_enclave_t* enclave = NULL;
+  FILE *f = fopen("running_time.txt", "w+");
   if (argc != 2) {
     goto exit;
   }
@@ -30,13 +32,22 @@ int main(int argc, const char* argv[]) {
     goto exit;
   }
   // Call into the enclave
-  clock_t start, end;
-  char string[SIZE] = {"abc"};
-  start = clock();
-  result = enclave_hello(enclave,
+  clock_t start_out, end_out, start_in, end_in;
+  int string[SIZE];
+  memset(string, 1, sizeof(string));
+  start_out = clock();
+  int i = 0;
+  do {
+    start_in = clock();
+    result = enclave_hello(enclave,
                          &method_return,
                          string);
-  end = clock();
+    end_in = clock();
+    fprintf(f, "%f\n", (double)(end_in-start_in)/CLOCKS_PER_SEC);
+    ++i;
+  } while (result == OE_OK && i <= TIMES);
+  fclose(f);
+  end_out = clock();
   if (result != OE_OK) {
     fprintf(stderr,
             "Calling into enclave_hello failed: result=%u (%s)\n",
@@ -50,7 +61,7 @@ int main(int argc, const char* argv[]) {
   }
 
   ret = 0;
-  fprintf(stdout, "Passing 4 * %d bytes size using %f time\n", SIZE, (double)(end-start)/CLOCKS_PER_SEC);
+  fprintf(stdout, "Passing 4 * %d bytes size using %f time for %d loops\n", SIZE, (double)(end_out-start_out)/CLOCKS_PER_SEC, TIMES);
   exit:
     if (enclave) 
       oe_terminate_enclave(enclave);

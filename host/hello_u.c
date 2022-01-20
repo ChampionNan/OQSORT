@@ -37,8 +37,7 @@ typedef struct _enclave_hello_args_t
     uint8_t* deepcopy_out_buffer;
     size_t deepcopy_out_buffer_size;
     oe_result_t oe_retval;
-    char* this_is_a_string;
-    size_t this_is_a_string_len;
+    int* arg1;
 } enclave_hello_args_t;
 
 typedef struct _oe_get_sgx_report_ecall_args_t
@@ -99,7 +98,7 @@ typedef struct _oe_sgx_switchless_enclave_worker_thread_ecall_args_t
 oe_result_t hello_enclave_hello(
     oe_enclave_t* enclave,
     oe_result_t* _retval,
-    char* this_is_a_string)
+    int* arg1)
 {
     oe_result_t _result = OE_FAILURE;
 
@@ -120,13 +119,12 @@ oe_result_t hello_enclave_hello(
 
     /* Fill marshalling struct. */
     memset(&_args, 0, sizeof(_args));
-    _args.this_is_a_string = (char*)this_is_a_string;
-    _args.this_is_a_string_len = (this_is_a_string) ? (oe_strlen(this_is_a_string) + 1) : 0;
+    _args.arg1 = (int*)arg1;
 
     /* Compute input buffer size. Include in and in-out parameters. */
     OE_ADD_SIZE(_input_buffer_size, sizeof(enclave_hello_args_t));
-    if (this_is_a_string)
-        OE_ADD_ARG_SIZE(_input_buffer_size, _args.this_is_a_string_len, sizeof(char));
+    if (arg1)
+        OE_ADD_ARG_SIZE(_input_buffer_size, 10, sizeof(int));
     
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(enclave_hello_args_t));
@@ -147,8 +145,8 @@ oe_result_t hello_enclave_hello(
     /* Serialize buffer inputs (in and in-out parameters). */
     _pargs_in = (enclave_hello_args_t*)_input_buffer;
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
-    if (this_is_a_string)
-        OE_WRITE_IN_PARAM(this_is_a_string, _args.this_is_a_string_len, sizeof(char), char*);
+    if (arg1)
+        OE_WRITE_IN_PARAM(arg1, 10, sizeof(int), int*);
     
     /* Copy args structure (now filled) to input buffer. */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));
@@ -807,8 +805,7 @@ typedef struct _host_hello_args_t
     uint8_t* deepcopy_out_buffer;
     size_t deepcopy_out_buffer_size;
     oe_result_t oe_retval;
-    char* this_is_a_string;
-    size_t this_is_a_string_len;
+    int* arg2;
 } host_hello_args_t;
 
 typedef struct _oe_syscall_epoll_create1_ocall_args_t
@@ -1863,8 +1860,7 @@ static void ocall_host_hello(
     }
 
     /* Set in and in-out pointers. */
-    if (_pargs_in->this_is_a_string)
-        OE_SET_IN_POINTER(this_is_a_string, _pargs_in->this_is_a_string_len, sizeof(char), char*);
+    /* There were no in nor in-out parameters. */
 
     /* Set out and in-out pointers. */
     /* In-out parameters are copied to output buffer. */
@@ -1872,7 +1868,7 @@ static void ocall_host_hello(
 
     /* Call user function. */
     _pargs_out->oe_retval = host_hello(
-        _pargs_in->this_is_a_string);
+        _pargs_in->arg2);
 
     /* There is no deep-copyable out parameter. */
     _pargs_out->deepcopy_out_buffer = NULL;

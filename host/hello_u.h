@@ -22,7 +22,7 @@ oe_result_t oe_create_hello_enclave(
 oe_result_t enclave_hello(
     oe_enclave_t* enclave,
     oe_result_t* _retval,
-    char* this_is_a_string);
+    int* arg1);
 
 oe_result_t oe_get_sgx_report_ecall(
     oe_enclave_t* enclave,
@@ -58,7 +58,7 @@ oe_result_t oe_sgx_switchless_enclave_worker_thread_ecall(
     oe_enclave_worker_context_t* context);
 
 /**** OCALL prototypes. ****/
-oe_result_t host_hello(char* this_is_a_string);
+oe_result_t host_hello(int* arg2);
 
 oe_host_fd_t oe_syscall_epoll_create1_ocall(int flags);
 

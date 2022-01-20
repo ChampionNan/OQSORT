@@ -4,13 +4,13 @@ enclave {
 
   trusted {
     public oe_result_t enclave_hello(
-      [string, in] char *this_is_a_string
+      [in, count=10] int* arg1
       );
   };
 
   untrusted {
     oe_result_t host_hello(
-      [string, in] char *this_is_a_string
+      int* arg2
       );
   };
 };
