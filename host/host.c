@@ -4,8 +4,8 @@
 
 #include "hello_u.h"
 
-const int SIZE = 10;
-const int TIMES = 5000;
+const int SIZE = 256 * 256;
+const int TIMES = 200000;
 
 oe_result_t host_hello(int* number) {
   fprintf(stdout, "This is output from host called from enclave: %d\n", number[0]);
@@ -34,19 +34,22 @@ int main(int argc, const char* argv[]) {
   // Call into the enclave
   clock_t start_out, end_out, start_in, end_in;
   int string[SIZE];
-  memset(string, 1, sizeof(string));
+  srand(time(0));
+  for (int i = 0; i < SIZE; ++i) {
+    string[i] = rand();
+  }
+
   start_out = clock();
   int i = 0;
   do {
-    start_in = clock();
+    // start_in = clock();
     result = enclave_hello(enclave,
                          &method_return,
                          string);
-    end_in = clock();
-    fprintf(f, "%f\n", (double)(end_in-start_in)/CLOCKS_PER_SEC);
+    // end_in = clock();
     ++i;
   } while (result == OE_OK && i <= TIMES);
-  fclose(f);
+
   end_out = clock();
   if (result != OE_OK) {
     fprintf(stderr,
@@ -61,7 +64,7 @@ int main(int argc, const char* argv[]) {
   }
 
   ret = 0;
-  fprintf(stdout, "Passing 4 * %d bytes size using %f time for %d loops\n", SIZE, (double)(end_out-start_out)/CLOCKS_PER_SEC, TIMES);
+  fprintf(stdout, "Passing %d KB size using %f time for %d loops\n", SIZE/256, (double)(end_out-start_out)/CLOCKS_PER_SEC, TIMES);
   exit:
     if (enclave) 
       oe_terminate_enclave(enclave);

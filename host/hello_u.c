@@ -124,7 +124,7 @@ oe_result_t hello_enclave_hello(
     /* Compute input buffer size. Include in and in-out parameters. */
     OE_ADD_SIZE(_input_buffer_size, sizeof(enclave_hello_args_t));
     if (arg1)
-        OE_ADD_ARG_SIZE(_input_buffer_size, 10, sizeof(int));
+        OE_ADD_ARG_SIZE(_input_buffer_size, 65536, sizeof(int));
     
     /* Compute output buffer size. Include out and in-out parameters. */
     OE_ADD_SIZE(_output_buffer_size, sizeof(enclave_hello_args_t));
@@ -146,7 +146,7 @@ oe_result_t hello_enclave_hello(
     _pargs_in = (enclave_hello_args_t*)_input_buffer;
     OE_ADD_SIZE(_input_buffer_offset, sizeof(*_pargs_in));
     if (arg1)
-        OE_WRITE_IN_PARAM(arg1, 10, sizeof(int), int*);
+        OE_WRITE_IN_PARAM(arg1, 65536, sizeof(int), int*);
     
     /* Copy args structure (now filled) to input buffer. */
     memcpy(_pargs_in, &_args, sizeof(*_pargs_in));

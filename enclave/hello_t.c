@@ -115,7 +115,7 @@ static void ecall_enclave_hello(
 
     /* Set in and in-out pointers. */
     if (_pargs_in->arg1)
-        OE_SET_IN_POINTER(arg1, 10, sizeof(int), int*);
+        OE_SET_IN_POINTER(arg1, 65536, sizeof(int), int*);
 
     /* Set out and in-out pointers. */
     /* In-out parameters are copied to output buffer. */
