@@ -1,0 +1,28 @@
+1. Passing 1 KB size using 1.258899 time for 200000 loops
+2. Passing 1 KB size using 1.421846 time for 200000 loops
+
+1. Passing 2 KB size using 1.287418 time for 200000 loops
+2. Passing 2 KB size using 1.616117 time for 200000 loops
+
+1. Passing 4 KB size using 1.280107 time for 200000 loops
+2. Passing 4 KB size using 1.921882 time for 200000 loops
+
+1. Passing 8 KB size using 1.398573 time for 200000 loops
+2. Passing 8 KB size using 2.673572 time for 200000 loops
+
+1. Passing 16 KB size using 1.576942 time for 200000 loops
+2. Passing 16 KB size using 4.274649 time for 200000 loops
+
+1. Passing 32 KB size using 1.916218 time for 200000 loops
+2. Passing 32 KB size using 7.221779 time for 200000 loops
+
+1. Passing 64 KB size using 2.796984 time for 200000 loops
+2. Passing 64 KB size using 12.790657 time for 200000 loops
+
+1. Passing 128 KB size using 4.590082 time for 200000 loops
+2. Passing 128 KB size using 24.379629 time for 200000 loops
+
+1. Passing 256 KB size using 7.576735 time for 200000 loops
+2. Passing 256 KB size using 48.610560 time for 200000 loops
+
+

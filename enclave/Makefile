@@ -37,7 +37,7 @@ sign:
 	oesign sign -e helloenc -c hello.conf -k private.pem
 
 clean:
-	rm -f enc.o hellenc helloenc.signed private.pem public.pem hello_t.o hello_t.h hello_t.c hello_args.h
+	rm -f enc.o helloenc helloenc.signed private.pem public.pem hello_t.o hello_t.h hello_t.c hello_args.h
 
 keys:
 	openssl genrsa -out private.pem -3 3072

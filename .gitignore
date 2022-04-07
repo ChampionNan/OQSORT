@@ -1,0 +1,12 @@
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# sgx generated files
+*_args.h
+*_t.*
+*enc.signed
+*.pem
+*_u.*
