@@ -4,7 +4,7 @@ enclave {
 
   trusted {
     public oe_result_t enclave_hello(
-      [in, count=65536] int* arg1
+      [in, count=262144] int* arg1,
       );
   };
 

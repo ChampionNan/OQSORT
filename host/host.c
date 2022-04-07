@@ -4,7 +4,7 @@
 
 #include "hello_u.h"
 
-const int SIZE = 256 * 256;
+const int SIZE = 256 * 1024;
 const int TIMES = 200000;
 
 oe_result_t host_hello(int* number) {
@@ -34,11 +34,12 @@ int main(int argc, const char* argv[]) {
   // Call into the enclave
   clock_t start_out, end_out, start_in, end_in;
   int string[SIZE];
+  
   srand(time(0));
   for (int i = 0; i < SIZE; ++i) {
     string[i] = rand();
   }
-
+  
   start_out = clock();
   int i = 0;
   do {
