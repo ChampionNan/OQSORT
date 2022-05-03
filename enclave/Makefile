@@ -2,22 +2,13 @@
 # Licensed under the MIT License.
 include ../../config.mk
 
-CRYPTO_LDFLAGS := $(shell pkg-config oeenclave-$(COMPILER) --variable=${OE_CRYPTO_LIB}libs)
+OE_CRYPTO_LIB := mbedtls
 
-ifeq ($(LVI_MITIGATION), ControlFlow)
-		ifeq ($(LVI_MITIGATION_BINDIR),)
-			$(error LVI_MITIGATION_BINDIR is not set)
-		endif
-		# Only run once. 
-		ifeq (,$(findstring $(LVI_MITIGATION_BINDIR),$(CC)))		CC := $(LVI_MITIGATION_BINDIR)/$(CC)
-		endif
-		COMPILER := $(COMPILER)-lvi-cfg
-		CRYPTO_LDFLAGS := $(shell pkjg-config oeenclave-$(COMPILER) --variable=${OE_CRYPTO_LIB}libslvicfg)
-endif
-
-CFLAGS=$(shell pkg-config oeenclave-$(COMPILER) --cflags)
-LDFLAGS=$(shell pkg-config oeenclave-$(COMPILER) --libs)
-INCDIR=$(shell pkg-config oeenclave-$(COMPILER) --variable=includedir)
+CFLAGS=$(shell pkg-config oeenclave-$(C_COMPILER) --cflags)
+CXXFLAGS=$(shell pkg-config oeenclave-$(CXX_COMPILER) --cflags)
+LDFLAGS=$(shell pkg-config oeenclave-$(CXX_COMPILER) --libs)
+INCDIR=$(shell pkg-config oeenclave-$(C_COMPILER) --variable=includedir)
+CRYPTO_LDFLAGS=$(shell pkg-config oeenclave-$(COMPILER) --variable=${OE_CRYPTO_LIB}libs)
 
 all:
 	$(MAKE) build
@@ -26,18 +17,19 @@ all:
 
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
-	oeedger8r ../hello.edl --trusted \
+	oeedger8r ../osort.edl --trusted \
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
-	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 enc.c -o enc.o
-	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 hello_t.c -o hello_t.o
-	$(CC) -o helloenc hello_t.o enc.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
+	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
+	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 osort_t.c
+	$(CXX) -o osortenc enc.o osort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
 
 sign:
-	oesign sign -e helloenc -c hello.conf -k private.pem
+	oesign sign -e osortenc -c osort.conf -k private.pem
 
 clean:
-	rm -f enc.o helloenc helloenc.signed private.pem public.pem hello_t.o hello_t.h hello_t.c hello_args.h
+	rm -f enc.o osortenc osortenc.signed private.pem public.pem osort_t.* osort_args.h
 
 keys:
 	openssl genrsa -out private.pem -3 3072

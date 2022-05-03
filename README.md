@@ -6,6 +6,8 @@ This repo is used for testing the execution time to pass different size of data 
 
 ## 2. Environment
 
+- `. /opt/openenclave/share/openenclave/openenclaverc`
+
 ### 2.1 Hardware
 
 - CPU:

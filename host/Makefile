@@ -1,7 +1,8 @@
 include ../../config.mk
 
-CFLAGS=$(shell pkg-config oehost-$(COMPILER) --cflags)
-LDFLAGS=$(shell pkg-config oehost-$(COMPILER) --libs)
+CFLAGS=$(shell pkg-config oehost-$(C_COMPILER) --cflags)
+CXXFLAGS=$(shell pkg-config oehost-$(CXX_COMPILER) --cflags)
+LDFLAGS=$(shell pkg-config oehost-$(CXX_COMPILER) --libs)
 INCDIR=$(shell pkg-config oehost-$(COMPILER) --variable=includedir)
 
 all:
@@ -9,12 +10,12 @@ all:
 
 build:
 	@ echo "Compiler used: $(CC), $(CXX)"
-	oeedger8r ../hello.edl --untrusted \
+	oeedger8r ../osort.edl --untrusted \
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
-	$(CC) -g -c $(CFLAGS) host.c
-	$(CC) -g -c $(CFLAGS) hello_u.c
-	$(CC) -o hellohost hello_u.o host.o $(LDFLAGS)
+	$(CXX) -g -c $(CXXFLAGS) host.cpp
+	$(CC) -g -c $(CFLAGS) osort_u.c
+	$(CXX) -o osorthost osort_u.o host.o $(LDFLAGS)
 
 clean:
-	rm -f hellohost host.o hello_u.o hello_u.c hello_u.h hello_args.h
+	rm -f hellohost host.o osort_*
