@@ -10,3 +10,6 @@
 *enc.signed
 *.pem
 *_u.*
+
+# .vscode
+.vscode/*
