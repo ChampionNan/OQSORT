@@ -3,7 +3,7 @@ enclave {
   from "openenclave/edl/sgx/platform.edl" import *;
 
   trusted {
-    public void callSort(int sortId,
+    public int callSort(int sortId,
                          int structureId, int paddedSize);
     public void callSmallSort(
       [in, out, count=dataSize]int *a,

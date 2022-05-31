@@ -1,0 +1,935 @@
+make all --print-data-base --no-builtin-variables --no-builtin-rules --question
+make -C enclave
+ 
+# make[1]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+/bin/sh: 0: 
+Illegal option --
+
+
+make build
+ 
+# make[2]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+/bin/sh: 0: 
+Illegal option --
+
+
+Package oeenclave-gcc was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-gcc.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-gcc' found
+
+Package oeenclave-gcc was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-gcc.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-gcc' found
+
+Package oeenclave-g++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-g++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-g++' found
+
+Package oeenclave-gcc was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-gcc.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-gcc' found
+
+Package oeenclave-g++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-g++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-g++' found
+
+Package oeenclave-gcc was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-gcc.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-gcc' found
+
+Package oeenclave-g++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-g++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-g++' found
+
+Package oeenclave-gcc was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-gcc.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-gcc' found
+
+# GNU Make 4.2.1
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2016 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Tue May 31 13:30:48 2022
+
+# Variables
+
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+?F = $(notdir $?)
+# default
+.SHELLFLAGS := -c
+# makefile (from 'Makefile', line 10)
+INCDIR = $(shell pkg-config oeenclave-$(C_COMPILER) --variable=includedir)
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AGENT_FOLDER = /home/chenbingnan/.vscode-server
+# environment
+XDG_SESSION_TYPE = tty
+# environment
+VSCODE_LOG_NATIVE = false
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# automatic
+@F = $(notdir $@)
+# default
+MAKE_VERSION := 4.2.1
+# makefile
+CURDIR := /home/chenbingnan/mysamples/OSORT/enclave
+# makefile
+SHELL = /bin/sh
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
+# environment
+_ = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/node
+# makefile (from 'Makefile', line 7)
+CFLAGS = $(shell pkg-config oeenclave-$(C_COMPILER) --cflags)
+# makefile (from '../../config.mk', line 1)
+MAKEFILE_LIST :=  Makefile ../../config.mk
+# 'override' directive
+GNUMAKEFLAGS := 
+# makefile (from 'Makefile', line 5)
+OE_CRYPTO_LIB := mbedtls
+# environment
+XDG_DATA_DIRS = /usr/local/share:/usr/share:/var/lib/snapd/desktop
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# environment
+VSCODE_VERBOSE_LOGGING = true
+# environment
+VSCODE_CWD = /home/chenbingnan
+# environment
+SSH_CONNECTION = 116.30.204.65 49327 10.1.0.5 22
+# environment
+PATH = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# makefile (from '../../config.mk', line 31)
+CXX_COMPILER = g++
+# environment
+VSCODE_LOG_STACK = false
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-7e0ca610-5a54-435c-bffb-8d0ff3afe681.sock
+# makefile (from 'Makefile', line 9)
+LDFLAGS = $(shell pkg-config oeenclave-$(CXX_COMPILER) --libs)
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
+# automatic
+%F = $(notdir $%)
+# environment
+VSCODE_PIPE_LOGGING = true
+# environment
+PWD = /home/chenbingnan/mysamples/OSORT
+# default
+.LOADED := 
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/chenbingnan
+# environment
+SGX_AESM_ADDR = 1
+# environment
+LOGNAME = chenbingnan
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# automatic
++F = $(notdir $+)
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# makefile (from '../../config.mk', line 30)
+C_COMPILER = gcc
+# environment
+MAKELEVEL := 2
+# default
+MAKE = $(MAKE_COMMAND)
+# default
+MAKECMDGOALS := build
+# environment
+SHLVL = 1
+# environment
+XDG_SESSION_ID = 1
+# environment
+USER = chenbingnan
+# makefile
+.DEFAULT_GOAL := all
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# default
+MAKE_COMMAND := make
+# default
+.VARIABLES := 
+# automatic
+*F = $(notdir $*)
+# makefile
+MAKEFLAGS = pqrRw
+# environment
+MFLAGS = -pqrRw
+# environment
+SSH_CLIENT = 116.30.204.65 49327 22
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from '../../config.mk', line 35)
+COMPILER = $(C_COMPILER)
+# environment
+BROWSER = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/helpers/browser.sh
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# 'override' directive
+.SHELLSTATUS := 2
+# default
+MAKEFILES := 
+# makefile (from 'Makefile', line 8)
+CXXFLAGS = $(shell pkg-config oeenclave-$(CXX_COMPILER) --cflags)
+# automatic
+<F = $(notdir $<)
+# environment
+PS1 = \[\e[1;34m\]\u@\h:\[\e[0m\]\[\e[1;33m\]\w\[\e[1;32m\]\[\e[0m\]\[\e[1;35m\]\$ \[\e[0m\]
+# environment
+LC_ALL = C
+# automatic
+^F = $(notdir $^)
+# default
+SUFFIXES := 
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# default
+.RECIPEPREFIX := 
+# makefile (from 'Makefile', line 11)
+CRYPTO_LDFLAGS = $(shell pkg-config oeenclave-$(COMPILER) --variable=${OE_CRYPTO_LIB}libs)
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+LANG = C
+# environment
+VSCODE_EXTHOST_WILL_SEND_SOCKET = true
+# environment
+MOTD_SHOWN = pam
+# variable set hash-table stats:
+# Load=79/1024=8%, Rehash=0, Collisions=15/169=9%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 2049, inode 1032437): 9 files, no impossibilities.
+
+# 9 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+all:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 14):
+	$(MAKE) build
+	$(MAKE) keys
+	$(MAKE) sign
+
+# Not a target:
+.SUFFIXES:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-05-02 12:36:03.695313271
+#  File has been updated.
+#  Successfully updated.
+
+# 'override' directive
+build: .SHELLSTATUS := 1
+build:
+#  Command line target.
+#  Implicit rule search has not been done.
+#  Implicit/static pattern stem: ''
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := build
+# automatic
+# % := 
+# automatic
+# * := 
+# automatic
+# + := 
+# automatic
+# | := 
+# automatic
+# < := 
+# automatic
+# ^ := 
+# automatic
+# ? := 
+# variable set hash-table stats:
+# Load=9/32=28%, Rehash=0, Collisions=27/68=40%
+#  recipe to execute (from 'Makefile', line 19):
+	@ echo "Compilers used: $(CC), $(CXX)"
+	oeedger8r ../osort.edl --trusted \
+		--search-path $(INCDIR) \
+		--search-path $(INCDIR)/openenclave/edl/sgx
+	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
+	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 osort_t.c
+	$(CXX) -o osortenc enc.o osort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
+
+# Not a target:
+../../config.mk:
+#  Implicit rule search has been done.
+#  Last modified 2022-05-02 07:27:23.652839684
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 32):
+	rm -f enc.o osortenc osortenc.signed private.pem public.pem osort_t.* osort_args.h
+
+sign:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 29):
+	oesign sign -e osortenc -c osort.conf -k private.pem
+
+keys:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 35):
+	openssl genrsa -out private.pem -3 3072
+ 
+	openssl rsa -in private.pem -pubout -out public.pem
+
+# files hash-table stats:
+# Load=9/1024=1%, Rehash=0, Collisions=0/22=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 19 / storage = 167 B / avg = 8 B
+# current buf: size = 8162 B / used = 167 B / count = 19 / avg = 8 B
+
+# strcache performance: lookups = 31 / hit rate = 38%
+# hash-table stats:
+# Load=19/8192=0%, Rehash=0, Collisions=1/31=3%
+# Finished Make data base on Tue May 31 13:30:48 2022
+
+# make[2]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+# GNU Make 4.2.1
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2016 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Tue May 31 13:30:48 2022
+
+# Variables
+
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+?F = $(notdir $?)
+# default
+.SHELLFLAGS := -c
+# makefile (from 'Makefile', line 10)
+INCDIR = $(shell pkg-config oeenclave-$(C_COMPILER) --variable=includedir)
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AGENT_FOLDER = /home/chenbingnan/.vscode-server
+# environment
+XDG_SESSION_TYPE = tty
+# environment
+VSCODE_LOG_NATIVE = false
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# automatic
+@F = $(notdir $@)
+# default
+MAKE_VERSION := 4.2.1
+# makefile
+CURDIR := /home/chenbingnan/mysamples/OSORT/enclave
+# makefile
+SHELL = /bin/sh
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
+# environment
+_ = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/node
+# makefile (from 'Makefile', line 7)
+CFLAGS = $(shell pkg-config oeenclave-$(C_COMPILER) --cflags)
+# makefile (from '../../config.mk', line 1)
+MAKEFILE_LIST :=  Makefile ../../config.mk
+# 'override' directive
+GNUMAKEFLAGS := 
+# makefile (from 'Makefile', line 5)
+OE_CRYPTO_LIB := mbedtls
+# environment
+XDG_DATA_DIRS = /usr/local/share:/usr/share:/var/lib/snapd/desktop
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# environment
+VSCODE_VERBOSE_LOGGING = true
+# environment
+VSCODE_CWD = /home/chenbingnan
+# environment
+SSH_CONNECTION = 116.30.204.65 49327 10.1.0.5 22
+# environment
+PATH = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# makefile (from '../../config.mk', line 31)
+CXX_COMPILER = g++
+# environment
+VSCODE_LOG_STACK = false
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-7e0ca610-5a54-435c-bffb-8d0ff3afe681.sock
+# makefile (from 'Makefile', line 9)
+LDFLAGS = $(shell pkg-config oeenclave-$(CXX_COMPILER) --libs)
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
+# automatic
+%F = $(notdir $%)
+# environment
+VSCODE_PIPE_LOGGING = true
+# environment
+PWD = /home/chenbingnan/mysamples/OSORT
+# default
+.LOADED := 
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/chenbingnan
+# environment
+SGX_AESM_ADDR = 1
+# environment
+LOGNAME = chenbingnan
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# automatic
++F = $(notdir $+)
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# makefile (from '../../config.mk', line 30)
+C_COMPILER = gcc
+# environment
+MAKELEVEL := 1
+# default
+MAKE = $(MAKE_COMMAND)
+# environment
+SHLVL = 1
+# environment
+XDG_SESSION_ID = 1
+# environment
+USER = chenbingnan
+# makefile
+.DEFAULT_GOAL := all
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# default
+MAKE_COMMAND := make
+# default
+.VARIABLES := 
+# automatic
+*F = $(notdir $*)
+# makefile
+MAKEFLAGS = pqrRw
+# environment
+MFLAGS = -pqrRw
+# environment
+SSH_CLIENT = 116.30.204.65 49327 22
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# makefile (from '../../config.mk', line 35)
+COMPILER = $(C_COMPILER)
+# environment
+BROWSER = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/helpers/browser.sh
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# 'override' directive
+.SHELLSTATUS := 2
+# default
+MAKEFILES := 
+# makefile (from 'Makefile', line 8)
+CXXFLAGS = $(shell pkg-config oeenclave-$(CXX_COMPILER) --cflags)
+# automatic
+<F = $(notdir $<)
+# environment
+PS1 = \[\e[1;34m\]\u@\h:\[\e[0m\]\[\e[1;33m\]\w\[\e[1;32m\]\[\e[0m\]\[\e[1;35m\]\$ \[\e[0m\]
+# environment
+LC_ALL = C
+# automatic
+^F = $(notdir $^)
+# default
+SUFFIXES := 
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# default
+.RECIPEPREFIX := 
+# makefile (from 'Makefile', line 11)
+CRYPTO_LDFLAGS = $(shell pkg-config oeenclave-$(COMPILER) --variable=${OE_CRYPTO_LIB}libs)
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+LANG = C
+# environment
+VSCODE_EXTHOST_WILL_SEND_SOCKET = true
+# environment
+MOTD_SHOWN = pam
+# variable set hash-table stats:
+# Load=78/1024=8%, Rehash=0, Collisions=12/124=10%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 2049, inode 1032437): 9 files, no impossibilities.
+
+# 9 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+all:
+#  Implicit rule search has not been done.
+#  Implicit/static pattern stem: ''
+#  Modification time never checked.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := all
+# automatic
+# % := 
+# automatic
+# * := 
+# automatic
+# + := 
+# automatic
+# | := 
+# automatic
+# < := 
+# automatic
+# ^ := 
+# automatic
+# ? := 
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=4/17=24%
+#  recipe to execute (from 'Makefile', line 14):
+	$(MAKE) build
+	$(MAKE) keys
+	$(MAKE) sign
+
+# Not a target:
+.SUFFIXES:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-05-02 12:36:03.695313271
+#  File has been updated.
+#  Successfully updated.
+
+build:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 19):
+	@ echo "Compilers used: $(CC), $(CXX)"
+	oeedger8r ../osort.edl --trusted \
+		--search-path $(INCDIR) \
+		--search-path $(INCDIR)/openenclave/edl/sgx
+	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
+	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 osort_t.c
+	$(CXX) -o osortenc enc.o osort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
+
+# Not a target:
+../../config.mk:
+#  Implicit rule search has been done.
+#  Last modified 2022-05-02 07:27:23.652839684
+#  File has been updated.
+#  Successfully updated.
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+clean:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 32):
+	rm -f enc.o osortenc osortenc.signed private.pem public.pem osort_t.* osort_args.h
+
+sign:
+ 
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 29):
+	oesign sign -e osortenc -c osort.conf -k private.pem
+
+keys:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 35):
+	openssl genrsa -out private.pem -3 3072
+	openssl rsa -in private.pem -pubout -out public.pem
+
+# files hash-table stats:
+# Load=9/1024=1%, Rehash=0, Collisions=0/23=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 20 / storage = 175 B / avg = 8 B
+# current buf: size = 8162 B / used = 175 B / count = 20 / avg = 8 B
+
+# strcache performance: lookups = 30 / hit rate = 33%
+# hash-table stats:
+# Load=20/8192=0%, Rehash=0, Collisions=1/30=3%
+# Finished Make data base on Tue May 31 13:30:48 2022
+
+# make[1]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+# GNU Make 4.2.1
+# Built for x86_64-pc-linux-gnu
+# Copyright (C) 1988-2016 Free Software Foundation, Inc.
+# License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+# This is free software: you are free to change and redistribute it.
+# There is NO WARRANTY, to the extent permitted by law.
+
+# Make data base, printed on Tue May 31 13:30:48 2022
+
+# Variables
+
+# automatic
+<D = $(patsubst %/,%,$(dir $<))
+# automatic
+?F = $(notdir $?)
+# default
+.SHELLFLAGS := -c
+# environment
+XDG_SESSION_CLASS = user
+# environment
+VSCODE_AGENT_FOLDER = /home/chenbingnan/.vscode-server
+# environment
+XDG_SESSION_TYPE = tty
+# environment
+VSCODE_LOG_NATIVE = false
+# automatic
+?D = $(patsubst %/,%,$(dir $?))
+# automatic
+@D = $(patsubst %/,%,$(dir $@))
+# automatic
+@F = $(notdir $@)
+# default
+MAKE_VERSION := 4.2.1
+# makefile
+CURDIR := /home/chenbingnan/mysamples/OSORT
+# makefile
+SHELL = /bin/sh
+# environment
+VSCODE_NLS_CONFIG = {"locale":"en","availableLanguages":{}}
+# environment
+_ = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/node
+# makefile (from 'Makefile', line 1)
+MAKEFILE_LIST :=  Makefile
+# 'override' directive
+GNUMAKEFLAGS := 
+# makefile (from 'Makefile', line 3)
+OE_CRYPTO_LIB := mbedtls
+# environment
+XDG_DATA_DIRS = /usr/local/share:/usr/share:/var/lib/snapd/desktop
+# environment
+DBUS_SESSION_BUS_ADDRESS = unix:path=/run/user/1000/bus
+# environment
+VSCODE_VERBOSE_LOGGING = true
+# environment
+VSCODE_CWD = /home/chenbingnan
+# environment
+SSH_CONNECTION = 116.30.204.65 49327 10.1.0.5 22
+# environment
+PATH = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/remote-cli:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
+# environment
+XDG_RUNTIME_DIR = /run/user/1000
+# environment
+VSCODE_LOG_STACK = false
+# environment
+VSCODE_IPC_HOOK_CLI = /run/user/1000/vscode-ipc-7e0ca610-5a54-435c-bffb-8d0ff3afe681.sock
+# default
+.FEATURES := target-specific order-only second-expansion else-if shortest-stem undefine oneshell archives jobserver output-sync check-symlink load
+# automatic
+%F = $(notdir $%)
+# environment
+VSCODE_PIPE_LOGGING = true
+# environment
+PWD = /home/chenbingnan/mysamples/OSORT
+# default
+.LOADED := 
+# automatic
+*D = $(patsubst %/,%,$(dir $*))
+# environment
+VSCODE_AMD_ENTRYPOINT = vs/workbench/api/node/extensionHostProcess
+# environment
+HOME = /home/chenbingnan
+# environment
+SGX_AESM_ADDR = 1
+# environment
+LOGNAME = chenbingnan
+# environment
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
+# automatic
++F = $(notdir $+)
+# environment
+VSCODE_HANDLES_UNCAUGHT_ERRORS = true
+# automatic
+^D = $(patsubst %/,%,$(dir $^))
+# environment
+MAKELEVEL := 0
+# default
+MAKE = $(MAKE_COMMAND)
+# default
+MAKECMDGOALS := all
+# environment
+SHLVL = 1
+# environment
+XDG_SESSION_ID = 1
+# environment
+USER = chenbingnan
+# makefile
+.DEFAULT_GOAL := all
+# automatic
+%D = $(patsubst %/,%,$(dir $%))
+# default
+MAKE_COMMAND := make
+# default
+.VARIABLES := 
+# automatic
+*F = $(notdir $*)
+# makefile
+MAKEFLAGS = pqrR
+# environment
+MFLAGS = -pqrR
+# environment
+SSH_CLIENT = 116.30.204.65 49327 22
+# automatic
++D = $(patsubst %/,%,$(dir $+))
+# environment
+BROWSER = /home/chenbingnan/.vscode-server/bin/da15b6fd3ef856477bf6f4fb29ba1b7af717770d/bin/helpers/browser.sh
+# environment
+VSCODE_HANDLES_SIGPIPE = true
+# default
+MAKEFILES := 
+# automatic
+<F = $(notdir $<)
+# environment
+PS1 = \[\e[1;34m\]\u@\h:\[\e[0m\]\[\e[1;33m\]\w\[\e[1;32m\]\[\e[0m\]\[\e[1;35m\]\$ \[\e[0m\]
+# environment
+LC_ALL = C
+# automatic
+^F = $(notdir $^)
+# default
+SUFFIXES := 
+# default
+.INCLUDE_DIRS = /usr/include /usr/local/include /usr/include
+# default
+.RECIPEPREFIX := 
+# default
+MAKE_HOST := x86_64-pc-linux-gnu
+# environment
+LANG = C
+# environment
+VSCODE_EXTHOST_WILL_SEND_SOCKET = true
+# environment
+MOTD_SHOWN = pam
+# variable set hash-table stats:
+# Load=70/1024=7%, Rehash=0, Collisions=9/103=9%
+
+# Pattern-specific Variable Values
+
+# No pattern-specific variable values.
+
+# Directories
+
+# . (device 2049, inode 1032435): 12 files, no impossibilities.
+
+# 12 files, no impossibilities in 1 directories.
+
+# Implicit Rules
+
+# No implicit rules.
+
+# Files
+
+all: build
+#  Phony target (prerequisite of .PHONY).
+#  Command line target.
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+# variable set hash-table stats:
+# Load=0/32=0%, Rehash=0, Collisions=0/7=0%
+
+.PHONY: all build clean run simulate
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+.SUFFIXES:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+# Not a target:
+Makefile:
+#  Implicit rule search has been done.
+#  Last modified 2022-05-02 12:34:40.174482309
+#  File has been updated.
+#  Successfully updated.
+
+build:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  Implicit/static pattern stem: ''
+#  File does not exist.
+#  File has been updated.
+#  Needs to be updated (-q is set).
+# automatic
+# @ := build
+# automatic
+# % := 
+# automatic
+# * := 
+# automatic
+# + := 
+# automatic
+# | := 
+# automatic
+# < := 
+# automatic
+# ^ := 
+# automatic
+# ? := 
+# variable set hash-table stats:
+# Load=8/32=25%, Rehash=0, Collisions=3/15=20%
+#  recipe to execute (from 'Makefile', line 9):
+	$(MAKE) -C enclave
+	$(MAKE) -C host
+
+simulate:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 20):
+	host/osorthost ./enclave/osortenc.signed --simulate
+
+# Not a target:
+.DEFAULT:
+#  Implicit rule search has not been done.
+#  Modification time never checked.
+#  File has not been updated.
+
+run:
+#  Phony target (prerequisite of .PHONY).
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 17):
+	host/osorthost ./enclave/osortenc.signed
+
+clean:
+#  Phony target (prerequisite of .PHONY).
+ 
+#  Implicit rule search has not been done.
+#  File does not exist.
+#  File has not been updated.
+#  recipe to execute (from 'Makefile', line 13):
+	$(MAKE) -C enclave clean
+	$(MAKE) -C host clean
+
+# files hash-table stats:
+# Load=9/1024=1%, Rehash=0, Collisions=0/32=0%
+# VPATH Search Paths
+
+# No 'vpath' search paths.
+
+# No general ('VPATH' variable) search path.
+
+# strcache buffers: 1 (0) / strings = 22 / storage = 179 B / avg = 8 B
+# current buf: size = 8162 B / used = 179 B / count = 22 / avg = 8 B
+
+# strcache performance: lookups = 40 / hit rate = 45%
+# hash-table stats:
+# Load=22/8192=0%, Rehash=0, Collisions=1/40=2%
+# Finished Make data base on Tue May 31 13:30:48 2022
+
+ 

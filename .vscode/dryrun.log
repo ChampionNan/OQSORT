@@ -1,0 +1,130 @@
+make --dry-run --always-make --keep-going --print-directory
+make: Entering directory '/home/chenbingnan/mysamples/OSORT'
+make -C enclave
+ 
+make[1]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+make build
+ 
+make[2]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+Package oeenclave-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang' found
+
+Package oeenclave-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang' found
+
+Package oeenclave-clang++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang++' found
+
+Package oeenclave-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang' found
+
+Package oeenclave-clang++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang++' found
+
+Package oeenclave-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang' found
+
+Package oeenclave-clang++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang++' found
+
+Package oeenclave-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oeenclave-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oeenclave-clang' found
+
+echo "Compilers used: clang-10, clang++-10"
+oeedger8r ../osort.edl --trusted \
+	--search-path  \
+	--search-path /openenclave/edl/sgx
+echo "FLAGS:  "
+clang++-10 -g -c  -DOE_API_VERSION=2 -std=c++11 enc.cpp
+clang-10 -g -c  -DOE_API_VERSION=2 osort_t.c
+clang++-10 -o osortenc enc.o osort_t.o  
+make[2]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+make keys
+ 
+make[2]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+openssl genrsa -out private.pem -3 3072
+openssl rsa -in private.pem -pubout -out public.pem
+make[2]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+make sign
+ 
+make[2]: Entering directory '/home/chenbingnan/mysamples/OSORT/enclave'
+ 
+oesign sign -e osortenc -c osort.conf -k private.pem
+make[2]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+make[1]: Leaving directory '/home/chenbingnan/mysamples/OSORT/enclave'
+make -C host
+ 
+make[1]: Entering directory '/home/chenbingnan/mysamples/OSORT/host'
+ 
+make build
+ 
+make[2]: Entering directory '/home/chenbingnan/mysamples/OSORT/host'
+ 
+Package oehost-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oehost-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oehost-clang' found
+
+Package oehost-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oehost-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oehost-clang' found
+
+Package oehost-clang++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oehost-clang++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oehost-clang++' found
+
+Package oehost-clang was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oehost-clang.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oehost-clang' found
+
+Package oehost-clang++ was not found in the pkg-config search path.
+Perhaps you should add the directory containing `oehost-clang++.pc'
+to the PKG_CONFIG_PATH environment variable
+
+No package 'oehost-clang++' found
+
+echo "Compiler used: clang-10, clang++-10"
+oeedger8r ../osort.edl --untrusted \
+	--search-path  \
+	--search-path /openenclave/edl/sgx
+clang++-10 -g -c  host.cpp
+clang-10 -g -c  osort_u.c
+clang++-10 -o osorthost osort_u.o host.o 
+make[2]: Leaving directory '/home/chenbingnan/mysamples/OSORT/host'
+make[1]: Leaving directory '/home/chenbingnan/mysamples/OSORT/host'
+make: Leaving directory '/home/chenbingnan/mysamples/OSORT'
+ 
