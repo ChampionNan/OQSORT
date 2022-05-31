@@ -12,4 +12,4 @@
 *_u.*
 
 # .vscode
-.vscode/*
+.vscode/*.log
