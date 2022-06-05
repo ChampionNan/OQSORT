@@ -112,7 +112,7 @@ void test(int structureId) {
   int pass = 1;
   int i;
   // print(structureId);
-  for (i = 1; i <= paddedSize; i++) {
+  for (i = 1; i < paddedSize; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
   }
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
@@ -122,9 +122,9 @@ void test(int structureId, int size) {
   int pass = 1;
   int i;
   print(structureId);
-  for (i = 1; i <= size; i++) {
+  for (i = 1; i < size; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
-    std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
+    // std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
   }
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
 }
