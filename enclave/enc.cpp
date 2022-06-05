@@ -119,12 +119,15 @@ public:
   fprintf(stderr, "\n"); \
 }
 
+int paddedSize;
+
+
 // Functions x crossing the enclave boundary
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write) {
   if (!write) {
-    OcallReadBlock(index, block, blockSize, structureId);
+    OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
   } else {
-    OcallWriteBlock(index, block, blockSize, structureId);
+    OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
   }
   return;
 }
@@ -246,10 +249,11 @@ void padWithDummy(int structureId, int start, int realNum) {
   if (len <= 0) {
     return ;
   }
-  int *junk = (int*)oe_malloc(len * sizeof(Bucket_x));
+  Bucket_x *junk = (Bucket_x*)oe_malloc(len * sizeof(Bucket_x));
   // memset(junk, 0xff, blockSize * len);
-  for (int i = 0; i < len * 2; ++i) {
-    junk[i] = -1;
+  for (int i = 0; i < len; ++i) {
+    junk[i].x = -1;
+    junk[i].key = -1;
   }
   
   opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);
@@ -332,8 +336,8 @@ void mergeSplit(int inputStructureId, int outputStructureId, int inputId0, int i
 }
 
 void kWayMergeSort(int inputStructureId, int outputStructureId, std::vector<int> &numRows1, std::vector<int> &numRows2, std::vector<int> bucketAddr) {
-  int mergeSortBatchSize = 256; // 256
-  int writeBufferSize = 8192; // 8192
+  int mergeSortBatchSize = 16; // 256
+  int writeBufferSize = 32; // 8192
   int numWays = (int)numRows1.size();
   HeapNode inputHeapNodeArr[numWays];
   int totalCounter = 0;
@@ -470,7 +474,11 @@ int bucketOSort(int structureId, int size) {
       // TODO: improve
       int offset = bucketAddr1[(i + j) % bucketNum] + numRows1[(i + j) % bucketNum];
       opOneLinearScanBlock(offset * 2, (int*)(&trustedMemory[j]), (size_t)1, structureId, 1);
-      
+      /*
+      std::cout<<"=====WriteB0=====\n";
+      std::cout<<(size_t)1 * sizeof(Bucket_x)<<std::endl;
+      std::cout<<trustedMemory[j].x <<" "<<trustedMemory[j].key<<std::endl;
+      std::cout<<"=====WriteB0=====\n";*/
       // paddedSize = bucketNum * BUCKET_SIZE;
       numRows1[(i + j) % bucketNum] ++;
     }
@@ -478,17 +486,22 @@ int bucketOSort(int structureId, int size) {
   }
   oe_free(trustedMemory);
   oe_free(inputTrustMemory);
-  
+
+  std::cout << "=======Initial0=======\n";
+  paddedSize = bucketNum * BUCKET_SIZE;
+  print(structureId, paddedSize);
+  std::cout << "=======Initial0=======\n";
+
   for (int i = 0; i < bucketNum; ++i) {
     DBGprint("currently bucket %d has %d records/%d", i, numRows1[i], BUCKET_SIZE);
     padWithDummy(structureId, bucketAddr1[i], numRows1[i]);
     
   }
-  /*
+  
   std::cout << "=======Initial=======\n";
   paddedSize = bucketNum * BUCKET_SIZE;
-  print(structureId);
-  std::cout << "=======Initial=======\n";*/
+  print(structureId, paddedSize);
+  std::cout << "=======Initial=======\n";
   
   for (int i = 0; i < ranBinAssignIters; ++i) {
     // data in Array1, update numRows2
@@ -521,18 +534,44 @@ int bucketOSort(int structureId, int size) {
   
   int resultId = 0;
   if (ranBinAssignIters % 2 == 0) {
+    std::cout << "=======MergeSplit0=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId, paddedSize);
+    std::cout << "=======MergeSplit0=======\n";
     for (int i = 0; i < bucketNum; ++i) {
       bucketSort(structureId, i, numRows1[i], bucketAddr1[i]);
     }
+    std::cout << "=======bucketSort0=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId, paddedSize);
+    std::cout << "=======bucketSort0=======\n";
     kWayMergeSort(structureId, structureId + 1, numRows1, numRows2, bucketAddr1);
+    std::cout << "=======mergeSort0=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId + 1, paddedSize);
+    std::cout << "=======mergeSort0=======\n"; 
     resultId = structureId + 1;
   } else {
+    std::cout << "=======MergeSplit1=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId + 1, paddedSize);
+    std::cout << "=======MergeSplit1=======\n"; 
     for (int i = 0; i < bucketNum; ++i) {
       bucketSort(structureId + 1, i, numRows2[i], bucketAddr2[i]);
     }
+    std::cout << "=======bucketSort1=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId + 1, paddedSize);
+    std::cout << "=======bucketSort1=======\n";
     kWayMergeSort(structureId + 1, structureId, numRows2, numRows1, bucketAddr2);
+    std::cout << "=======mergeSort1=======\n";
+    paddedSize = bucketNum * BUCKET_SIZE;
+    print(structureId, paddedSize);
+    std::cout << "=======mergeSort1=======\n"; 
     resultId = structureId;
   }
+  paddedSize = N;
+  test(resultId, paddedSize);
   return resultId;
 }
 
@@ -541,7 +580,7 @@ int callSort(int sortId, int structureId, int paddedSize) {
   // bitonic sort
   int size = paddedSize / BLOCK_DATA_SIZE;
   printf("size: %d %d\n", paddedSize, size);
-  if (sortId == 2) {
+  if (sortId == 1) {
     return bucketOSort(structureId, N);
   }
   if (sortId == 3) {

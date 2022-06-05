@@ -18,23 +18,29 @@ Bucket_x *bucketx2;
 //structureId=3, write back array
 int *Y;
 int *arrayAddr[NUM_STRUCTURES];
-int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x)};
 int paddedSize;
 
 void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
   if (blockSize == 0) {
-    printf("Unknown data size");
+    // printf("Unknown data size");
     return;
   }
+  // memcpy(buffer, arrayAddr[structureId] + index, blockSize * structureSize[structureId]);
   memcpy(buffer, arrayAddr[structureId] + index, blockSize * structureSize[structureId]);
 }
 
 void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) {
   if (blockSize == 0) {
-    printf("Unknown data size");
+    // printf("Unknown data size");
     return;
   }
-  memcpy(arrayAddr[structureId] + index, buffer, blockSize * structureSize[structureId]);
+  // memcpy(arrayAddr[structureId] + index, buffer, blockSize * structureSize[structureId]);
+  memcpy(arrayAddr[structureId] + index, buffer, blockSize);
+  /*
+  std::cout<<"=====WriteB1=====\n";
+  std::cout<<blockSize * structureSize[structureId]<<std::endl;
+  std::cout<<buffer[0]<<" "<<buffer[1]<<std::endl;
+  std::cout<<"=====WriteB1=====\n";*/
 }
 
 int smallestPowerOfTwoLargerThan(int n) {
@@ -76,6 +82,22 @@ void print(int structureId) {
   printf("\n");
 }
 
+void print(int structureId, int size) {
+  int i;
+  for (i = 0; i < size; i++) {
+    if(structureSize[structureId] == 4) {
+      // int
+      int *addr = (int*)arrayAddr[structureId];
+      printf("%d ", addr[i]);
+    } else if (structureSize[structureId] == 8) {
+      //Bucket
+      Bucket_x *addr = (Bucket_x*)arrayAddr[structureId];
+      printf("(%d, %d), ", addr[i].x, addr[i].key);
+    }
+  }
+  printf("\n");
+}
+
 void test() {
   int pass = 1;
   int i;
@@ -90,8 +112,19 @@ void test(int structureId) {
   int pass = 1;
   int i;
   // print(structureId);
-  for (i = 1; i < paddedSize; i++) {
+  for (i = 1; i <= paddedSize; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
+  }
+  printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
+}
+
+void test(int structureId, int size) {
+  int pass = 1;
+  int i;
+  print(structureId);
+  for (i = 1; i <= size; i++) {
+    pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
+    std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
   }
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
 }
@@ -144,8 +177,9 @@ int main(int argc, const char* argv[]) {
     goto exit;
   }
   // Small bitonic sort Passed
-  result = callSmallSort(enclave, X, paddedSize);
-  test();
+  // result = callSmallSort(enclave, X, paddedSize);
+  // test();
+  /*
   if (result != OE_OK) {
     fprintf(stderr,
             "Calling into enclave_hello failed: result=%u (%s)\n",
@@ -156,12 +190,13 @@ int main(int argc, const char* argv[]) {
     if (method_return != OE_OK) {
       ret = -1;
     }
-  }
+  }*/
   // Bitonic sort Passed
-  result = callSort(enclave, &outputStructureId, sortId, 0, paddedSize);
   if (sortId == 2 || sortId == 3) {
+    result = callSort(enclave, &outputStructureId, sortId, 0, paddedSize);
     test();
   } else if (sortId == 1) {
+    result = callSort(enclave, &outputStructureId, sortId, 1, paddedSize);
     test(outputStructureId);
   } else {
     // break;
