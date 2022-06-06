@@ -444,6 +444,7 @@ void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
   free(arr);
 }
 
+int inputTrustMemory[BLOCK_DATA_SIZE];
 // size = #inputs real size
 int bucketOSort(int structureId, int size) {
   int bucketNum = smallestPowerOfTwoLargerThan(ceil(2.0 * size / BUCKET_SIZE));
@@ -469,7 +470,7 @@ int bucketOSort(int structureId, int size) {
   // TODO: Assign each element in X a uniformly random key (Finished)
   // srand((unsigned)time(NULL));
   Bucket_x *trustedMemory = (Bucket_x*)malloc(BLOCK_DATA_SIZE * sizeof(Bucket_x));
-  int *inputTrustMemory = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
+  // int *inputTrustMemory = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
   
   int total = 0;
   
@@ -584,7 +585,7 @@ int bucketOSort(int structureId, int size) {
   // test(resultId, paddedSize);
   free(bucketAddr);
   free(numRow1);
-  // free(numRow2);
+  free(numRow2);
 
   return resultId;
 }
@@ -592,12 +593,12 @@ int bucketOSort(int structureId, int size) {
 // trusted function
 void callSort(int sortId, int structureId, int paddedSize, int *resId) {
   // bitonic sort
-  int size = paddedSize / BLOCK_DATA_SIZE;
-  printf("size: %d %d\n", paddedSize, size);
+  printf("size: %d\n", paddedSize);
   if (sortId == 1) {
-     *resId = bucketOSort(structureId, N);
+     *resId = bucketOSort(structureId, paddedSize);
   }
   if (sortId == 3) {
+    int size = paddedSize / BLOCK_DATA_SIZE;
     int *row1 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
     int *row2 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
     bitonicSort(structureId, 0, size, 0, row1, row2);
