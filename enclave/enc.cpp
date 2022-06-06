@@ -260,7 +260,7 @@ bool isTargetBitOne(int randomKey, int iter) {
 
 void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, int outputId0, int outputId1, int iter, int* bucketAddr, int outputStructureId) {
   // write back standard
-  int batchSize = 8192; // 8192
+  int batchSize = 256; // 8192
   Bucket_x *buf0 = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
   Bucket_x *buf1 = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
   int counter0 = 0, counter1 = 0;
@@ -330,7 +330,7 @@ void mergeSplit(int inputStructureId, int outputStructureId, int inputId0, int i
 
 void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* numRow2, int* bucketAddr, int bucketSize) {
   int mergeSortBatchSize = 256; // 256
-  int writeBufferSize = 8192; // 8192
+  int writeBufferSize = 256; // 8192
   int numWays = bucketSize;
   HeapNode inputHeapNodeArr[numWays];
   int totalCounter = 0;
@@ -609,6 +609,8 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId) {
     int *row1 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
     int *row2 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
     bitonicSort(structureId, 0, size, 0, row1, row2);
+    free(row1);
+    free(row2);
     // return -1;
   }
   // return -1;

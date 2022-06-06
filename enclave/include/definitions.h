@@ -11,7 +11,7 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define BLOCK_DATA_SIZE 128
+#define BLOCK_DATA_SIZE 256
 #define BUCKET_SIZE 256//256
 #define DUMMY 0xffffffff
 #define NULLCHAR '\0'
