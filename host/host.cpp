@@ -115,7 +115,7 @@ void test(int structureId) {
   for (i = 1; i < paddedSize; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
   }
-  printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
+  printf(" TEST%d %s\n", structureId, (pass) ? "PASSed" : "FAILed");
 }
 
 void test(int structureId, int size) {
@@ -155,8 +155,8 @@ int main(int argc, const char* argv[]) {
     std::cout<<"TOTAL BUCKET SIZE: " << bucketSize<<std::endl;
     bucketx1 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
-    memset(bucketx1, '\0', bucketSize*sizeof(Bucket_x));
-    memset(bucketx2, '\0', bucketSize*sizeof(Bucket_x));
+    memset(bucketx1, 0, bucketSize*sizeof(Bucket_x));
+    memset(bucketx2, 0, bucketSize*sizeof(Bucket_x));
     arrayAddr[1] = (int*)bucketx1;
     arrayAddr[2] = (int*)bucketx2;
     X = (int *) malloc(N * sizeof(int));
@@ -198,6 +198,8 @@ int main(int argc, const char* argv[]) {
   } else if (sortId == 1) {
     result = callSort(enclave, sortId, 1, paddedSize, resId);
     test(*resId);
+    // test(1);
+    // test(2);
   } else {
     // break;
   }

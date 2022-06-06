@@ -1,7 +1,7 @@
 #pragma once
 #include <stdio.h>
 
-#define N 1000//1100
+#define N 300//1100
 #define M 128
 // #define B 10
 
@@ -12,7 +12,7 @@
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
 #define BLOCK_DATA_SIZE 128
-#define BUCKET_SIZE 128//256
+#define BUCKET_SIZE 64//256
 #define DUMMY 0xffffffff
 #define NULLCHAR '\0'
 
