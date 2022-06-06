@@ -580,9 +580,9 @@ int bucketOSort(int structureId, int size) {
     print(structureId + 1, paddedSize);
     std::cout << "=======bucketSort1=======\n";*/
     kWayMergeSort(structureId + 1, structureId, numRow2, numRow1, bucketAddr, bucketNum);
-    /*
-    std::cout << "=======mergeSort1=======\n";
-    paddedSize = bucketNum * BUCKET_SIZE;
+    
+    // std::cout << "=======mergeSort1=======\n";
+    /*paddedSize = bucketNum * BUCKET_SIZE;
     print(structureId, paddedSize);
     std::cout << "=======mergeSort1=======\n"; */
     resultId = structureId;
