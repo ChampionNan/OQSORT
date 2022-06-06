@@ -111,7 +111,7 @@ void test() {
 void test(int structureId) {
   int pass = 1;
   int i;
-  // print(structureId);
+  print(structureId);
   for (i = 1; i < paddedSize; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
   }
@@ -133,7 +133,7 @@ int main(int argc, const char* argv[]) {
   oe_result_t result;
   oe_result_t method_return;
   int ret = 1;
-  int outputStructureId = -1;
+  int *resId = (int*)malloc(sizeof(int));
   oe_enclave_t* enclave = NULL;
 
   // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
@@ -168,7 +168,7 @@ int main(int argc, const char* argv[]) {
   }
   // Create the enclave
   result = oe_create_osort_enclave(
-    argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+    argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
   if (result != OE_OK) {
     fprintf(stderr,
             "oe_create_hello_enclave(): result=%u (%s)\n",
@@ -193,11 +193,11 @@ int main(int argc, const char* argv[]) {
   }*/
   // Bitonic sort Passed
   if (sortId == 2 || sortId == 3) {
-    result = callSort(enclave, &outputStructureId, sortId, 0, paddedSize);
+    result = callSort(enclave, sortId, 0, paddedSize, resId);
     test();
   } else if (sortId == 1) {
-    result = callSort(enclave, &outputStructureId, sortId, 1, paddedSize);
-    test(outputStructureId);
+    result = callSort(enclave, sortId, 1, paddedSize, resId);
+    test(*resId);
   } else {
     // break;
   }
