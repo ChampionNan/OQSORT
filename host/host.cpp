@@ -114,6 +114,10 @@ void test(int structureId) {
   print(structureId);
   for (i = 1; i < paddedSize; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
+    if (((Bucket_x*)arrayAddr[structureId])[i].x == 0) {
+      pass = 0;
+      break;
+    }
   }
   printf(" TEST%d %s\n", structureId, (pass) ? "PASSed" : "FAILed");
 }
@@ -197,6 +201,7 @@ int main(int argc, const char* argv[]) {
     test();
   } else if (sortId == 1) {
     result = callSort(enclave, sortId, 1, paddedSize, resId);
+    std::cout<<"Return test: "<<*resId<<std::endl;
     test(*resId);
     // test(1);
     // test(2);
