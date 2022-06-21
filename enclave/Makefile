@@ -17,19 +17,19 @@ all:
 
 build:
 	@ echo "Compilers used: $(CC), $(CXX)"
-	oeedger8r ../osort.edl --trusted \
+	oeedger8r ../oqsort.edl --trusted \
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
 	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
-	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 osort_t.c
-	$(CXX) -o osortenc enc.o osort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
+	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 oqsort_t.c
+	$(CXX) -o oqsortenc enc.o oqsort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
 
 sign:
-	oesign sign -e osortenc -c osort.conf -k private.pem
+	oesign sign -e oqsortenc -c oqsort.conf -k private.pem
 
 clean:
-	rm -f enc.o osortenc osortenc.signed private.pem public.pem osort_t.* osort_args.h
+	rm -f enc.o oqsortenc oqsortenc.signed private.pem public.pem oqsort_t.* oqsort_args.h
 
 keys:
 	openssl genrsa -out private.pem -3 3072

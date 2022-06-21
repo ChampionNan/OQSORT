@@ -10,12 +10,12 @@ all:
 
 build:
 	@ echo "Compiler used: $(CC), $(CXX)"
-	oeedger8r ../osort.edl --untrusted \
+	oeedger8r ../oqsort.edl --untrusted \
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
 	$(CXX) -g -c $(CXXFLAGS) host.cpp
-	$(CC) -g -c $(CFLAGS) osort_u.c
-	$(CXX) -o osorthost osort_u.o host.o $(LDFLAGS)
+	$(CC) -g -c $(CFLAGS) oqsort_u.c
+	$(CXX) -o oqsorthost oqsort_u.o host.o $(LDFLAGS)
 
 clean:
-	rm -f hellohost host.o osort_*
+	rm -f hellohost host.o oqsort_*b

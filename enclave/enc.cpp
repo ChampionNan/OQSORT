@@ -1,15 +1,14 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
-#include <math.h>
-// #include <vector>
 #include <random>
 #include <cassert>
-#include <stdio.h>
+#include <math.h>
 #include <string.h>
 
 #include "./include/definitions.h"
 #include "../enclave/include/common.h"
-#include "osort_t.h"
+#include "oqsort_t.h"
 
 // Function Declaration
 int greatestPowerOfTwoLessThan(int n);
@@ -560,10 +559,10 @@ int bucketOSort(int structureId, int size) {
     std::cout << "=======bucketSort0=======\n";*/
     kWayMergeSort(structureId, structureId + 1, numRow1, numRow2, bucketAddr, bucketNum);
     
-    // std::cout << "=======mergeSort0=======\n";
+    std::cout <<"";
     // paddedSize = bucketNum * BUCKET_SIZE;
     // print(structureId + 1, paddedSize);
-    std::cout << "=======mergeSort0=======\n"; 
+    // DBGprint("=======mergeSort0=======\n");
     resultId = structureId + 1;
   } else {
     /*
@@ -571,6 +570,7 @@ int bucketOSort(int structureId, int size) {
     paddedSize = bucketNum * BUCKET_SIZE;
     print(structureId + 1, paddedSize);
     std::cout << "=======MergeSplit1=======\n"; */
+    // DBGprint("=======MergeSplit1=======\n");
     for (int i = 0; i < bucketNum; ++i) {
       bucketSort(structureId + 1, i, numRow2[i], bucketAddr[i]);
     }

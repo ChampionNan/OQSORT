@@ -8,7 +8,7 @@
 #include "../enclave/include/definitions.h"
 #include "../enclave/include/common.h"
 
-#include "osort_u.h"
+#include "oqsort_u.h"
 
 int *X;
 //structureId=1, bucket1 in bucket sort; input
@@ -125,7 +125,7 @@ void test(int structureId) {
 void test(int structureId, int size) {
   int pass = 1;
   int i;
-  print(structureId);
+  // print(structureId);
   for (i = 1; i < size; i++) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
     // std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
@@ -173,7 +173,7 @@ int main(int argc, const char* argv[]) {
   // Create the enclave
   
   // result = oe_create_osort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
-  result = oe_create_osort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   if (result != OE_OK) {
     fprintf(stderr,
             "oe_create_hello_enclave(): result=%u (%s)\n",

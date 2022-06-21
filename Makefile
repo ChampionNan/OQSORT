@@ -14,7 +14,7 @@ clean:
 	$(MAKE) -C host clean
 
 run:
-	host/osorthost ./enclave/osortenc.signed
+	host/oqsorthost ./enclave/oqsortenc.signed
 
 simulate:
-	host/osorthost ./enclave/osortenc.signed --simulate
+	host/oqsorthost ./enclave/oqsortenc.signed --simulate

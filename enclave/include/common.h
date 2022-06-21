@@ -1,7 +1,9 @@
 #ifndef COMMON_STRUCTURE_H
 #define COMMON_STRUCTURE_H
-#include <iostream> 
+
 #include <stdio.h>
+#include <iostream>
+#include <cstdio>
 
 typedef struct {
   int x;
