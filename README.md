@@ -36,4 +36,7 @@ $ make run
 
 ## 5. Version & Key commit
 
--
+- v0.1 (Finish bitonic sort): bd6e19b8f56a56f2a1a992f4c97bcea36aca9f9c
+- v0.2 (Finish bucket sort, primarily): 5c816db25c5ab2459efa2c22f1e6fca57e5d8203
+- v0.3 (Finish bucket sort, 10w+256): 9fa159914cda99e5be47f6eb4caed0bab013924d
+- v0.4 (latest): 475199efaf061591a2234bfec68150112b400476

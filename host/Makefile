@@ -18,4 +18,4 @@ build:
 	$(CXX) -o oqsorthost oqsort_u.o host.o $(LDFLAGS)
 
 clean:
-	rm -f hellohost host.o oqsort_*b
+	rm -f hellohost host.o oqsort_*
