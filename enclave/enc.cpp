@@ -1,4 +1,5 @@
 #include "enc.h"
+#include <openenclave/enclave.h>
 #include "./include/definitions.h"
 #include "../enclave/include/common.h"
 #include "oqsort_t.h"
@@ -66,7 +67,7 @@ public:
   }
   
   bool reduceSizeByOne() {
-    free(harr[0].data);
+    oe_free(harr[0].data);
     heapSize --;
     if (heapSize > 0) {
       harr[0] = harr[heapSize];
@@ -149,7 +150,7 @@ void bitonicMerge(int structureId, int start, int size, int flipped, int* row1, 
   if (size < 1) {
     return ;
   } else if (size < MEM_IN_ENCLAVE) {
-    int *trustedMemory = (int*)malloc(size * BLOCK_DATA_SIZE * sizeof(int));
+    int *trustedMemory = (int*)oe_malloc(size * BLOCK_DATA_SIZE * sizeof(int));
     for (int i = 0; i < size; ++i) {
       opOneLinearScanBlock((start + i) * BLOCK_DATA_SIZE, &trustedMemory[i * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, structureId, 0);
     }
@@ -157,7 +158,7 @@ void bitonicMerge(int structureId, int start, int size, int flipped, int* row1, 
     for (int i = 0; i < size; ++i) {
       opOneLinearScanBlock((start + i) * BLOCK_DATA_SIZE, &trustedMemory[i * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, structureId, 1);
     }
-    free(trustedMemory);
+    oe_free(trustedMemory);
   } else {
     int swap = 0;
     int mid = greatestPowerOfTwoLessThan(size);
@@ -186,7 +187,7 @@ void bitonicSort(int structureId, int start, int size, int flipped, int* row1, i
   if (size < 1) {
     return;
   } else if (size < MEM_IN_ENCLAVE) {
-    int *trustedMemory = (int*)malloc(size * BLOCK_DATA_SIZE * sizeof(int));
+    int *trustedMemory = (int*)oe_malloc(size * BLOCK_DATA_SIZE * sizeof(int));
     for (int i = 0; i < size; ++i) {
       opOneLinearScanBlock((start + i) * BLOCK_DATA_SIZE, &trustedMemory[i * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, structureId, 0);
     }
@@ -195,7 +196,7 @@ void bitonicSort(int structureId, int start, int size, int flipped, int* row1, i
     for (int i = 0; i < size; ++i) {
       opOneLinearScanBlock((start + i) * BLOCK_DATA_SIZE, &trustedMemory[i * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, structureId, 1);
     }
-    free(trustedMemory);
+    oe_free(trustedMemory);
   } else {
     int mid = greatestPowerOfTwoLessThan(size);
     bitonicSort(structureId, start, mid, 1, row1, row2);
@@ -210,7 +211,7 @@ void padWithDummy(int structureId, int start, int realNum) {
   if (len <= 0) {
     return ;
   }
-  Bucket_x *junk = (Bucket_x*)malloc(len * sizeof(Bucket_x));
+  Bucket_x *junk = (Bucket_x*)oe_malloc(len * sizeof(Bucket_x));
 
   for (int i = 0; i < len; ++i) {
     junk[i].x = -1;
@@ -218,7 +219,7 @@ void padWithDummy(int structureId, int start, int realNum) {
   }
   
   opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);
-  free(junk);
+  oe_free(junk);
 }
 
 bool isTargetBitOne(int randomKey, int iter) {
@@ -228,8 +229,8 @@ bool isTargetBitOne(int randomKey, int iter) {
 
 void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, int outputId0, int outputId1, int iter, int* bucketAddr, int outputStructureId) {
   int batchSize = 256; // 8192
-  Bucket_x *buf0 = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
-  Bucket_x *buf1 = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
+  Bucket_x *buf0 = (Bucket_x*)oe_malloc(batchSize * sizeof(Bucket_x));
+  Bucket_x *buf1 = (Bucket_x*)oe_malloc(batchSize * sizeof(Bucket_x));
   int counter0 = 0, counter1 = 0;
   int randomKey = 0;
   
@@ -262,12 +263,12 @@ void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, i
   opOneLinearScanBlock(2 * (bucketAddr[outputId0] + numRow2[outputId0]), (int*)buf0, (size_t)(counter0 % batchSize), outputStructureId, 1);
   numRow2[outputId0] += counter0 % batchSize;
   
-  free(buf0);
-  free(buf1);
+  oe_free(buf0);
+  oe_free(buf1);
 }
 
 void mergeSplit(int inputStructureId, int outputStructureId, int inputId0, int inputId1, int outputId0, int outputId1, int* bucketAddr, int* numRow1, int* numRow2, int iter) {
-  Bucket_x *inputBuffer = (Bucket_x*)malloc(sizeof(Bucket_x) * BUCKET_SIZE);
+  Bucket_x *inputBuffer = (Bucket_x*)oe_malloc(sizeof(Bucket_x) * BUCKET_SIZE);
   // BLOCK#0
   opOneLinearScanBlock(2 * bucketAddr[inputId0], (int*)inputBuffer, BUCKET_SIZE, inputStructureId, 0);
   mergeSplitHelper(inputBuffer, numRow1[inputId0], numRow2, outputId0, outputId1, iter, bucketAddr, outputStructureId);
@@ -286,23 +287,23 @@ void mergeSplit(int inputStructureId, int outputStructureId, int inputId0, int i
   padWithDummy(outputStructureId, bucketAddr[outputId1], numRow2[outputId1]);
   padWithDummy(outputStructureId, bucketAddr[outputId0], numRow2[outputId0]);
   
-  free(inputBuffer);
+  oe_free(inputBuffer);
 }
 
 void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* numRow2, int* bucketAddr, int bucketSize) {
-  int mergeSortBatchSize = 256; // 256
-  int writeBufferSize = 256; // 8192
+  int mergeSortBatchSize = (int)MERGE_SORT_BATCH_SIZE; // 256
+  int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
   int numWays = bucketSize;
   HeapNode inputHeapNodeArr[numWays];
   int totalCounter = 0;
   
-  int *readBucketAddr = (int*)malloc(sizeof(int) * numWays);
+  int *readBucketAddr = (int*)oe_malloc(sizeof(int) * numWays);
   memcpy(readBucketAddr, bucketAddr, sizeof(int) * numWays);
   int writeBucketAddr = 0;
   
   for (int i = 0; i < numWays; ++i) {
     HeapNode node;
-    node.data = (Bucket_x*)malloc(mergeSortBatchSize * sizeof(Bucket_x));
+    node.data = (Bucket_x*)oe_malloc(mergeSortBatchSize * sizeof(Bucket_x));
     node.bucketIdx = i;
     node.elemIdx = 0;
     opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(mergeSortBatchSize, numRow1[i]), inputStructureId, 0);
@@ -311,7 +312,7 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
   }
   
   Heap heap(inputHeapNodeArr, numWays, mergeSortBatchSize);
-  Bucket_x *writeBuffer = (Bucket_x*)malloc(writeBufferSize * sizeof(Bucket_x));
+  Bucket_x *writeBuffer = (Bucket_x*)oe_malloc(writeBufferSize * sizeof(Bucket_x));
   int writeBufferCounter = 0;
 
   while (1) {
@@ -345,16 +346,16 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
   }
   opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)writeBufferCounter, outputStructureId, 1);
   numRow2[0] += writeBufferCounter;
-  free(writeBuffer);
-  free(readBucketAddr);
+  oe_free(writeBuffer);
+  oe_free(readBucketAddr);
 }
 
 void swapRow(Bucket_x *a, Bucket_x *b) {
-  Bucket_x *temp = (Bucket_x*)malloc(sizeof(Bucket_x));
+  Bucket_x *temp = (Bucket_x*)oe_malloc(sizeof(Bucket_x));
   memmove(temp, a, sizeof(Bucket_x));
   memmove(a, b, sizeof(Bucket_x));
   memmove(b, temp, sizeof(Bucket_x));
-  free(temp);
+  oe_free(temp);
 }
 
 bool cmpHelper(Bucket_x *a, Bucket_x *b) {
@@ -387,22 +388,23 @@ void quickSort(Bucket_x *arr, int low, int high) {
 }
 
 void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
-  Bucket_x *arr = (Bucket_x*)malloc(BUCKET_SIZE * sizeof(Bucket_x));
+  Bucket_x *arr = (Bucket_x*)oe_malloc(BUCKET_SIZE * sizeof(Bucket_x));
   opOneLinearScanBlock(2 * dataStart, (int*)arr, (size_t)size, inputStructureId, 0);
   quickSort(arr, 0, size - 1);
   opOneLinearScanBlock(2 * dataStart, (int*)arr, (size_t)size, inputStructureId, 1);
-  free(arr);
+  oe_free(arr);
 }
 
 int inputTrustMemory[BLOCK_DATA_SIZE];
 
 int bucketOSort(int structureId, int size) {
+  // DBGprint("1\n");
   int bucketNum = smallestPowerOfTwoLargerThan(ceil(2.0 * size / BUCKET_SIZE));
   int ranBinAssignIters = log2(bucketNum) - 1;
 
-  int *bucketAddr = (int*)malloc(bucketNum * sizeof(int));
-  int *numRow1 = (int*)malloc(bucketNum * sizeof(int));
-  int *numRow2 = (int*)malloc(bucketNum * sizeof(int));
+  int *bucketAddr = (int*)oe_malloc(bucketNum * sizeof(int));
+  int *numRow1 = (int*)oe_malloc(bucketNum * sizeof(int));
+  int *numRow2 = (int*)oe_malloc(bucketNum * sizeof(int));
   memset(numRow1, 0, bucketNum * sizeof(int));
   memset(numRow2, 0, bucketNum * sizeof(int)); 
   
@@ -410,16 +412,17 @@ int bucketOSort(int structureId, int size) {
     bucketAddr[i] = i * BUCKET_SIZE;
   }
   
-  Bucket_x *trustedMemory = (Bucket_x*)malloc(BLOCK_DATA_SIZE * sizeof(Bucket_x));
-  // int *inputTrustMemory = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
+  Bucket_x *trustedMemory = (Bucket_x*)oe_malloc(BLOCK_DATA_SIZE * sizeof(Bucket_x));
+  // int *inputTrustMemory = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
   int total = 0;
   int offset;
-  
+  // DBGprint("2\n");
   for (int i = 0; i < size; i += BLOCK_DATA_SIZE) {
     opOneLinearScanBlock(i, inputTrustMemory, std::min(BLOCK_DATA_SIZE, size - i), structureId - 1, 0);
     int randomKey;
     for (int j = 0; j < std::min(BLOCK_DATA_SIZE, size - i); ++j) {
-      oe_random(&randomKey, 4);
+      // oe_random(&randomKey, 4);
+      randomKey = (int)oe_rdrand();
       trustedMemory[j].x = inputTrustMemory[j];
       trustedMemory[j].key = randomKey;
       
@@ -429,13 +432,14 @@ int bucketOSort(int structureId, int size) {
     }
     total += std::min(BLOCK_DATA_SIZE, size - i);
   }
-  free(trustedMemory);
-  // free(inputTrustMemory);
+  // DBGprint("3\n");
+  
+  // oe_free(inputTrustMemory);
   for (int i = 0; i < bucketNum; ++i) {
     // DBGprint("currently bucket %d has %d records/%d", i, numRow1[i], BUCKET_SIZE);
     padWithDummy(structureId, bucketAddr[i], numRow1[i]);    
   }
-  
+  // DBGprint("4\n");
   for (int i = 0; i < ranBinAssignIters; ++i) {
     if (i % 2 == 0) {
       for (int j = 0; j < bucketNum / 2; ++j) {
@@ -462,7 +466,7 @@ int bucketOSort(int structureId, int size) {
     }
     // DBGprint("\n\n Finish random bin assignment iter%dth out of %d\n\n", i, ranBinAssignIters);
   }
-  
+  // DBGprint("5\n");
   int resultId = 0;
   if (ranBinAssignIters % 2 == 0) {
     for (int i = 0; i < bucketNum; ++i) {
@@ -470,7 +474,8 @@ int bucketOSort(int structureId, int size) {
     }
     kWayMergeSort(structureId, structureId + 1, numRow1, numRow2, bucketAddr, bucketNum);
     
-    std::cout <<"hello\n";
+    // std::cout<<("hello");
+
     // fprintf(stdout, "%s: Line %d:\t", __FILE__, __LINE__);
     resultId = structureId + 1;
   } else {
@@ -482,27 +487,30 @@ int bucketOSort(int structureId, int size) {
   }
   // paddedSize = N;
   // test(resultId, paddedSize);
-  free(bucketAddr);
-  free(numRow1);
-  free(numRow2);
+  // std::cout<<"5\n";
+  oe_free(trustedMemory);
+  oe_free(bucketAddr);
+  oe_free(numRow1);
+  oe_free(numRow2);
+  // std::cout << "6\n";
   return resultId;
 }
 
 // trusted function
 void callSort(int sortId, int structureId, int paddedSize, int *resId) {
   // bitonic sort
-  printf("size: %d\n", paddedSize);
+  // printf("size: %d\n", paddedSize);
   if (sortId == 1) {
     // DBGprint("Before call");
      *resId = bucketOSort(structureId, paddedSize);
   }
   if (sortId == 3) {
     int size = paddedSize / BLOCK_DATA_SIZE;
-    int *row1 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
-    int *row2 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
+    int *row1 = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
+    int *row2 = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
     bitonicSort(structureId, 0, size, 0, row1, row2);
-    free(row1);
-    free(row2);
+    oe_free(row1);
+    oe_free(row2);
     // return -1;
   }
   // return -1;

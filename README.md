@@ -40,3 +40,4 @@ $ make run
 - v0.2 (Finish bucket sort, primarily): 5c816db25c5ab2459efa2c22f1e6fca57e5d8203
 - v0.3 (Finish bucket sort, 10w+256): 9fa159914cda99e5be47f6eb4caed0bab013924d
 - v0.4 (latest): 475199efaf061591a2234bfec68150112b400476
+- v0.5 (Remove explanation): 39304a72f20dd2cf4ccd0f944d5e173342c19910

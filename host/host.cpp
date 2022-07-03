@@ -1,6 +1,6 @@
 #include <openenclave/host.h>
-#include <stdio.h>
-#include <time.h>
+// #include <cstdio>
+#include <ctime>
 #include <iostream>
 #include <vector>
 #include <math.h>
@@ -119,7 +119,7 @@ void test(int structureId) {
       break;
     }
   }
-  printf(" TEST%d %s\n", structureId, (pass) ? "PASSed" : "FAILed");
+  printf(" TEST1%d %s\n", structureId, (pass) ? "PASSed" : "FAILed");
 }
 
 void test(int structureId, int size) {
@@ -130,7 +130,7 @@ void test(int structureId, int size) {
     pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
     // std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
   }
-  printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
+  printf(" TEST2 %s\n",(pass) ? "PASSed" : "FAILed");
 }
 
 int main(int argc, const char* argv[]) {
@@ -156,7 +156,7 @@ int main(int argc, const char* argv[]) {
     // srand((unsigned)time(NULL));
     int bucketNum = smallestPowerOfTwoLargerThan(ceil(2.0 * N / BUCKET_SIZE));
     int bucketSize = bucketNum * BUCKET_SIZE;
-    std::cout<<"TOTAL BUCKET SIZE: " << bucketSize<<std::endl;
+    printf("TOTAL BUCKET SIZE: %d", bucketSize);
     bucketx1 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     memset(bucketx1, 0, bucketSize*sizeof(Bucket_x));
@@ -172,8 +172,8 @@ int main(int argc, const char* argv[]) {
   }
   // Create the enclave
   
-  // result = oe_create_osort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
+  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   if (result != OE_OK) {
     fprintf(stderr,
             "oe_create_hello_enclave(): result=%u (%s)\n",
