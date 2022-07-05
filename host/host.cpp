@@ -19,14 +19,18 @@ Bucket_x *bucketx2;
 int *Y;
 int *arrayAddr[NUM_STRUCTURES];
 int paddedSize;
+// int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x)};
+
 
 void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
   if (blockSize == 0) {
     // printf("Unknown data size");
     return;
   }
+  // std::cout << "OcallReadBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
+  // std::cout << "OcallReadBlock: " <<blockSize/structureSize[structureId] << " " << blockSize << std::endl; 
   // memcpy(buffer, arrayAddr[structureId] + index, blockSize * structureSize[structureId]);
-  memcpy(buffer, arrayAddr[structureId] + index, blockSize * structureSize[structureId]);
+  memcpy(buffer, arrayAddr[structureId] + index, blockSize);
 }
 
 void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) {
@@ -34,6 +38,8 @@ void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) 
     // printf("Unknown data size");
     return;
   }
+  // std::cout << "OcallWriteBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
+  // std::cout << "OcallWriteBlock: " <<blockSize/structureSize[structureId] << " " << blockSize << std::endl;  
   // memcpy(arrayAddr[structureId] + index, buffer, blockSize * structureSize[structureId]);
   memcpy(arrayAddr[structureId] + index, buffer, blockSize);
   /*
@@ -139,9 +145,10 @@ int main(int argc, const char* argv[]) {
   int ret = 1;
   int *resId = (int*)malloc(sizeof(int));
   oe_enclave_t* enclave = NULL;
+  // freopen("out2.txt", "w", stdout); 
 
   // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
-  int sortId = 1;
+  int sortId = 3;
 
   if (sortId == 2 || sortId == 3) {
     int addi = 0;

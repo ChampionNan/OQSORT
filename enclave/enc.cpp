@@ -85,13 +85,19 @@ public:
 };
 
 int paddedSize;
+int sizeFlag; // represent which kind of data type
+// int structureSize[NUM_STRUCTURES] = {4, 8, 8};
 
 // Functions x crossing the enclave boundary
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write) {
   if (!write) {
+    // std::cout << "OcallReadBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
     OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
+    // OcallReadBlock(index, block, blockSize, structureId); 
   } else {
+    // std::cout << "OcallWriteBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
     OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
+    // OcallWriteBlock(index, block, blockSize, structureId);
   }
   return;
 }
@@ -502,9 +508,11 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId) {
   // printf("size: %d\n", paddedSize);
   if (sortId == 1) {
     // DBGprint("Before call");
+    sizeFlag = 2;
      *resId = bucketOSort(structureId, paddedSize);
   }
   if (sortId == 3) {
+    sizeFlag = 1;
     int size = paddedSize / BLOCK_DATA_SIZE;
     int *row1 = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
     int *row2 = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));

@@ -14,12 +14,12 @@ enclave {
   untrusted {
     void OcallReadBlock(
       int index, 
-      [out, count=blockSize]int* buffer,
+      [out, size=blockSize]int* buffer,
       size_t blockSize,
       int structureId);
     void OcallWriteBlock(
       int index, 
-      [in, count=blockSize]int* buffer,
+      [in, size=blockSize]int* buffer,
       size_t blockSize, int structureId);
     void print(int structureId, int size);
     void test(int structureId, int size);
