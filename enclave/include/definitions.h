@@ -1,6 +1,6 @@
 #pragma once
 
-#define N 500000//1100
+#define N 1000000//1100
 #define M 128
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5

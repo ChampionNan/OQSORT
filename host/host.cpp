@@ -148,7 +148,7 @@ int main(int argc, const char* argv[]) {
   // freopen("out2.txt", "w", stdout); 
 
   // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
-  int sortId = 3;
+  int sortId = 1;
 
   if (sortId == 2 || sortId == 3) {
     int addi = 0;
@@ -209,7 +209,7 @@ int main(int argc, const char* argv[]) {
     test();
   } else if (sortId == 1) {
     result = callSort(enclave, sortId, 1, paddedSize, resId);
-    std::cout<<"Return test: "<<*resId<<std::endl;
+    std::cout<<"\nReturn test: "<<*resId<<std::endl;
     test(*resId);
     // test(1);
     // test(2);
@@ -227,7 +227,7 @@ int main(int argc, const char* argv[]) {
     if (method_return != OE_OK) {
       ret = -1;
     }
-  } 
+  }
   std::cout<<"end\n";
   exit:
     std::cout<<"before if: \n";
