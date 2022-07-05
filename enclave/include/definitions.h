@@ -1,7 +1,7 @@
 #pragma once
 #include <stdio.h>
 
-#define N 100000//1100
+#define N 500000//1100
 #define M 128
 // #define B 10
 
