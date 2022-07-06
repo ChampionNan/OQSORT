@@ -3,6 +3,8 @@
 
 #include <cstdio>
 
+
+
 int smallestPowerOfTwoLargerThan(int n) {
   int k = 1;
   while (k > 0 && k < n) {
@@ -45,4 +47,13 @@ void test(int **arrayAddr, int structureId, int size) {
     // std::cout<<"i, pass: "<<i<<" "<<pass<<std::endl;
   }
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
+}
+
+/* OCall functions */
+void ocall_print_string(const char *str) {
+  /* Proxy/Bridge will check the length and null-terminate
+   * the input string to prevent buffer overflow.
+   */
+  printf("%s", str);
+  fflush(stdout);
 }

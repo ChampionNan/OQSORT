@@ -87,16 +87,13 @@ public:
 
 int paddedSize;
 int sizeFlag; // represent which kind of data type
-// int structureSize[NUM_STRUCTURES] = {4, 8, 8};
 
 // Functions x crossing the enclave boundary
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write) {
   if (!write) {
-    // std::cout << "OcallReadBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
     OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
     // OcallReadBlock(index, block, blockSize, structureId); 
   } else {
-    // std::cout << "OcallWriteBlock: " <<blockSize << " " << blockSize * structureSize[structureId] << std::endl; 
     OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
     // OcallWriteBlock(index, block, blockSize, structureId);
   }
@@ -402,10 +399,9 @@ void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
   oe_free(arr);
 }
 
-int inputTrustMemory[BLOCK_DATA_SIZE];
+// int inputTrustMemory[BLOCK_DATA_SIZE];
 
 int bucketOSort(int structureId, int size) {
-  // DBGprint("1\n");
   int bucketNum = smallestPowerOfTwoLargerThan(ceil(2.0 * size / BUCKET_SIZE));
   int ranBinAssignIters = log2(bucketNum) - 1;
 
@@ -420,10 +416,10 @@ int bucketOSort(int structureId, int size) {
   }
   
   Bucket_x *trustedMemory = (Bucket_x*)oe_malloc(BLOCK_DATA_SIZE * sizeof(Bucket_x));
-  // int *inputTrustMemory = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
+  int *inputTrustMemory = (int*)oe_malloc(BLOCK_DATA_SIZE * sizeof(int));
   int total = 0;
   int offset;
-  // DBGprint("2\n");
+
   for (int i = 0; i < size; i += BLOCK_DATA_SIZE) {
     opOneLinearScanBlock(i, inputTrustMemory, std::min(BLOCK_DATA_SIZE, size - i), structureId - 1, 0);
     int randomKey;
@@ -439,14 +435,14 @@ int bucketOSort(int structureId, int size) {
     }
     total += std::min(BLOCK_DATA_SIZE, size - i);
   }
-  // DBGprint("3\n");
-  
-  // oe_free(inputTrustMemory);
+  oe_free(trustedMemory);
+  oe_free(inputTrustMemory);
+
   for (int i = 0; i < bucketNum; ++i) {
     // DBGprint("currently bucket %d has %d records/%d", i, numRow1[i], BUCKET_SIZE);
     padWithDummy(structureId, bucketAddr[i], numRow1[i]);    
   }
-  // DBGprint("4\n");
+
   for (int i = 0; i < ranBinAssignIters; ++i) {
     if (i % 2 == 0) {
       for (int j = 0; j < bucketNum / 2; ++j) {
@@ -473,7 +469,7 @@ int bucketOSort(int structureId, int size) {
     }
     // DBGprint("\n\n Finish random bin assignment iter%dth out of %d\n\n", i, ranBinAssignIters);
   }
-  // DBGprint("5\n");
+  
   int resultId = 0;
   if (ranBinAssignIters % 2 == 0) {
     for (int i = 0; i < bucketNum; ++i) {
@@ -481,9 +477,6 @@ int bucketOSort(int structureId, int size) {
     }
     kWayMergeSort(structureId, structureId + 1, numRow1, numRow2, bucketAddr, bucketNum);
     
-    // std::cout<<("hello");
-
-    // fprintf(stdout, "%s: Line %d:\t", __FILE__, __LINE__);
     resultId = structureId + 1;
   } else {
     for (int i = 0; i < bucketNum; ++i) {
@@ -492,23 +485,16 @@ int bucketOSort(int structureId, int size) {
     kWayMergeSort(structureId + 1, structureId, numRow2, numRow1, bucketAddr, bucketNum);
     resultId = structureId;
   }
-  // paddedSize = N;
-  // test(resultId, paddedSize);
-  // std::cout<<"5\n";
-  oe_free(trustedMemory);
   oe_free(bucketAddr);
   oe_free(numRow1);
   oe_free(numRow2);
-  // std::cout << "6\n";
   return resultId;
 }
 
 // trusted function
 void callSort(int sortId, int structureId, int paddedSize, int *resId) {
   // bitonic sort
-  // printf("size: %d\n", paddedSize);
   if (sortId == 1) {
-    // DBGprint("Before call");
     sizeFlag = 2;
      *resId = bucketOSort(structureId, paddedSize);
   }
@@ -520,9 +506,7 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId) {
     bitonicSort(structureId, 0, size, 0, row1, row2);
     oe_free(row1);
     oe_free(row2);
-    // return -1;
   }
-  // return -1;
 }
 
 // trusted function
