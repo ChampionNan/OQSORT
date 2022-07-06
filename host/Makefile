@@ -13,9 +13,10 @@ build:
 	oeedger8r ../oqsort.edl --untrusted \
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
-	$(CXX) -g -c $(CXXFLAGS) host.cpp
+	$(CXX) -g -c $(CXXFLAGS) host.cpp 
+	$(CXX) -g -c $(CXXFLAGS) ../include/IOTools.cpp
 	$(CC) -g -c $(CFLAGS) oqsort_u.c
-	$(CXX) -o oqsorthost oqsort_u.o host.o $(LDFLAGS)
+	$(CXX) -o oqsorthost oqsort_u.o host.o IOTools.o $(LDFLAGS)
 
 clean:
-	rm -f hellohost host.o oqsort_*
+	rm -f oqsorthost oqsort_* host.o

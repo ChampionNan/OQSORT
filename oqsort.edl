@@ -21,7 +21,5 @@ enclave {
       int index, 
       [in, size=blockSize]int* buffer,
       size_t blockSize, int structureId);
-    void print(int structureId, int size);
-    void test(int structureId, int size);
   };
 };

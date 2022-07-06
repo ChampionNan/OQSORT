@@ -1,6 +1,7 @@
-#pragma once
+#ifndef DEFINITIONS_H
+#define DEFINITIONS_H 
 
-#define N 1000000//1100
+#define N 5000000//1100
 #define M 128
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
@@ -13,7 +14,8 @@
 #define gamma 0.1
 
 #define BLOCK_DATA_SIZE 256
-#define BUCKET_SIZE 256//256
-#define MERGE_SORT_BATCH_SIZE 200
-#define WRITE_BUFFER_SIZE 200
+#define BUCKET_SIZE 3000//256
+#define MERGE_SORT_BATCH_SIZE 256
+#define WRITE_BUFFER_SIZE 256
 
+#endif // !DEFINITIONS_H

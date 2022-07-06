@@ -2,20 +2,19 @@
 #define _ENC_H_
 
 #include <cstdio>
-// #include <cstdlib>
-// #include <openenclave/3rdparty/libcxx/iostream>
+#include <cstdlib>
 #include <iostream>
 #include <random>
 #include <cassert>
 #include <cmath>
 #include <algorithm>
-#include <string.h>
+#include <cstring>
+
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/debugmalloc.h>
-#include <stdio.h>
 #include <openenclave/internal/rdrand.h>
 
-#include "./include/common.h"
+#include "../include/common.h"
 
 // Function Declaration
 int greatestPowerOfTwoLessThan(int n);

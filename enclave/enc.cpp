@@ -1,8 +1,9 @@
 #include "enc.h"
-#include <openenclave/enclave.h>
-#include "./include/definitions.h"
-#include "../enclave/include/common.h"
+#include "../include/definitions.h"
+#include "../include/common.h"
 #include "oqsort_t.h"
+
+#include <openenclave/enclave.h>
 
 struct HeapNode {
   Bucket_x *data;
@@ -14,7 +15,7 @@ class Heap {
   HeapNode *harr;
   int heapSize;
   int batchSize;
-  
+
 public:
   Heap(HeapNode *a, int size, int bsize) {
     heapSize = size;
