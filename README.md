@@ -41,3 +41,4 @@ $ make run
 - v0.3 (Finish bucket sort, 10w+256): 9fa159914cda99e5be47f6eb4caed0bab013924d
 - v0.4 (latest): 475199efaf061591a2234bfec68150112b400476
 - v0.5 (100w ok): 858935643980c7092078bf3e512eae81fa5b842d
+- v0.6 (500w+3000, reconstruct): 67480c89060c7f6afcb28c0384600cf1f1972dd4
