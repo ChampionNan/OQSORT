@@ -1,9 +1,7 @@
-#include <openenclave/host.h>
-// #include <cstdio>
-#include <ctime>
 #include <iostream>
-#include <vector>
-#include <math.h>
+#include <chrono>
+#include <cmath>
+#include <openenclave/host.h>
 
 #include "../include/IOTools.h"
 #include "../include/definitions.h"
@@ -23,6 +21,15 @@ int paddedSize;
 // int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x)};
 
 
+/* OCall functions */
+void ocall_print_string(const char *str) {
+  /* Proxy/Bridge will check the length and null-terminate
+   * the input string to prevent buffer overflow.
+   */
+  printf("%s", str);
+  fflush(stdout);
+}
+
 void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
   if (blockSize == 0) {
     // printf("Unknown data size");
@@ -41,16 +48,16 @@ void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) 
   memcpy(arrayAddr[structureId] + index, buffer, blockSize);
 }
 
-
+/* main function */
 int main(int argc, const char* argv[]) {
-  oe_result_t result;
-  oe_result_t method_return;
   int ret = 1;
   int *resId = (int*)malloc(sizeof(int));
+  oe_result_t result;
   oe_enclave_t* enclave = NULL;
+  std::chrono::high_resolution_clock::time_point start, end;
+  std::chrono::seconds duration;
   // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
   int sortId = 1;
-  // freopen("out2.txt", "w", stdout); 
 
   // step1: init test numbers
   if (sortId == 2 || sortId == 3) {
@@ -92,6 +99,7 @@ int main(int argc, const char* argv[]) {
   }
   
   // step3: call sort algorithms
+  start = std::chrono::high_resolution_clock::now();
   if (sortId == 2 || sortId == 3) {
     std::cout << "Test bitonic sort: " << std::endl;
     result = callSort(enclave, sortId, 0, paddedSize, resId);
@@ -105,18 +113,20 @@ int main(int argc, const char* argv[]) {
   } else {
     // TODO: 
   }
+  end = std::chrono::high_resolution_clock::now();
   if (result != OE_OK) {
     fprintf(stderr,
             "Calling into enclave_hello failed: result=%u (%s)\n",
             result,
             oe_result_str(result));
     ret = -1;
-  } else {
-    if (method_return != OE_OK) {
-      ret = -1;
-    }
   }
-  // step4: exix part
+
+  // step4: std::cout execution time
+  duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+  std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
+
+  // step5: exix part
   exit:
     if (enclave) {
       oe_terminate_enclave(enclave);

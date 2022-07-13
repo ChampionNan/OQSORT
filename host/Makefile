@@ -19,4 +19,4 @@ build:
 	$(CXX) -o oqsorthost oqsort_u.o host.o IOTools.o $(LDFLAGS)
 
 clean:
-	rm -f oqsorthost oqsort_* host.o
+	rm -f oqsorthost oqsort_* *.o

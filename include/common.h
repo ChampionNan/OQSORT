@@ -1,7 +1,7 @@
 #ifndef COMMON_STRUCTURE_H
 #define COMMON_STRUCTURE_H
 
-#include <cstdio>
+// #include <cstdio>
 #include "definitions.h"
 
 typedef struct {

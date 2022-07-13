@@ -6,9 +6,6 @@ enclave {
     public void callSort(int sortId,
                          int structureId, int paddedSize,
        [in, out, count=1]int *resId);
-    public void callSmallSort(
-      [in, out, count=dataSize]int *a,
-      size_t dataSize);
   };
 
   untrusted {
@@ -21,5 +18,6 @@ enclave {
       int index, 
       [in, size=blockSize]int* buffer,
       size_t blockSize, int structureId);
+    void ocall_print_string([in, string] const char *str);
   };
 };
