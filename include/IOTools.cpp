@@ -3,12 +3,12 @@
 
 #include <cstdio>
 
-int smallestPowerOfTwoLargerThan(int n) {
-  int k = 1;
-  while (k > 0 && k < n) {
-    k = k << 1;
+int smallestPowerOfKLargerThan(int n, int k) {
+  int num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
   }
-  return k;
+  return num;
 }
 
 void init(int **arrayAddr, int structurId, int size) {
@@ -18,7 +18,6 @@ void init(int **arrayAddr, int structurId, int size) {
     addr[i] = (size - i);
   }
 }
-
 
 void print(int **arrayAddr, int structureId, int size) {
   int i;

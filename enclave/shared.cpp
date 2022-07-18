@@ -89,12 +89,12 @@ int greatestPowerOfTwoLessThan(int n) {
 	return k >> 1;
 }
 
-int smallestPowerOfTwoLargerThan(int n) {
-  int k = 1;
-  while (k > 0 && k < n) {
-    k = k << 1;
+int smallestPowerOfKLargerThan(int n, int k) {
+  int num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
   }
-  return k;
+  return num;
 }
 
 // Functions x crossing the enclave boundary
@@ -129,9 +129,13 @@ void padWithDummy(int structureId, int start, int realNum) {
   oe_free(junk);
 }
 
-bool isTargetBitOne(int randomKey, int iter) {
-  assert(iter >= 1);
-  return (randomKey & (0x01 << (iter - 1))) == 0 ? false : true;
+bool isTargetIterK(int randomKey, int iter, int k, int num) {
+  while (iter) {
+    randomKey = randomKey / k;
+    iter--;
+  }
+  // return (randomKey & (0x01 << (iter - 1))) == 0 ? false : true;
+  return (randomKey % k) == num;
 }
 
 void swapRow(Bucket_x *a, Bucket_x *b) {

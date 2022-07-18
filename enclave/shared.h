@@ -42,11 +42,11 @@ public:
 
 int printf(const char *fmt, ...);
 int greatestPowerOfTwoLessThan(int n);
-int smallestPowerOfTwoLargerThan(int n);
+int smallestPowerOfKLargerThan(int n, int k);
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
 void padWithDummy(int structureId, int start, int realNum);
-bool isTargetBitOne(int randomKey, int iter);
+bool isTargetIterK(int randomKey, int iter, int k, int num);
 void swapRow(Bucket_x *a, Bucket_x *b);
 
 #endif // !SHARED_H

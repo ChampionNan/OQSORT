@@ -1,6 +1,7 @@
 #include <iostream>
 #include <chrono>
 #include <cmath>
+#include <cassert>
 #include <openenclave/host.h>
 
 #include "../include/IOTools.h"
@@ -70,9 +71,13 @@ int main(int argc, const char* argv[]) {
     arrayAddr[0] = X;
   } else if (sortId == 1) {
     // srand((unsigned)time(NULL));
-    int bucketNum = smallestPowerOfTwoLargerThan(ceil(2.0 * N / BUCKET_SIZE));
+    int k = M / BUCKET_SIZE;
+    assert(k >= 2 && "M/B must greater than 2");
+    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), k);
     int bucketSize = bucketNum * BUCKET_SIZE;
+    std::cout << "BUCKET NUMBER: " << bucketNum << std::endl;
     std::cout << "TOTAL BUCKET SIZE: " << bucketSize << std::endl;
+    std::cout << "Iterations: " << log(bucketNum)/log(k) << std::endl; 
     bucketx1 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     memset(bucketx1, 0, bucketSize*sizeof(Bucket_x));
@@ -101,11 +106,11 @@ int main(int argc, const char* argv[]) {
   // step3: call sort algorithms
   start = std::chrono::high_resolution_clock::now();
   if (sortId == 2 || sortId == 3) {
-    std::cout << "Test bitonic sort: " << std::endl;
+    std::cout << "Test bitonic sort... " << std::endl;
     result = callSort(enclave, sortId, 0, paddedSize, resId);
     test(arrayAddr, 0, paddedSize);
   } else if (sortId == 1) {
-    std::cout << "Test bucket oblivious sort: " << std::endl;
+    std::cout << "Test bucket oblivious sort... " << std::endl;
     result = callSort(enclave, sortId, 1, paddedSize, resId);
     std::cout << "Result ID: " << *resId << std::endl;
     // print(arrayAddr, *resId, paddedSize);
