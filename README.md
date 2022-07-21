@@ -58,7 +58,52 @@ $ make run
 - `oqsort.edl`: declarations about ECALLs & OCALLs
 - `gdb.cfg`: breakpoints used in oegdb
 
-## 5. Version & Key commit
+## 5. Test Results
+
+- config: NumHeapPages=262144, NumStackPages=8192, NumTCS=1
+- $Z=max(B, (40+log(n)) * 6)$
+- x: Test Failed, xx: segfault, limited memory, v: test pass on non-enclave environment
+- A/B: server data / local data
+- bucket sort 100w
+
+  | B(bytes) \ M/B | 2   | 3   | 4   | 5   | 6   | 7   |
+  | -------------- | --- | --- | --- | --- | --- | --- |
+  | 256 \* 8       | 18s | x   | x   | x   | x   | x   |
+  | 512 \* 8       | 7s  | 6s  | 5s  | x   | x   | x   |
+  | 1000 \* 8      | 6s  | 5s  | 5s  | 5s  | 6s  | 4s  |
+  | 2000 \* 8      | 5s  | 5s  | 4s  | 5s  | 4s  | 5s  |
+  | 3000 \* 8      | 5s  | 4s  | 4s  | 5s  | 4s  | 5s  |
+  | 5000 \* 8      | 5s  | 4s  | 4s  | 4s  | 4s  | 5s  |
+  | 7000 \* 8      | 5s  | 5s  | 4s  | 4s  | 4s  | 4s  |
+  | 10000 \* 8     | 5s  | 4s  | 4s  | 4s  | 4s  | 4s  |
+
+- bucket sort 500w
+
+| B(bytes) \ M/B | 2    | 3    | 4    | 5    | 6    | 7    |
+| -------------- | ---- | ---- | ---- | ---- | ---- | ---- |
+| 256 \* 8       | xx/v | xx/x |      |      |      |      |
+| 512 \* 8       | xx/v | xx/x |      |      |      |      |
+| 1000 \* 8      | xx/v | xx/v | xx/v | xx/v | xx/x |      |
+| 2000 \* 8      | 84s  | 26s  | xx/v | xx/v | xx/v | xx/v |
+| 3000 \* 8      | 31s  | 27s  | 23s  | 35s  | 27s  | xx/v |
+| 5000 \* 8      | 29s  | 24s  | 24s  | 23s  | 28s  | 22s  |
+| 7000 \* 8      | 29s  | 24s  | 24s  | 23s  | 28s  | 23s  |
+| 10000 \* 8     | 27s  | 25s  | 22s  | 23s  | 22s  | 23s  |
+
+- bucket sort 1000w
+
+| B(bytes) \ M/B | 2    | 3    | 4    | 5   | 6   | 7    |
+| -------------- | ---- | ---- | ---- | --- | --- | ---- |
+| 256 \* 8       | xx/v | xx/x |      |     |     |      |
+| 512 \* 8       | xx/v | xx/v | xx/x |     |     |      |
+| 1000 \* 8      | xx/v | xx/v | xx/x |     |     |      |
+| 2000 \* 8      | xx/v | xx/v | xx/v |     |     |      |
+| 3000 \* 8      | 169s | xx/v |      |     |     |      |
+| 5000 \* 8      | 62s  | 53s  | 47s  | 68s | 53s | xx/v |
+| 7000 \* 8      | 63s  | 53s  | 47s  | 46s | 53s | xx   |
+| 10000 \* 8     | 58s  | 48s  | 48s  | 46s | 54s | 45s  |
+
+## 6. Version & Key commit
 
 - v0.1 (Finish bitonic sort): bd6e19b8f56a56f2a1a992f4c97bcea36aca9f9c
 - v0.2 (Finish bucket sort, primarily): 5c816db25c5ab2459efa2c22f1e6fca57e5d8203

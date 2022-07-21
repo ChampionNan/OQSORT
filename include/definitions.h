@@ -2,7 +2,7 @@
 #define DEFINITIONS_H 
 
 #define N 10000000//1100
-#define M 60000
+#define M 70000
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
 #define DUMMY 0xffffffff
