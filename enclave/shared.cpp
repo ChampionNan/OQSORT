@@ -121,8 +121,8 @@ void padWithDummy(int structureId, int start, int realNum) {
   Bucket_x *junk = (Bucket_x*)oe_malloc(len * sizeof(Bucket_x));
 
   for (int i = 0; i < len; ++i) {
-    junk[i].x = -1;
-    junk[i].key = -1;
+    junk[i].x = DUMMY;
+    junk[i].key = DUMMY;
   }
   
   opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);

@@ -25,11 +25,17 @@ void print(int **arrayAddr, int structureId, int size) {
     int *addr = (int*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       printf("%d ", addr[i]);
+      if (i % 10 == 0) {
+        printf("\n");
+      }
     }
   } else if (structureSize[structureId] == 8) {
     Bucket_x *addr = (Bucket_x*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       printf("(%d, %d) ", addr[i].x, addr[i].key);
+      if (i % 5 == 0) {
+        printf("\n");
+      }
     } 
   }
   printf("\n");

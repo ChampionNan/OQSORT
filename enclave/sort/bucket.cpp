@@ -2,88 +2,110 @@
 #include "quick.h"
 
 void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, int* outputId, int iter, int k, int* bucketAddr, int outputStructureId) {
-  // step1. malloc k bucket size memory
-  Bucket_x **buf = (Bucket_x**)oe_malloc(k * sizeof(Bucket_x*));
+  int batchSize = MERGE_BATCH_SIZE; // 8192
+  // TODO: FREE these malloc
+  Bucket_x **buf = (Bucket_x**)malloc(k * sizeof(Bucket_x*));
   for (int i = 0; i < k; ++i) {
-    buf[i] = (Bucket_x*)oe_malloc(MERGE_SORT_BATCH_SIZE * sizeof(Bucket_x));
+    buf[i] = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
   }
-  // step2. set up counters for each bucket
-  int randomKey = 0;
-  int *counter = (int*)oe_malloc(k * sizeof(int));
+  
+  // int counter0 = 0, counter1 = 0;
+  int randomKey;
+  int *counter = (int*)malloc(k * sizeof(int));
   memset(counter, 0, k * sizeof(int));
-  // step3. assign to certain bucket
+  
   for (int i = 0; i < inputBufferLen; ++i) {
     if ((inputBuffer[i].key != DUMMY) && (inputBuffer[i].x != DUMMY)) {
       randomKey = inputBuffer[i].key;
       for (int j = 0; j < k; ++j) {
         if (isTargetIterK(randomKey, iter, k, j)) {
-          buf[j][counter[j] % MERGE_SORT_BATCH_SIZE] = inputBuffer[i];
+          buf[j][counter[j] % batchSize] = inputBuffer[i];
           counter[j]++;
-          if (counter[j] % MERGE_SORT_BATCH_SIZE == 0) {
-            opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] +  numRow2[outputId[j]]), (int*)buf[j], (size_t)MERGE_SORT_BATCH_SIZE, outputStructureId, 1);
-            numRow2[outputId[j]] += MERGE_SORT_BATCH_SIZE;
+          // // std::cout << "couter j: " << counter[j] << std::endl;
+          if (counter[j] % batchSize == 0) {
+            opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] +  numRow2[outputId[j]]), (int*)buf[j], (size_t)batchSize, outputStructureId, 1);
+            numRow2[outputId[j]] += batchSize;
+            for (int j = 0; j < k; ++j) {
+              if (numRow2[outputId[j]] > BUCKET_SIZE) {
+                // // printf("overflow error during merge split!\n");
+              }
+            }
           }
         }
       }
     }
   }
-  // step4. write back the rest
+  
   for (int j = 0; j < k; ++j) {
-    opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] + numRow2[outputId[j]]), (int*)buf[j], (size_t)(counter[j] % MERGE_SORT_BATCH_SIZE), outputStructureId, 1);
-    numRow2[outputId[j]] += counter[j] % MERGE_SORT_BATCH_SIZE;
-    oe_free(buf[j]);
+    opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] + numRow2[outputId[j]]), (int*)buf[j], (size_t)(counter[j] % batchSize), outputStructureId, 1);
+    numRow2[outputId[j]] += counter[j] % batchSize;
+    for (int j = 0; j < k; ++j) {
+      if (numRow2[outputId[j]] > BUCKET_SIZE) {
+        // // printf("overflow error during merge split!\n");
+      }
+    }
+    free(buf[j]);
   }
-  oe_free(counter);
+  free(counter);
 }
+
 
 void mergeSplit(int inputStructureId, int outputStructureId, int *inputId, int *outputId, int k, int* bucketAddr, int* numRow1, int* numRow2, int iter) {
   // step1. Read k buckets together
-  // TODO: change memory bounded by MEM_IN_ENCLAVE
-  Bucket_x *inputBuffer = (Bucket_x*)oe_malloc(k * sizeof(Bucket_x) * BUCKET_SIZE);
+  Bucket_x *inputBuffer = (Bucket_x*)malloc(k * sizeof(Bucket_x) * BUCKET_SIZE);
+  // Bucket_x *inputBuffer = (Bucket_x*)malloc(sizeof(Bucket_x) * BUCKET_SIZE);
+  
   for (int i = 0; i < k; ++i) {
     opOneLinearScanBlock(2 * bucketAddr[inputId[i]], (int*)(&inputBuffer[i * BUCKET_SIZE]), BUCKET_SIZE, inputStructureId, 0);
   }
   // step2. process k buckets
   for (int i = 0; i < k; ++i) {
+    // opOneLinearScanBlock(2 * bucketAddr[inputId[i]], (int*)inputBuffer, BUCKET_SIZE, inputStructureId, 0);
     mergeSplitHelper(&inputBuffer[i * BUCKET_SIZE], numRow1[inputId[i]], numRow2, outputId, iter, k, bucketAddr, outputStructureId);
+    // mergeSplitHelper(inputBuffer, numRow1[inputId[i]], numRow2, outputId, iter, k, bucketAddr, outputStructureId);
     for (int j = 0; j < k; ++j) {
       if (numRow2[outputId[j]] > BUCKET_SIZE) {
         // printf("overflow error during merge split!\n");
       }
     }
   }
+  free(inputBuffer);
   
   for (int j = 0; j < k; ++j) {
     padWithDummy(outputStructureId, bucketAddr[outputId[j]], numRow2[outputId[j]]);
   }
   
-  oe_free(inputBuffer);
 }
 
 
 void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* numRow2, int* bucketAddr, int bucketSize) {
-  int mergeSortBatchSize = (int)MERGE_SORT_BATCH_SIZE; // 256
+  int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
   int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
   int numWays = bucketSize;
   HeapNode inputHeapNodeArr[numWays];
   int totalCounter = 0;
   
-  int *readBucketAddr = (int*)oe_malloc(sizeof(int) * numWays);
+  int *readBucketAddr = (int*)malloc(sizeof(int) * numWays);
   memcpy(readBucketAddr, bucketAddr, sizeof(int) * numWays);
   int writeBucketAddr = 0;
+  int j = 0;
   
   for (int i = 0; i < numWays; ++i) {
+    // TODO: 数据0跳过
+    if (numRow1[i] == 0) {
+      continue;
+    }
     HeapNode node;
-    node.data = (Bucket_x*)oe_malloc(mergeSortBatchSize * sizeof(Bucket_x));
+    node.data = (Bucket_x*)malloc(mergeSortBatchSize * sizeof(Bucket_x));
     node.bucketIdx = i;
     node.elemIdx = 0;
     opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(mergeSortBatchSize, numRow1[i]), inputStructureId, 0);
-    inputHeapNodeArr[i] = node;
+    inputHeapNodeArr[j++] = node;
     readBucketAddr[i] += std::min(mergeSortBatchSize, numRow1[i]);
   }
   
-  Heap heap(inputHeapNodeArr, numWays, mergeSortBatchSize);
-  Bucket_x *writeBuffer = (Bucket_x*)oe_malloc(writeBufferSize * sizeof(Bucket_x));
+  Heap heap(inputHeapNodeArr, j, mergeSortBatchSize);
+  Bucket_x *writeBuffer = (Bucket_x*)malloc(writeBufferSize * sizeof(Bucket_x));
   int writeBufferCounter = 0;
 
   while (1) {
@@ -98,6 +120,7 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
       writeBucketAddr += writeBufferSize;
       numRow2[temp->bucketIdx] += writeBufferSize;
       writeBufferCounter = 0;
+      // print(arrayAddr, outputStructureId, numWays * BUCKET_SIZE);
     }
     
     if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % mergeSortBatchSize) == 0) {
@@ -117,9 +140,11 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
   }
   opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)writeBufferCounter, outputStructureId, 1);
   numRow2[0] += writeBufferCounter;
-  oe_free(writeBuffer);
-  oe_free(readBucketAddr);
+  // TODO: ERROR writeBuffer
+  free(writeBuffer);
+  free(readBucketAddr);
 }
+
 
 void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
   Bucket_x *arr = (Bucket_x*)oe_malloc(BUCKET_SIZE * sizeof(Bucket_x));
@@ -131,10 +156,16 @@ void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
 
 // int inputTrustMemory[BLOCK_DATA_SIZE];
 int bucketOSort(int structureId, int size) {
-  int k = M / BUCKET_SIZE;
+  int k = FAN_OUT;
   int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * size / BUCKET_SIZE), k);
+  if ((2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * MERGE_BATCH_SIZE > M) || (3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE> M)) {
+    int maxM = std::max(2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * MERGE_BATCH_SIZE, 3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE);
+    // // printf("Memory %d bytes exceeds.\n", maxM);
+  }
   int ranBinAssignIters = log(bucketNum)/log(k) - 1;
-  // std::cout << "Iteration times: " << ranBinAssignIters << std::endl;
+  // std::cout << "Iteration times: " << log(bucketNum)/log(k) << std::endl;
+  srand((unsigned)time(NULL));
+  // // std::cout << "Iters:" << ranBinAssignIters << std::endl;
   int *bucketAddr = (int*)malloc(bucketNum * sizeof(int));
   int *numRow1 = (int*)malloc(bucketNum * sizeof(int));
   int *numRow2 = (int*)malloc(bucketNum * sizeof(int));
@@ -145,17 +176,17 @@ int bucketOSort(int structureId, int size) {
     bucketAddr[i] = i * BUCKET_SIZE;
   }
   
-  Bucket_x *trustedMemory = (Bucket_x*)malloc(M * sizeof(Bucket_x));
-  int *inputTrustMemory = (int*)malloc(M * sizeof(int));
+  Bucket_x *trustedMemory = (Bucket_x*)malloc(BLOCK_DATA_SIZE * sizeof(Bucket_x));
+  int *inputTrustMemory = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
   int total = 0;
   int offset;
 
-  for (int i = 0; i < size; i += M) {
-    opOneLinearScanBlock(i, inputTrustMemory, std::min(M, size - i), structureId - 1, 0);
+  for (int i = 0; i < size; i += BLOCK_DATA_SIZE) {
+    opOneLinearScanBlock(i, inputTrustMemory, std::min(BLOCK_DATA_SIZE, size - i), structureId - 1, 0);
     int randomKey;
-    for (int j = 0; j < std::min(M, size - i); ++j) {
-      // oe_random(&randomKey, 4);
-      randomKey = (int)rand();
+    for (int j = 0; j < std::min(BLOCK_DATA_SIZE, size - i); ++j) {
+      // randomKey = (int)oe_rdrand();
+      randomKey = rand();
       trustedMemory[j].x = inputTrustMemory[j];
       trustedMemory[j].key = randomKey;
       
@@ -163,52 +194,74 @@ int bucketOSort(int structureId, int size) {
       opOneLinearScanBlock(offset * 2, (int*)(&trustedMemory[j]), (size_t)1, structureId, 1);
       numRow1[(i + j) % bucketNum] ++;
     }
-    total += std::min(M, size - i);
+    total += std::min(BLOCK_DATA_SIZE, size - i);
   }
   free(trustedMemory);
   free(inputTrustMemory);
 
   for (int i = 0; i < bucketNum; ++i) {
-    // DBGprint("currently bucket %d has %d records/%d", i, numRow1[i], BUCKET_SIZE);
+    //// // printf("currently bucket %d has %d records/%d\n", i, numRow1[i], BUCKET_SIZE);
     padWithDummy(structureId, bucketAddr[i], numRow1[i]);
   }
+  // print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
+  // // std::cout << "Iters:" << ranBinAssignIters << std::endl;
+  // // std::cout << "k:" << k << std::endl;
   int *inputId = (int*)malloc(k * sizeof(int));
   int *outputId = (int*)malloc(k *sizeof(int));
+  int outIdx = 0;
   
   for (int i = 0; i < ranBinAssignIters; ++i) {
     if (i % 2 == 0) {
-      for (int j = 0; j < bucketNum / k; ++j) {
-        int jj = (j / (int)pow(k, i)) * (int)pow(k, i);
-        for (int m = 0; m < k; ++m) {
-          inputId[m] = j + jj + m * (int)pow(k, i);
-          outputId[m] = k * j + m;
+      for (int j = 0; j < bucketNum / (int)pow(k, i+1); ++j) {
+        // pass (i-1) * k^i
+        //// // printf("j: %d\n", j);
+        for (int jj = 0; jj < (int)pow(k, i); ++jj) {
+          //// // printf("jj: %d\n", jj);
+          for (int m = 0; m < k; ++m) {
+            //// // printf("j, jj, m: %d, %d, %d\n", j, jj, m);
+            inputId[m] = j * (int)pow(k, i+1)+ jj + m * (int)pow(k, i);
+            outputId[m] = (outIdx * k + m) % bucketNum;
+            //// // printf("input, output: %d, %d\n", inputId[m], outputId[m]);
+          }
+          mergeSplit(structureId, structureId + 1, inputId, outputId, k, bucketAddr, numRow1, numRow2, i);
+          outIdx ++;
         }
-        
-        mergeSplit(structureId, structureId + 1, inputId, outputId, k, bucketAddr, numRow1, numRow2, i);
       }
       int count = 0;
-      for (int k = 0; k < bucketNum; ++k) {
-        numRow1[k] = 0;
-        count += numRow2[k];
+      for (int n = 0; n < bucketNum; ++n) {
+        numRow1[n] = 0;
+        count += numRow2[n];
       }
-      // printf("after %dth merge split, we have %d tuples\n", i, count);
+      // // printf("after %dth merge split, we have %d tuples\n", i, count);
+      outIdx = 0;
+      //print(arrayAddr, structureId + 1, bucketNum * BUCKET_SIZE);
     } else {
-      for (int j = 0; j < bucketNum / k; ++j) {
-        int jj = (j / (int)pow(k, i)) * (int)pow(k, i);
-        for (int m = 0; m < k; ++m) {
-          inputId[m] = j + jj + m * (int)pow(k, i);
-          outputId[m] = k * j + m;
+      for (int j = 0; j < bucketNum / (int)pow(k, i+1); ++j) {
+        //// // printf("j: %d\n", j);
+        for (int jj = 0; jj < (int)pow(k, i); ++jj) {
+          //// // printf("jj: %d\n", jj);
+          for (int m = 0; m < k; ++m) {
+            //// // printf("j, jj, m: %d, %d, %d\n", j, jj, m);
+            inputId[m] = j * (int)pow(k, i+1)+ jj + m * (int)pow(k, i);
+            outputId[m] = (outIdx * k + m) % bucketNum;
+            //// // printf("input, output: %d, %d\n", inputId[m], outputId[m]);
+          }
+          mergeSplit(structureId + 1, structureId, inputId, outputId, k, bucketAddr, numRow2, numRow1, i);
+          outIdx ++;
         }
-        mergeSplit(structureId + 1, structureId, inputId, outputId, k, bucketAddr, numRow2, numRow1, i);
       }
       int count = 0;
-      for (int k = 0; k < bucketNum; ++k) {
-        numRow2[k] = 0;
-        count += numRow1[k];
+      for (int n = 0; n < bucketNum; ++n) {
+        numRow2[n] = 0;
+        count += numRow1[n];
       }
-      // printf("after %dth merge split, we have %d tuples\n", i, count);
+      // // printf("after %dth merge split, we have %d tuples\n", i, count);
+      outIdx = 0;
+      //print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
     }
-    // printf("\n\n Finish random bin assignment iter%dth out of %d\n\n", i, ranBinAssignIters);
+    // std::cout << "----------------------------------------\n";
+    // // printf("\n\n Finish random bin assignment iter%dth out of %d\n\n", i, ranBinAssignIters);
+    // std::cout << "----------------------------------------\n";
   }
   
   int resultId = 0;
@@ -216,6 +269,9 @@ int bucketOSort(int structureId, int size) {
     for (int i = 0; i < bucketNum; ++i) {
       bucketSort(structureId, i, numRow1[i], bucketAddr[i]);
     }
+    //// std::cout << "********************************************\n";
+    //print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
+    
     kWayMergeSort(structureId, structureId + 1, numRow1, numRow2, bucketAddr, bucketNum);
     
     resultId = structureId + 1;
@@ -223,6 +279,9 @@ int bucketOSort(int structureId, int size) {
     for (int i = 0; i < bucketNum; ++i) {
       bucketSort(structureId + 1, i, numRow2[i], bucketAddr[i]);
     }
+    //// std::cout << "********************************************\n";
+    //print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
+    
     kWayMergeSort(structureId + 1, structureId, numRow2, numRow1, bucketAddr, bucketNum);
     resultId = structureId;
   }

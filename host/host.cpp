@@ -57,6 +57,7 @@ int main(int argc, const char* argv[]) {
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
   std::chrono::seconds duration;
+  // freopen("/home/chenbingnan/mysamples/OQSORT/out.txt", "w+", stdout);
   // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
   int sortId = 1;
 
@@ -71,17 +72,16 @@ int main(int argc, const char* argv[]) {
     arrayAddr[0] = X;
   } else if (sortId == 1) {
     // srand((unsigned)time(NULL));
-    int k = M / BUCKET_SIZE;
-    assert(k >= 2 && "M/B must greater than 2");
-    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), k);
+    assert(FAN_OUT >= 2 && "M/Z must greater than 2");
+    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), FAN_OUT);
     int bucketSize = bucketNum * BUCKET_SIZE;
     std::cout << "BUCKET NUMBER: " << bucketNum << std::endl;
     std::cout << "TOTAL BUCKET SIZE: " << bucketSize << std::endl;
-    std::cout << "Iterations: " << log(bucketNum)/log(k) << std::endl; 
+    std::cout << "Iterations: " << log(bucketNum)/log(FAN_OUT) << std::endl; 
     bucketx1 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
-    memset(bucketx1, 0, bucketSize*sizeof(Bucket_x));
-    memset(bucketx2, 0, bucketSize*sizeof(Bucket_x));
+    memset(bucketx1, 0xff, bucketSize*sizeof(Bucket_x));
+    memset(bucketx2, 0xff, bucketSize*sizeof(Bucket_x));
     arrayAddr[1] = (int*)bucketx1;
     arrayAddr[2] = (int*)bucketx2;
     X = (int *) malloc(N * sizeof(int));
@@ -113,7 +113,7 @@ int main(int argc, const char* argv[]) {
     std::cout << "Test bucket oblivious sort... " << std::endl;
     result = callSort(enclave, sortId, 1, paddedSize, resId);
     std::cout << "Result ID: " << *resId << std::endl;
-    // print(arrayAddr, *resId, paddedSize);
+    // print(arrayAddr, *resId, N);
     test(arrayAddr, *resId, paddedSize);
   } else {
     // TODO: 
