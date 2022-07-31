@@ -10,6 +10,15 @@ This repo is used for implementing oqsort, bucketOSort, bitonic sort etc in TEE 
   - `. /opt/openenclave/share/openenclave/openenclaverc`
 - Sgx oegdb Debug Command
   - `/opt/openenclave/bin/oegdb -arg ./host/oqsorthost ./enclave/oqsortenc.signed `
+- swap file
+
+```sh
+$sudo swapoff -a
+$sudo dd if=/dev/zero of=/swapfile bs=1G count=4
+$sudo mkswap /swapfile
+$sudo swapon /swapfile
+$grep SwapTotal /proc/meminfo
+```
 
 ### 2.1 Hardware
 
@@ -60,7 +69,7 @@ $ make run
 
 ## 5. Test Results
 
-- config: NumHeapPages=262144, NumStackPages=8192, NumTCS=1
+- config: Debug=0, NumHeapPages=100000, NumStackPages=10000, NumTCS=1, swap=4G
 - $Z=max(B, (40+log(n)) * 6)$
 - x: Test Failed, xx: segfault, limited memory, v: test pass
 
@@ -69,71 +78,71 @@ $ make run
 | FAN OUT \ Z(bytes) | 323 \* 8 |
 | ------------------ | -------- |
 | 2                  | 8s       |
-| 3                  | 7s       |
-| 4                  | 17s      |
-| 5                  | 15s      |
-| 6                  | 7s       |
-| 7                  | 18s      |
-| 8                  | 33s      |
-| 9                  | 6s       |
+| 3                  | 6s       |
+| 4                  | 7s       |
+| 5                  | 7s       |
+| 6                  | 6s       |
+| 7                  | 7s       |
+| 8                  | 8s       |
+| 9                  | 5s       |
 | 10                 | 6s       |
-| 11                 | 17s      |
-| 12                 | 32s      |
-| 13                 | 30s      |
-| 14                 | 36s      |
-| 15                 | 42s      |
-| 16                 | 48s      |
-| 17                 | 58s      |
-| 18                 | 70s      |
-| 19                 | 6s       |
-| 20                 | 6s       |
+| 11                 | 6s       |
+| 12                 | 7s       |
+| 13                 | 7s       |
+| 14                 | 8s       |
+| 15                 | 9s       |
+| 16                 | 10s      |
+| 17                 | 11s      |
+| 18                 | 12s      |
+| 19                 | 5s       |
+| 20                 | 5s       |
 
 - bucket sort 500w
   | FAN OUT \ Z(bytes) | 333 \* 8 |
   | -------------- | --- |
-  | 2 | 270s |
-  | 3 | 229s |
-  | 4 | 348s |
-  | 5 | 365s |
-  | 6 | 227s |
-  | 7 | 409s |
-  | 8 | 145s |
-  | 9 | 151s |
-  | 10 | 312s |
-  | 11 | 409s |
-  | 12 | 520s |
-  | 13 | 647s |
-  | 14 | 158s |
-  | 15 | 178s |
-  | 16 | 185s |
-  | 17 | 222s |
-  | 18 | 253s |
-  | 19 | 280s |
-  | 20 | 315s |
+  | 2 | 43s |
+  | 3 | 40s |
+  | 4 | 41s |
+  | 5 | 41s |
+  | 6 | 35s |
+  | 7 | 44s |
+  | 8 | 32s |
+  | 9 | 32s |
+  | 10 | 41s |
+  | 11 | 56s |
+  | 12 | 93s |
+  | 13 | 145s |
+  | 14 | 32s |
+  | 15 | 34s |
+  | 16 | 36s |
+  | 17 | 38s |
+  | 18 | 39s |
+  | 19 | 42s |
+  | 20 | 53s |
 
 - bucket sort 1000w
 
 | FAN OUT \ Z(bytes) | 337 \* 8 |
 | ------------------ | -------- |
-| 2                  | 906s     |
-| 3                  | 1357s    |
-| 4                  | 684s     |
-| 5                  | 720s     |
-| 6                  | 1378s    |
-| 7                  | 800s     |
-| 8                  | 1169s    |
-| 9                  | x        |
-| 10                 | 618s     |
-| 11                 | 792s     |
-| 12                 | 978s     |
-| 13                 | 1183s    |
-| 14                 | x        |
-| 15                 | x        |
-| 16                 | 364s     |
-| 17                 | 446s     |
-| 18                 | 494s     |
-| 19                 | 525s     |
-| 20                 | 576s     |
+| 2                  | 95s      |
+| 3                  | 228s     |
+| 4                  | 76s      |
+| 5                  | 76s      |
+| 6                  | 311s     |
+| 7                  | 79s      |
+| 8                  | 214s     |
+| 9                  | 510s     |
+| 10                 | 76s      |
+| 11                 | 101s     |
+| 12                 | 169s     |
+| 13                 | 257s     |
+| 14                 | 376s     |
+| 15                 | 1918s    |
+| 16                 | 69s      |
+| 17                 | 71s      |
+| 18                 | 74s      |
+| 19                 | 78s      |
+| 20                 | 96s      |
 
 ## 6. Version & Key commit
 

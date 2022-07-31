@@ -10,6 +10,7 @@
 *enc.signed
 *.pem
 *_u.*
+out.txt
 
 # .vscode
 .vscode/*.log

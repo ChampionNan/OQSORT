@@ -1,12 +1,12 @@
 #include "bucket.h"
 #include "quick.h"
 
-void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, int* outputId, int iter, int k, int* bucketAddr, int outputStructureId) {
-  int batchSize = MERGE_BATCH_SIZE; // 8192
+void mergeSplitHelper(Bucket_x *inputBuffer, int* numRow1, int* numRow2, int* inputId, int* outputId, int iter, int k, int* bucketAddr, int outputStructureId) {
+  // int batchSize = BUCKET_SIZE; // 8192
   // TODO: FREE these malloc
   Bucket_x **buf = (Bucket_x**)malloc(k * sizeof(Bucket_x*));
   for (int i = 0; i < k; ++i) {
-    buf[i] = (Bucket_x*)malloc(batchSize * sizeof(Bucket_x));
+    buf[i] = (Bucket_x*)malloc(BUCKET_SIZE * sizeof(Bucket_x));
   }
   
   // int counter0 = 0, counter1 = 0;
@@ -14,22 +14,17 @@ void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, i
   int *counter = (int*)malloc(k * sizeof(int));
   memset(counter, 0, k * sizeof(int));
   
-  for (int i = 0; i < inputBufferLen; ++i) {
+  for (int i = 0; i < k * BUCKET_SIZE; ++i) {
     if ((inputBuffer[i].key != DUMMY) && (inputBuffer[i].x != DUMMY)) {
       randomKey = inputBuffer[i].key;
       for (int j = 0; j < k; ++j) {
         if (isTargetIterK(randomKey, iter, k, j)) {
-          buf[j][counter[j] % batchSize] = inputBuffer[i];
+          buf[j][counter[j] % BUCKET_SIZE] = inputBuffer[i];
           counter[j]++;
-          // // std::cout << "couter j: " << counter[j] << std::endl;
-          if (counter[j] % batchSize == 0) {
-            opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] +  numRow2[outputId[j]]), (int*)buf[j], (size_t)batchSize, outputStructureId, 1);
-            numRow2[outputId[j]] += batchSize;
-            for (int j = 0; j < k; ++j) {
-              if (numRow2[outputId[j]] > BUCKET_SIZE) {
-                // // printf("overflow error during merge split!\n");
-              }
-            }
+          // std::cout << "couter j: " << counter[j] << std::endl;
+          if (counter[j] % BUCKET_SIZE == 0) {
+            opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] +  numRow2[outputId[j]]), (int*)buf[j], (size_t)BUCKET_SIZE, outputStructureId, 1);
+            numRow2[outputId[j]] += BUCKET_SIZE;
           }
         }
       }
@@ -37,50 +32,35 @@ void mergeSplitHelper(Bucket_x *inputBuffer, int inputBufferLen, int* numRow2, i
   }
   
   for (int j = 0; j < k; ++j) {
-    opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] + numRow2[outputId[j]]), (int*)buf[j], (size_t)(counter[j] % batchSize), outputStructureId, 1);
-    numRow2[outputId[j]] += counter[j] % batchSize;
-    for (int j = 0; j < k; ++j) {
-      if (numRow2[outputId[j]] > BUCKET_SIZE) {
-        // // printf("overflow error during merge split!\n");
-      }
+    opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] + numRow2[outputId[j]]), (int*)buf[j], (size_t)(counter[j] % BUCKET_SIZE), outputStructureId, 1);
+    numRow2[outputId[j]] += counter[j] % BUCKET_SIZE;
+    padWithDummy(outputStructureId, bucketAddr[outputId[j]], numRow2[outputId[j]]);
+    if (numRow2[outputId[j]] > BUCKET_SIZE) {
+      printf("overflow error during merge split!\n");
     }
     free(buf[j]);
   }
+  free(buf);
   free(counter);
 }
-
 
 void mergeSplit(int inputStructureId, int outputStructureId, int *inputId, int *outputId, int k, int* bucketAddr, int* numRow1, int* numRow2, int iter) {
   // step1. Read k buckets together
   Bucket_x *inputBuffer = (Bucket_x*)malloc(k * sizeof(Bucket_x) * BUCKET_SIZE);
-  // Bucket_x *inputBuffer = (Bucket_x*)malloc(sizeof(Bucket_x) * BUCKET_SIZE);
-  
   for (int i = 0; i < k; ++i) {
     opOneLinearScanBlock(2 * bucketAddr[inputId[i]], (int*)(&inputBuffer[i * BUCKET_SIZE]), BUCKET_SIZE, inputStructureId, 0);
   }
   // step2. process k buckets
-  for (int i = 0; i < k; ++i) {
-    // opOneLinearScanBlock(2 * bucketAddr[inputId[i]], (int*)inputBuffer, BUCKET_SIZE, inputStructureId, 0);
-    mergeSplitHelper(&inputBuffer[i * BUCKET_SIZE], numRow1[inputId[i]], numRow2, outputId, iter, k, bucketAddr, outputStructureId);
-    // mergeSplitHelper(inputBuffer, numRow1[inputId[i]], numRow2, outputId, iter, k, bucketAddr, outputStructureId);
-    for (int j = 0; j < k; ++j) {
-      if (numRow2[outputId[j]] > BUCKET_SIZE) {
-        // printf("overflow error during merge split!\n");
-      }
-    }
-  }
+  mergeSplitHelper(inputBuffer, numRow1, numRow2, inputId, outputId, iter, k, bucketAddr, outputStructureId);
   free(inputBuffer);
-  
-  for (int j = 0; j < k; ++j) {
-    padWithDummy(outputStructureId, bucketAddr[outputId[j]], numRow2[outputId[j]]);
-  }
   
 }
 
 
+
 void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* numRow2, int* bucketAddr, int bucketSize) {
-  int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
-  int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
+  // int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
+  // int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
   int numWays = bucketSize;
   HeapNode inputHeapNodeArr[numWays];
   int totalCounter = 0;
@@ -96,37 +76,37 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
       continue;
     }
     HeapNode node;
-    node.data = (Bucket_x*)malloc(mergeSortBatchSize * sizeof(Bucket_x));
+    node.data = (Bucket_x*)malloc(HEAP_NODE_SIZE * sizeof(Bucket_x));
     node.bucketIdx = i;
     node.elemIdx = 0;
-    opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(mergeSortBatchSize, numRow1[i]), inputStructureId, 0);
+    opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(HEAP_NODE_SIZE, numRow1[i]), inputStructureId, 0);
     inputHeapNodeArr[j++] = node;
-    readBucketAddr[i] += std::min(mergeSortBatchSize, numRow1[i]);
+    readBucketAddr[i] += std::min(HEAP_NODE_SIZE, numRow1[i]);
   }
   
-  Heap heap(inputHeapNodeArr, j, mergeSortBatchSize);
-  Bucket_x *writeBuffer = (Bucket_x*)malloc(writeBufferSize * sizeof(Bucket_x));
+  Heap heap(inputHeapNodeArr, j, HEAP_NODE_SIZE);
+  Bucket_x *writeBuffer = (Bucket_x*)malloc(WRITE_BUFFER_SIZE * sizeof(Bucket_x));
   int writeBufferCounter = 0;
 
   while (1) {
     HeapNode *temp = heap.getRoot();
-    memcpy(writeBuffer + writeBufferCounter, temp->data + temp->elemIdx % mergeSortBatchSize, sizeof(Bucket_x));
+    memcpy(writeBuffer + writeBufferCounter, temp->data + temp->elemIdx % HEAP_NODE_SIZE, sizeof(Bucket_x));
     writeBufferCounter ++;
     totalCounter ++;
     temp->elemIdx ++;
     
-    if (writeBufferCounter == writeBufferSize) {
-      opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)writeBufferSize, outputStructureId, 1);
-      writeBucketAddr += writeBufferSize;
-      numRow2[temp->bucketIdx] += writeBufferSize;
+    if (writeBufferCounter == WRITE_BUFFER_SIZE) {
+      opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)WRITE_BUFFER_SIZE, outputStructureId, 1);
+      writeBucketAddr += WRITE_BUFFER_SIZE;
+      numRow2[temp->bucketIdx] += WRITE_BUFFER_SIZE;
       writeBufferCounter = 0;
       // print(arrayAddr, outputStructureId, numWays * BUCKET_SIZE);
     }
     
-    if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % mergeSortBatchSize) == 0) {
-      opOneLinearScanBlock(2 * readBucketAddr[temp->bucketIdx], (int*)(temp->data), (size_t)std::min(mergeSortBatchSize, numRow1[temp->bucketIdx]-temp->elemIdx), inputStructureId, 0);
+    if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % HEAP_NODE_SIZE) == 0) {
+      opOneLinearScanBlock(2 * readBucketAddr[temp->bucketIdx], (int*)(temp->data), (size_t)std::min(HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx), inputStructureId, 0);
       
-      readBucketAddr[temp->bucketIdx] += std::min(mergeSortBatchSize, numRow1[temp->bucketIdx]-temp->elemIdx);
+      readBucketAddr[temp->bucketIdx] += std::min(HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx);
       heap.Heapify(0);
       
     } else if (temp->elemIdx >= numRow1[temp->bucketIdx]) {
@@ -158,8 +138,8 @@ void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
 int bucketOSort(int structureId, int size) {
   int k = FAN_OUT;
   int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * size / BUCKET_SIZE), k);
-  if ((2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * MERGE_BATCH_SIZE > M) || (3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE> M)) {
-    int maxM = std::max(2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * MERGE_BATCH_SIZE, 3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE);
+  if ((2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * BUCKET_SIZE > M) || (3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE> M)) {
+    int maxM = std::max(2 * k * BUCKET_SIZE + bucketNum * 3 + k * 2 * BUCKET_SIZE, 3 * bucketNum + bucketNum * HEAP_NODE_SIZE * 2 + 2 * WRITE_BUFFER_SIZE);
     // // printf("Memory %d bytes exceeds.\n", maxM);
   }
   int ranBinAssignIters = log(bucketNum)/log(k) - 1;

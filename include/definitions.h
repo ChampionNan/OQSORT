@@ -13,11 +13,11 @@
 #define beta 0.1
 #define gamma 0.1
 */
-#define FAN_OUT 15
+#define FAN_OUT 20
 #define BLOCK_DATA_SIZE 256
-#define BUCKET_SIZE 333//256
-#define MERGE_BATCH_SIZE 256 // merge split hepler
-#define HEAP_NODE_SIZE 256//8192. heap node size
-#define WRITE_BUFFER_SIZE 256
+#define BUCKET_SIZE 337//256
+// #define MERGE_BATCH_SIZE 256 // merge split hepler
+#define HEAP_NODE_SIZE 20//8192. heap node size
+#define WRITE_BUFFER_SIZE 20
 
 #endif // !DEFINITIONS_H
