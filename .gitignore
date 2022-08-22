@@ -7,7 +7,7 @@
 # sgx generated files
 *_args.h
 *_t.*
-*enc.signed
+oqsortenc
 *.pem
 *_u.*
 out.txt
@@ -15,3 +15,6 @@ out.txt
 
 # .vscode
 .vscode/*.log
+
+# pic file
+pic/*
