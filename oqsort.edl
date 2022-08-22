@@ -5,7 +5,8 @@ enclave {
   trusted {
     public void callSort(int sortId,
                          int structureId, int paddedSize,
-       [in, out, count=1]int *resId);
+       [in, out, count=1]int *resId,
+       [in, out, count=1]int *resN);
   };
 
   untrusted {
@@ -19,5 +20,6 @@ enclave {
       [in, size=blockSize]int* buffer,
       size_t blockSize, int structureId);
     void ocall_print_string([in, string] const char *str);
+    void freeAllocate(int structureIdM, int structureIdF, int size);
   };
 };

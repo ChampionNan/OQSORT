@@ -34,7 +34,7 @@ void mergeSplitHelper(Bucket_x *inputBuffer, int* numRow1, int* numRow2, int* in
   for (int j = 0; j < k; ++j) {
     opOneLinearScanBlock(2 * (bucketAddr[outputId[j]] + numRow2[outputId[j]]), (int*)buf[j], (size_t)(counter[j] % BUCKET_SIZE), outputStructureId, 1);
     numRow2[outputId[j]] += counter[j] % BUCKET_SIZE;
-    padWithDummy(outputStructureId, bucketAddr[outputId[j]], numRow2[outputId[j]]);
+    padWithDummy(outputStructureId, bucketAddr[outputId[j]], numRow2[outputId[j]], BUCKET_SIZE);
     if (numRow2[outputId[j]] > BUCKET_SIZE) {
       printf("overflow error during merge split!\n");
     }
@@ -165,8 +165,8 @@ int bucketOSort(int structureId, int size) {
     opOneLinearScanBlock(i, inputTrustMemory, std::min(BLOCK_DATA_SIZE, size - i), structureId - 1, 0);
     int randomKey;
     for (int j = 0; j < std::min(BLOCK_DATA_SIZE, size - i); ++j) {
-      // randomKey = (int)oe_rdrand();
-      randomKey = rand();
+      randomKey = (int)oe_rdrand();
+      // randomKey = rand();
       trustedMemory[j].x = inputTrustMemory[j];
       trustedMemory[j].key = randomKey;
       
@@ -181,7 +181,7 @@ int bucketOSort(int structureId, int size) {
 
   for (int i = 0; i < bucketNum; ++i) {
     //// // printf("currently bucket %d has %d records/%d\n", i, numRow1[i], BUCKET_SIZE);
-    padWithDummy(structureId, bucketAddr[i], numRow1[i]);
+    padWithDummy(structureId, bucketAddr[i], numRow1[i], BUCKET_SIZE);
   }
   // print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
   // // std::cout << "Iters:" << ranBinAssignIters << std::endl;
@@ -252,7 +252,7 @@ int bucketOSort(int structureId, int size) {
     //// std::cout << "********************************************\n";
     //print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
     
-    kWayMergeSort(structureId, structureId + 1, numRow1, numRow2, bucketAddr, bucketNum);
+    kWayMergeSort(structureId, structureId + 1, numRow1, bucketAddr, bucketNum);
     
     resultId = structureId + 1;
   } else {
@@ -262,7 +262,7 @@ int bucketOSort(int structureId, int size) {
     //// std::cout << "********************************************\n";
     //print(arrayAddr, structureId, bucketNum * BUCKET_SIZE);
     
-    kWayMergeSort(structureId + 1, structureId, numRow2, numRow1, bucketAddr, bucketNum);
+    kWayMergeSort(structureId + 1, structureId, numRow2, bucketAddr, bucketNum);
     resultId = structureId;
   }
   // test(arrayAddr, resultId, N);

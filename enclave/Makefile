@@ -24,10 +24,11 @@ build:
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/bitonic.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/bucket.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/quick.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/oq.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 shared.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
 	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 oqsort_t.c
-	$(CXX) -o oqsortenc enc.o bitonic.o bucket.o quick.o shared.o oqsort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
+	$(CXX) -o oqsortenc enc.o bitonic.o bucket.o quick.o oq.o shared.o oqsort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
 
 sign:
 	oesign sign -e oqsortenc -c oqsort.conf -k private.pem

@@ -19,7 +19,7 @@ Bucket_x *bucketx2;
 int *Y;
 int *arrayAddr[NUM_STRUCTURES];
 int paddedSize;
-// int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x)};
+int IOcost = 0;
 
 
 /* OCall functions */
@@ -38,6 +38,7 @@ void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
   }
   // memcpy(buffer, arrayAddr[structureId] + index, blockSize * structureSize[structureId]);
   memcpy(buffer, arrayAddr[structureId] + index, blockSize);
+  IOcost += 1;
 }
 
 void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) {
@@ -47,30 +48,53 @@ void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) 
   }
   // memcpy(arrayAddr[structureId] + index, buffer, blockSize * structureSize[structureId]);
   memcpy(arrayAddr[structureId] + index, buffer, blockSize);
+  IOcost += 1;
 }
+
+// TODO: Set this function as OCALL
+void freeAllocate(int structureIdM, int structureIdF, int size) {
+  // 1. Free arrayAddr[structureId]
+  if (arrayAddr[structureIdF]) {
+    free(arrayAddr[structureIdF]);
+  }
+  // 2. malloc new asked size (allocated in outside)
+  if (size <= 0) {
+    return;
+  }
+  int *addr = (int*)malloc(size * sizeof(int));
+  memset(addr, DUMMY, size * sizeof(int));
+  // 3. assign malloc address to arrayAddr
+  arrayAddr[structureIdM] = addr;
+  return ;
+}
+
 
 /* main function */
 int main(int argc, const char* argv[]) {
   int ret = 1;
   int *resId = (int*)malloc(sizeof(int));
+  int *resN = (int*)malloc(sizeof(int));
   oe_result_t result;
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
   std::chrono::seconds duration;
-  // freopen("/home/chenbingnan/mysamples/OQSORT/out.txt", "w+", stdout);
-  // 0: OSORT, 1: bucketOSort, 2: smallBSort, 3: bitonicSort, 
+  srand((unsigned)time(NULL));
+  
+  // 0: OSORT-Tight, 1: OSORT-Loss, 2: bucketOSort, 3: bitonicSort
   int sortId = 1;
+  int inputId = 0;
 
   // step1: init test numbers
-  if (sortId == 2 || sortId == 3) {
+  if (sortId == 3) {
     int addi = 0;
     if (N % BLOCK_DATA_SIZE != 0) {
       addi = ((N / BLOCK_DATA_SIZE) + 1) * BLOCK_DATA_SIZE - N;
     }
     X = (int*)malloc((N + addi) * sizeof(int));
     paddedSize = N + addi;
-    arrayAddr[0] = X;
-  } else if (sortId == 1) {
+    arrayAddr[inputId] = X;
+    init(arrayAddr, inputId, paddedSize);
+  } else if (sortId == 2) {
     // srand((unsigned)time(NULL));
     assert(FAN_OUT >= 2 && "M/Z must greater than 2");
     int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), FAN_OUT);
@@ -85,12 +109,16 @@ int main(int argc, const char* argv[]) {
     arrayAddr[1] = (int*)bucketx1;
     arrayAddr[2] = (int*)bucketx2;
     X = (int *) malloc(N * sizeof(int));
-    arrayAddr[0] = X;
+    arrayAddr[inputId] = X;
     paddedSize = N;
-  } else {
-    // TODO: 
+    init(arrayAddr, inputId, paddedSize);
+  } else if (sortId == 0 || sortId == 1) {
+    inputId = 3;
+    X = (int *)malloc(N * sizeof(int));
+    arrayAddr[inputId] = X;
+    paddedSize = N;
+    init(arrayAddr, inputId, paddedSize);
   }
-  init(arrayAddr, 0, paddedSize);
 
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
@@ -105,20 +133,32 @@ int main(int argc, const char* argv[]) {
   
   // step3: call sort algorithms
   start = std::chrono::high_resolution_clock::now();
-  if (sortId == 2 || sortId == 3) {
+  if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
-    result = callSort(enclave, sortId, 0, paddedSize, resId);
+    result = callSort(enclave, sortId, 0, paddedSize, resId, resN);
     test(arrayAddr, 0, paddedSize);
-  } else if (sortId == 1) {
+  } else if (sortId == 2) {
     std::cout << "Test bucket oblivious sort... " << std::endl;
-    result = callSort(enclave, sortId, 1, paddedSize, resId);
+    result = callSort(enclave, sortId, 1, paddedSize, resId, resN);
     std::cout << "Result ID: " << *resId << std::endl;
+    *resN = N;
     // print(arrayAddr, *resId, N);
     test(arrayAddr, *resId, paddedSize);
-  } else {
-    // TODO: 
+  } else if (sortId == 0 || sortId == 1) {
+    std::cout << "Test OQSort... " << std::endl;
+    callSort(sortId, inputId, paddedSize, resId, resN);
+    std::cout << "Result ID: " << *resId << std::endl;
+    if (sortId == 0) {
+      test(arrayAddr, *resId, paddedSize);
+      *resN = N;
+    } else {
+      // Sample Loose has different test & print
+      testWithDummy(arrayAddr, *resId, *resN);
+    }
   }
   end = std::chrono::high_resolution_clock::now();
+  print(arrayAddr, *resId, *resN);
+
   if (result != OE_OK) {
     fprintf(stderr,
             "Calling into enclave_hello failed: result=%u (%s)\n",
@@ -141,5 +181,7 @@ int main(int argc, const char* argv[]) {
         free(arrayAddr[i]);
       }
     }
+    free(resId);
+    free(resN);
     return ret;
 }

@@ -97,36 +97,73 @@ int smallestPowerOfKLargerThan(int n, int k) {
   return num;
 }
 
-// Functions x crossing the enclave boundary
+// Functions x crossing the enclave boundary, unit: BLOCK_DATA_SIZE
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write) {
+  int boundary = (int)((blockSize + BLOCK_DATA_SIZE - 1 )/ BLOCK_DATA_SIZE);
+  int Msize;
+  int multi = structureSize[structureId] / sizeof(int);
   if (!write) {
-    OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
-    // OcallReadBlock(index, block, blockSize, structureId); 
+    // OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
+    for (int i = 0; i < boundary; ++i) {
+      Msize = std::min(BLOCK_DATA_SIZE, (int)blockSize - i * BLOCK_DATA_SIZE);
+      OcallReadBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+    }
   } else {
-    OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
-    // OcallWriteBlock(index, block, blockSize, structureId);
+    // OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
+    for (int i = 0; i < boundary; ++i) {
+      Msize = std::min(BLOCK_DATA_SIZE, (int)blockSize - i * BLOCK_DATA_SIZE);
+      OcallWriteBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+    }
   }
   return;
+}
+
+bool cmpHelper(int *a, int *b) {
+  return (*a > *b) ? true : false;
 }
 
 bool cmpHelper(Bucket_x *a, Bucket_x *b) {
   return (a->x > b->x) ? true : false;
 }
 
-void padWithDummy(int structureId, int start, int realNum) {
-  int len = BUCKET_SIZE - realNum;
+void padWithDummy(int structureId, int start, int realNum, int secSize) {
+  int len = secSize - realNum;
   if (len <= 0) {
     return ;
   }
-  Bucket_x *junk = (Bucket_x*)oe_malloc(len * sizeof(Bucket_x));
-
-  for (int i = 0; i < len; ++i) {
-    junk[i].x = DUMMY;
-    junk[i].key = DUMMY;
-  }
   
-  opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);
-  oe_free(junk);
+  if (structureSize[structureId] == 4) {
+    int *junk = (int*)malloc(len * sizeof(int));
+    for (int i = 0; i < len; ++i) {
+      junk[i] = DUMMY;
+    }
+    opOneLinearScanBlock(start + realNum, (int*)junk, len, structureId, 1);
+    free(junk);
+  
+  } else if (structureSize[structureId] == 8) {
+    Bucket_x *junk = (Bucket_x*)malloc(len * sizeof(Bucket_x));
+    for (int i = 0; i < len; ++i) {
+      junk[i].x = DUMMY;
+      junk[i].key = DUMMY;
+    }
+    opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);
+    free(junk);
+  }
+}
+
+int moveDummy(int *a, int size) {
+  // k: #elem != DUMMY
+  int k = 0;
+  for (int i = 0; i < size; ++i) {
+    if (a[i] != DUMMY) {
+      if (i != k) {
+        swapRow(&a[i], &a[k++]);
+      } else {
+        k++;
+      }
+    }
+  }
+  return k;
 }
 
 bool isTargetIterK(int randomKey, int iter, int k, int num) {
@@ -136,6 +173,14 @@ bool isTargetIterK(int randomKey, int iter, int k, int num) {
   }
   // return (randomKey & (0x01 << (iter - 1))) == 0 ? false : true;
   return (randomKey % k) == num;
+}
+
+void swapRow(int *a, int *b) {
+  int *temp = (int*)malloc(sizeof(int));
+  memmove(temp, a, sizeof(int));
+  memmove(a, b, sizeof(int));
+  memmove(b, temp, sizeof(int));
+  free(temp);
 }
 
 void swapRow(Bucket_x *a, Bucket_x *b) {

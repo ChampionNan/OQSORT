@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdarg>
+#include <cstdlib>
 
 #include "oqsort_t.h"
 
@@ -44,9 +45,12 @@ int printf(const char *fmt, ...);
 int greatestPowerOfTwoLessThan(int n);
 int smallestPowerOfKLargerThan(int n, int k);
 void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write);
+bool cmpHelper(int *a, int *b);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
-void padWithDummy(int structureId, int start, int realNum);
+void padWithDummy(int structureId, int start, int realNum, int secSize);
+int moveDummy(int *a, int size);
 bool isTargetIterK(int randomKey, int iter, int k, int num);
+void swapRow(int *a, int *b);
 void swapRow(Bucket_x *a, Bucket_x *b);
 
 #endif // !SHARED_H
