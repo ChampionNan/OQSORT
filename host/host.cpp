@@ -146,7 +146,7 @@ int main(int argc, const char* argv[]) {
     test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     std::cout << "Test OQSort... " << std::endl;
-    callSort(sortId, inputId, paddedSize, resId, resN);
+    callSort(enclave, sortId, inputId, paddedSize, resId, resN);
     std::cout << "Result ID: " << *resId << std::endl;
     if (sortId == 0) {
       test(arrayAddr, *resId, paddedSize);
@@ -170,6 +170,7 @@ int main(int argc, const char* argv[]) {
   // step4: std::cout execution time
   duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
+  std::cout << "IOcost: " << IOcost << std::endl;
 
   // step5: exix part
   exit:

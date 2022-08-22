@@ -196,7 +196,6 @@ int ProcessL(int LIdIn, int LIdOut, int lsize) {
     }
     opOneLinearScanBlock(2 * i * BLOCK_DATA_SIZE, (int*)L, Msize, LIdIn, 1);
   }
-  
   // TODO: External Memory Sort: eg merge sort
   int bucketNum = (int)ceil(1.0 * lsize / M);
   int bucketSize = lsize / bucketNum;
@@ -347,7 +346,6 @@ int ObliviousTightSort(int inStructureId, int inSize, int sampleId, int LIdIn, i
     printf("Samples number error!\n");
     realNum = SampleTight(inStructureId, sampleId);
   }
-  
   std::pair<int, int> section = MultiLevelPartition(inStructureId, sampleId, LIdIn, LIdOut, std::min(realNum, n), P, outStructureId1);
   int sectionSize = section.first;
   int sectionNum = section.second;

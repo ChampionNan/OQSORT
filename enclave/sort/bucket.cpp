@@ -56,13 +56,12 @@ void mergeSplit(int inputStructureId, int outputStructureId, int *inputId, int *
   
 }
 
-
-
-void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* numRow2, int* bucketAddr, int bucketSize) {
-  // int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
-  // int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
-  int numWays = bucketSize;
-  HeapNode inputHeapNodeArr[numWays];
+void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* bucketAddr, int bucketNum) {
+  int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
+  int writeBufferSize = (int)WRITE_BUFFER_SIZE; // 8192
+  int numWays = bucketNum;
+  // HeapNode inputHeapNodeArr[numWays];
+  HeapNode *inputHeapNodeArr = (HeapNode*)malloc(numWays * sizeof(HeapNode));
   int totalCounter = 0;
   
   int *readBucketAddr = (int*)malloc(sizeof(int) * numWays);
@@ -76,37 +75,37 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
       continue;
     }
     HeapNode node;
-    node.data = (Bucket_x*)malloc(HEAP_NODE_SIZE * sizeof(Bucket_x));
+    node.data = (Bucket_x*)malloc(mergeSortBatchSize * sizeof(Bucket_x));
     node.bucketIdx = i;
     node.elemIdx = 0;
-    opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(HEAP_NODE_SIZE, numRow1[i]), inputStructureId, 0);
+    opOneLinearScanBlock(2 * readBucketAddr[i], (int*)node.data, (size_t)std::min(mergeSortBatchSize, numRow1[i]), inputStructureId, 0);
     inputHeapNodeArr[j++] = node;
-    readBucketAddr[i] += std::min(HEAP_NODE_SIZE, numRow1[i]);
+    readBucketAddr[i] += std::min(mergeSortBatchSize, numRow1[i]);
   }
   
-  Heap heap(inputHeapNodeArr, j, HEAP_NODE_SIZE);
-  Bucket_x *writeBuffer = (Bucket_x*)malloc(WRITE_BUFFER_SIZE * sizeof(Bucket_x));
+  Heap heap(inputHeapNodeArr, j, mergeSortBatchSize);
+  Bucket_x *writeBuffer = (Bucket_x*)malloc(writeBufferSize * sizeof(Bucket_x));
   int writeBufferCounter = 0;
 
   while (1) {
     HeapNode *temp = heap.getRoot();
-    memcpy(writeBuffer + writeBufferCounter, temp->data + temp->elemIdx % HEAP_NODE_SIZE, sizeof(Bucket_x));
+    memcpy(writeBuffer + writeBufferCounter, temp->data + temp->elemIdx % mergeSortBatchSize, sizeof(Bucket_x));
     writeBufferCounter ++;
     totalCounter ++;
     temp->elemIdx ++;
     
-    if (writeBufferCounter == WRITE_BUFFER_SIZE) {
-      opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)WRITE_BUFFER_SIZE, outputStructureId, 1);
-      writeBucketAddr += WRITE_BUFFER_SIZE;
-      numRow2[temp->bucketIdx] += WRITE_BUFFER_SIZE;
+    if (writeBufferCounter == writeBufferSize) {
+      opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)writeBufferSize, outputStructureId, 1);
+      writeBucketAddr += writeBufferSize;
+      // numRow2[temp->bucketIdx] += writeBufferSize;
       writeBufferCounter = 0;
       // print(arrayAddr, outputStructureId, numWays * BUCKET_SIZE);
     }
     
-    if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % HEAP_NODE_SIZE) == 0) {
-      opOneLinearScanBlock(2 * readBucketAddr[temp->bucketIdx], (int*)(temp->data), (size_t)std::min(HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx), inputStructureId, 0);
+    if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % mergeSortBatchSize) == 0) {
+      opOneLinearScanBlock(2 * readBucketAddr[temp->bucketIdx], (int*)(temp->data), (size_t)std::min(mergeSortBatchSize, numRow1[temp->bucketIdx]-temp->elemIdx), inputStructureId, 0);
       
-      readBucketAddr[temp->bucketIdx] += std::min(HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx);
+      readBucketAddr[temp->bucketIdx] += std::min(mergeSortBatchSize, numRow1[temp->bucketIdx]-temp->elemIdx);
       heap.Heapify(0);
       
     } else if (temp->elemIdx >= numRow1[temp->bucketIdx]) {
@@ -119,19 +118,19 @@ void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, in
     }
   }
   opOneLinearScanBlock(2 * writeBucketAddr, (int*)writeBuffer, (size_t)writeBufferCounter, outputStructureId, 1);
-  numRow2[0] += writeBufferCounter;
+  // numRow2[0] += writeBufferCounter;
   // TODO: ERROR writeBuffer
   free(writeBuffer);
   free(readBucketAddr);
+  free(inputHeapNodeArr);
 }
 
-
 void bucketSort(int inputStructureId, int bucketId, int size, int dataStart) {
-  Bucket_x *arr = (Bucket_x*)oe_malloc(BUCKET_SIZE * sizeof(Bucket_x));
+  Bucket_x *arr = (Bucket_x*)malloc(size * sizeof(Bucket_x));
   opOneLinearScanBlock(2 * dataStart, (int*)arr, (size_t)size, inputStructureId, 0);
   quickSort(arr, 0, size - 1);
   opOneLinearScanBlock(2 * dataStart, (int*)arr, (size_t)size, inputStructureId, 1);
-  oe_free(arr);
+  free(arr);
 }
 
 // int inputTrustMemory[BLOCK_DATA_SIZE];

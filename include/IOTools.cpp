@@ -3,6 +3,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <utility>
 #include <fstream>
 #include <algorithm>
@@ -36,7 +37,7 @@ void init(int **arrayAddr, int structurId, int size) {
 
 void print(int **arrayAddr, int structureId, int size) {
   int i;
-  std::ofstream fout("/Users/apple/Desktop/Lab/ALLSORT/ALLSORT/output.txt");
+  std::ofstream fout("/home/chenbingnan/mysamples/OQSORT/out.txt");
   if(structureSize[structureId] == 4) {
     int *addr = (int*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {

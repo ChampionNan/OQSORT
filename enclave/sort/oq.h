@@ -4,7 +4,7 @@
 #include "../shared.h"
 #include <utility>
 
-int Hypergeometric(int NN, int Msize, double n_prime);
+int Hypergeometric(int NN, int Msize, int n_prime);
 void shuffle(int *array, int n);
 int SampleTight(int inStructureId, int samplesId);
 int SampleLoose(int inStructureId, int samplesId);

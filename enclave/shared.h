@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdarg>
-#include <cstdlib>
+// #include <cstdlib>
 
 #include "oqsort_t.h"
 

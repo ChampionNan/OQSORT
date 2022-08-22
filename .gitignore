@@ -11,6 +11,7 @@
 *.pem
 *_u.*
 out.txt
+*.txt
 
 # .vscode
 .vscode/*.log
