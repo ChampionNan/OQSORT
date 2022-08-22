@@ -1,8 +1,8 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H 
 
-#define N 6000000//9437184//10000000//1100
-#define M 666667//1048576//80000000
+#define N 10000000//9437184//10000000//1100
+#define M 1111112//1048576//80000000
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
 #define DUMMY 0xffffffff
@@ -10,11 +10,11 @@
 // #define B 10
 
 #define ALPHA 0.020
-#define BETA 0.205
-#define P 13
+#define BETA 0.158
+#define P 12
 
 #define FAN_OUT 20
-#define BLOCK_DATA_SIZE 6//4
+#define BLOCK_DATA_SIZE 8//4
 #define BUCKET_SIZE 337//256
 #define MERGE_BATCH_SIZE 256 // merge split hepler
 #define HEAP_NODE_SIZE 20//8192. heap node size

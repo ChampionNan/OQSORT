@@ -80,7 +80,7 @@ int main(int argc, const char* argv[]) {
   std::chrono::seconds duration;
   srand((unsigned)time(NULL));
   
-  // 0: OSORT-Tight, 1: OSORT-Loss, 2: bucketOSort, 3: bitonicSort
+  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
   int sortId = 1;
   int inputId = 0;
 
@@ -157,7 +157,7 @@ int main(int argc, const char* argv[]) {
     }
   }
   end = std::chrono::high_resolution_clock::now();
-  print(arrayAddr, *resId, *resN);
+  // print(arrayAddr, *resId, *resN);
 
   if (result != OE_OK) {
     fprintf(stderr,
