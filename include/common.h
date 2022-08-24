@@ -11,7 +11,7 @@ typedef struct {
 
 const int structureSize[NUM_STRUCTURES] = {sizeof(int),
   sizeof(Bucket_x), sizeof(Bucket_x),
-  sizeof(int), sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x), sizeof(int), sizeof(int)};
+  sizeof(int), sizeof(int), sizeof(int), sizeof(int)};
 
 // Print Message
 #define DBGprint(...) { \

@@ -6,12 +6,13 @@
 
 int Hypergeometric(int NN, int Msize, int n_prime);
 void shuffle(int *array, int n);
-int SampleTight(int inStructureId, int samplesId);
+int SampleTight(int inStructureId, int samplesId, int *trustedM2);
 int SampleLoose(int inStructureId, int samplesId);
-int quantileCal(int sampleId, int start, int end, int p, int *trustedM1);
-int ProcessL(int LIdIn, int LIdOut, int lsize);
-std::pair<int, int> MultiLevelPartition(int inStructureId, int sampleId, int LIdIn, int LIdOut, int sampleSize, int p, int outStructureId1);
-int ObliviousTightSort(int inStructureId, int inSize, int sampleId, int LIdIn, int LIdOut, int outStructureId1, int outStructureId2);
-int ObliviousLooseSort(int inStructureId, int inSize, int sampleId, int LIdIn, int LIdOut, int outStructureId1, int outStructureId2, int *resN);
+int quantileCalT(int *samples, int start, int end, int p, int *trustedM1);
+int quantileCalL(int sampleId, int start, int end, int p, int *trustedM1);
+std::pair<int, int> MultiLevelPartitionT(int inStructureId, int *samples, int sampleSize, int p, int outStructureId1);
+int ObliviousTightSort(int inStructureId, int inSize, int sampleId, int outStructureId1, int outStructureId2);
+std::pair<int, int> ObliviousLooseSort(int inStructureId, int inSize, int sampleId, int outStructureId1, int outStructureId2);
+
 
 #endif // !OQ_SORT_H

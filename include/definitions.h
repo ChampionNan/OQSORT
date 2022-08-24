@@ -9,9 +9,9 @@
 #define NULLCHAR '\0'
 // #define B 10
 
-#define ALPHA 0.020
-#define BETA 0.158
-#define P 12
+#define ALPHA 0.025
+#define BETA 0.090
+#define P 11
 
 #define FAN_OUT 20
 #define BLOCK_DATA_SIZE 8//4

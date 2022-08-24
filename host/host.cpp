@@ -157,7 +157,6 @@ int main(int argc, const char* argv[]) {
     }
   }
   end = std::chrono::high_resolution_clock::now();
-  // print(arrayAddr, *resId, *resN);
 
   if (result != OE_OK) {
     fprintf(stderr,
@@ -171,6 +170,7 @@ int main(int argc, const char* argv[]) {
   duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
   std::cout << "IOcost: " << IOcost << std::endl;
+  // print(arrayAddr, *resId, *resN);
 
   // step5: exix part
   exit:
