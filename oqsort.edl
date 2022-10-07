@@ -6,7 +6,8 @@ enclave {
     public void callSort(int sortId,
                          int structureId, int paddedSize,
        [in, out, count=1]int *resId,
-       [in, out, count=1]int *resN);
+       [in, out, count=1]int *resN,
+       [in, count=9]double *params);
   };
 
   untrusted {

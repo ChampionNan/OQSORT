@@ -30,9 +30,10 @@ void init(int **arrayAddr, int structurId, int size) {
   for (i = 0; i < size; i++) {
     addr[i] = (size - i);
   }
+  /*
   for(i = size - 1; i >= 1; --i) {
     swapRow(addr + i, addr + (rand() % i));
-  }
+  }*/
 }
 
 void print(int **arrayAddr, int structureId, int size) {

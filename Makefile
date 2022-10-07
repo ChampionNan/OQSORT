@@ -6,6 +6,7 @@ export OE_CRYPTO_LIB
 all: build
 
 build:
+	python3 calParams.py
 	$(MAKE) -C enclave
 	$(MAKE) -C host
 

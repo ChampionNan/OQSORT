@@ -1,4 +1,6 @@
 #include <iostream>
+#include <string>
+#include <fstream>
 #include <chrono>
 #include <cmath>
 #include <cassert>
@@ -20,7 +22,6 @@ int *Y;
 int *arrayAddr[NUM_STRUCTURES];
 int paddedSize;
 int IOcost = 0;
-
 
 /* OCall functions */
 void ocall_print_string(const char *str) {
@@ -79,9 +80,22 @@ int main(int argc, const char* argv[]) {
   std::chrono::high_resolution_clock::time_point start, end;
   std::chrono::seconds duration;
   srand((unsigned)time(NULL));
-  
+  double params[9] = {-1};
+  int i = 0;
+  std::ifstream ifs;
+  ifs.open("/home/chenbingnan/mysamples/OQSORT/params.txt",std::ios::in);
+  std::string buf;
+  while (getline(ifs, buf)) {
+    params[i++] = std::stod(buf);
+    std::cout << params[i-1] << std::endl;
+  }
+  if (params[3] == -1) {
+    std::cout << "Parameters setting wrong!\n";
+    return 0;
+  }
+  int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2];
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  int sortId = 1;
+  int sortId = 0;
   int inputId = 0;
 
   // step1: init test numbers
@@ -130,23 +144,22 @@ int main(int argc, const char* argv[]) {
             oe_result_str(result));
     goto exit;
   }
-  
   // step3: call sort algorithms
   start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
-    result = callSort(enclave, sortId, 0, paddedSize, resId, resN);
+    result = callSort(enclave, sortId, 0, paddedSize, resId, resN, params);
     test(arrayAddr, 0, paddedSize);
   } else if (sortId == 2) {
     std::cout << "Test bucket oblivious sort... " << std::endl;
-    result = callSort(enclave, sortId, 1, paddedSize, resId, resN);
+    result = callSort(enclave, sortId, 1, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
     *resN = N;
     // print(arrayAddr, *resId, N);
     test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     std::cout << "Test OQSort... " << std::endl;
-    callSort(enclave, sortId, inputId, paddedSize, resId, resN);
+    callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
     if (sortId == 0) {
       test(arrayAddr, *resId, paddedSize);
@@ -169,8 +182,8 @@ int main(int argc, const char* argv[]) {
   // step4: std::cout execution time
   duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  std::cout << "IOcost: " << IOcost << std::endl;
-  // print(arrayAddr, *resId, *resN);
+  std::cout << "IOcost: " << 1.0*IOcost/N*BLOCK_DATA_SIZE << std::endl;
+  print(arrayAddr, *resId, *resN);
 
   // step5: exix part
   exit:

@@ -3,17 +3,33 @@
 #include "sort/bucket.h"
 #include "sort/quick.h"
 #include "sort/oq.h"
+#include "shared.h"
 
+double ALPHA, BETA, P, _ALPHA, _BETA, _P;
+int N, M, BLOCK_DATA_SIZE;
 
 // trusted function
-void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN) {
-  // TODO: Change trans-Id
+void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN, double *params) {
+  // TODO: Utilize Memory alloction -- structureId
+  N = (int)params[0]; M = (int)params[1]; BLOCK_DATA_SIZE = (int)params[2];
+  ALPHA = params[3];BETA = params[4];P = params[5];
+  _ALPHA = params[6];_BETA = params[7];_P = params[8];
   if (sortId == 0) {
-    *resId = ObliviousTightSort(structureId, paddedSize, structureId + 1, structureId + 2, structureId + 3);
+    if (paddedSize / M < 100) {
+      *resId = ObliviousTightSort(structureId, paddedSize, structureId + 1, structureId, 1);
+    } else {
+      *resId = ObliviousTightSort2(structureId, paddedSize, structureId+1, structureId+2, structureId+1, structureId);
+    }
   } else if (sortId == 1) {
-    std::pair<int, int> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId + 2, structureId + 3);
-    *resId = ans.first;
-    *resN = ans.second;
+    if (paddedSize / M < 100) {
+      std::pair<int, int> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId, 0);
+      *resId = ans.first;
+      *resN = ans.second;
+    } else {
+      std::pair<int, int> ans = ObliviousLooseSort2(structureId, paddedSize, structureId + 1, structureId + 2, structureId + 1, structureId);
+      *resId = ans.first;
+      *resN = ans.second;
+    }
   } else if (sortId == 2) {
      *resId = bucketOSort(structureId, paddedSize);
   } else if (sortId == 3) {
@@ -25,3 +41,4 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
     free(row2);
   }
 }
+

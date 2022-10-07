@@ -15,9 +15,13 @@
 #include <algorithm>
 #include <cstring>
 #include <cstdarg>
+#include <unordered_set>
 // #include <cstdlib>
 
 #include "oqsort_t.h"
+
+extern double ALPHA, BETA, P, _ALPHA, _BETA, _P;
+extern int N, M, BLOCK_DATA_SIZE;
 
 struct HeapNode {
   Bucket_x *data;
@@ -44,7 +48,7 @@ public:
 int printf(const char *fmt, ...);
 int greatestPowerOfTwoLessThan(int n);
 int smallestPowerOfKLargerThan(int n, int k);
-void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write);
+void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write, int dummyNum);
 bool cmpHelper(int *a, int *b);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
 void padWithDummy(int structureId, int start, int realNum, int secSize);

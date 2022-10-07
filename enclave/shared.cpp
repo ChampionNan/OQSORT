@@ -98,25 +98,41 @@ int smallestPowerOfKLargerThan(int n, int k) {
 }
 
 // Functions x crossing the enclave boundary, unit: BLOCK_DATA_SIZE
-void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write) {
+void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write, int dummyNum) {
+  if (blockSize + dummyNum == 0) {
+    return ;
+  }
   int boundary = (int)((blockSize + BLOCK_DATA_SIZE - 1 )/ BLOCK_DATA_SIZE);
-  int Msize;
+  int Msize, i;
   int multi = structureSize[structureId] / sizeof(int);
   if (!write) {
     // OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
-    for (int i = 0; i < boundary; ++i) {
+    for (i = 0; i < boundary; ++i) {
       Msize = std::min(BLOCK_DATA_SIZE, (int)blockSize - i * BLOCK_DATA_SIZE);
       OcallReadBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
     }
   } else {
     // OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
-    for (int i = 0; i < boundary; ++i) {
+    for (i = 0; i < boundary; ++i) {
       Msize = std::min(BLOCK_DATA_SIZE, (int)blockSize - i * BLOCK_DATA_SIZE);
       OcallWriteBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+    }
+    if (dummyNum) {
+      int *junk = (int*)malloc(dummyNum * multi * sizeof(int));
+      for (int j = 0; j < dummyNum * multi; ++j) {
+        junk[j] = DUMMY;
+      }
+      int startIdx = index + multi * blockSize;
+      boundary = ceil(1.0 * dummyNum / BLOCK_DATA_SIZE);
+      for (int j = 0; j < boundary; ++j) {
+        Msize = std::min(BLOCK_DATA_SIZE, dummyNum - j * BLOCK_DATA_SIZE);
+        OcallWriteBlock(startIdx + multi * j * BLOCK_DATA_SIZE, &junk[j * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+      }
     }
   }
   return;
 }
+
 
 bool cmpHelper(int *a, int *b) {
   return (*a > *b) ? true : false;
@@ -137,7 +153,7 @@ void padWithDummy(int structureId, int start, int realNum, int secSize) {
     for (int i = 0; i < len; ++i) {
       junk[i] = DUMMY;
     }
-    opOneLinearScanBlock(start + realNum, (int*)junk, len, structureId, 1);
+    opOneLinearScanBlock(start + realNum, (int*)junk, len, structureId, 1, 0);
     free(junk);
   
   } else if (structureSize[structureId] == 8) {
@@ -146,7 +162,7 @@ void padWithDummy(int structureId, int start, int realNum, int secSize) {
       junk[i].x = DUMMY;
       junk[i].key = DUMMY;
     }
-    opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1);
+    opOneLinearScanBlock(2 * (start + realNum), (int*)junk, len, structureId, 1, 0);
     free(junk);
   }
 }
