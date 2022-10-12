@@ -2,6 +2,65 @@
 #include "quick.h"
 #include "oq.h"
 
+#include <mbedtls/aes.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+
+mbedtls_aes_context aes;
+unsigned char key[16];
+int base;
+int max_num;
+int ROUND = 3;
+
+__uint128_t prf(__uint128_t a) {
+  unsigned char input[16] = {0};
+  unsigned char encrypt_output[16] = {0};
+  for (int i = 0; i < 16; ++i) {
+    input[i] = (a >> (120 - i * 8)) & 0xFF;
+  }
+  mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, input, encrypt_output);
+  __uint128_t res = 0;
+  for (int i = 0; i < 16; ++i) {
+    res |= encrypt_output[i] << (120 - i * 8);
+  }
+  return res;
+}
+
+int encrypt(int index) {
+  int l = index / (1 << base);
+  int r = index % (1 << base);
+  __uint128_t e;
+  int temp, i = 1;
+  while (i <= ROUND) {
+    e = prf((r << 16 * 8 - base) + i);
+    temp = r;
+    r = l ^ (e >> 16 * 8 - base);
+    l = temp;
+    i += 1;
+  }
+  return (l << base) + r;
+}
+
+void pseudo_init(int size) {
+  mbedtls_aes_init(&aes);
+  mbedtls_ctr_drbg_context ctr_drbg;
+  mbedtls_entropy_context entropy;
+  char *pers = "aes generate key";
+  int ret;
+  mbedtls_entropy_init(&entropy);
+  mbedtls_ctr_drbg_init(&ctr_drbg);
+  if((ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (unsigned char *) pers, strlen(pers))) != 0) {
+    printf(" failed\n ! mbedtls_ctr_drbg_init returned -0x%04x\n", -ret);
+    return;
+  }
+  if((ret = mbedtls_ctr_drbg_random(&ctr_drbg, key, 16)) != 0) {
+    printf(" failed\n ! mbedtls_ctr_drbg_random returned -0x%04x\n", -ret);
+    return ;
+  }
+  mbedtls_aes_setkey_enc(&aes, key, 128);
+  base = ceil(1.0 * log2(max_num) / 2);
+  max_num = 1 << 2 * base;
+}
 
 int Hypergeometric(int NN, int Msize, int n_prime) {
   int m = 0;
@@ -170,29 +229,35 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
   int bucketSize0 = boundary1 * smallSectionSize;
   freeAllocate(outStructureId1, outStructureId1, boundary1 * smallSectionSize * p0);
   
-  int k, Msize1, Msize2, index1, index2, writeBackNum;
+  int Msize1, Msize2, index1, index2, writeBackNum;
   int blocks_done = 0;
   int total_blocks = ceil(1.0 * inSize / BLOCK_DATA_SIZE);
   int *trustedM3 = (int*)malloc(sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   memset(trustedM3, DUMMY, sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   int *shuffleB = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
   std::vector<int> partitionIdx;
-  // TODO: Find FFSEM implementation in c++
+  // Finish FFSEM implementation in c++
+  pseudo_init(total_blocks);
+  int index_range = max_num;
+  int k = 0, read_index;
   for (int i = 0; i < boundary1; ++i) {
     for (int j = 0; j < boundary2; ++j) {
-      if (total_blocks - 1 - blocks_done == 0) {
-        k = 0;
-      } else {
-        k = rand() % (total_blocks - blocks_done);
+      read_index = encrypt(k);
+      while (read_index >= total_blocks) {
+        k += 1;
+        if (k == index_range) {
+          k = -1;
+          break;
+        }
+        read_index = encrypt(k);
       }
-      Msize1 = std::min(BLOCK_DATA_SIZE, inSize - k * BLOCK_DATA_SIZE);
-      opOneLinearScanBlock(k * BLOCK_DATA_SIZE, &trustedM3[j*BLOCK_DATA_SIZE], Msize1, inStructureId, 0, 0);
-      memset(shuffleB, DUMMY, sizeof(int) * BLOCK_DATA_SIZE);
-      Msize2 = std::min(BLOCK_DATA_SIZE, inSize - (total_blocks-1-blocks_done) * BLOCK_DATA_SIZE);
-      opOneLinearScanBlock((total_blocks-1-blocks_done) * BLOCK_DATA_SIZE, shuffleB, Msize2, inStructureId, 0, 0);
-      opOneLinearScanBlock(k * BLOCK_DATA_SIZE, shuffleB, BLOCK_DATA_SIZE, inStructureId, 1, 0);
-      blocks_done += 1;
-      if (blocks_done == total_blocks) {
+      if (k == -1) {
+        break;
+      }
+      Msize1 = std::min(BLOCK_DATA_SIZE, inSize - read_index * BLOCK_DATA_SIZE);
+      opOneLinearScanBlock(read_index * BLOCK_DATA_SIZE, &trustedM3[j*BLOCK_DATA_SIZE], Msize1, inStructureId, 0, 0);
+      k += 1;
+      if (k == index_range) {
         break;
       }
     }

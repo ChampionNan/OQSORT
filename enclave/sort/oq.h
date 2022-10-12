@@ -4,6 +4,9 @@
 #include "../shared.h"
 #include <utility>
 
+__uint128_t prf(__uint128_t a);
+int encrypt(int index);
+void pseudo_init(int size);
 int Hypergeometric(int NN, int Msize, int n_prime);
 void shuffle(int *array, int n);
 void floydSampler(int n, int k, std::vector<int> &x);
