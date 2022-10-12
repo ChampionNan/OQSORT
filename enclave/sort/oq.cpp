@@ -58,7 +58,7 @@ void pseudo_init(int size) {
     return ;
   }
   mbedtls_aes_setkey_enc(&aes, key, 128);
-  base = ceil(1.0 * log2(max_num) / 2);
+  base = ceil(1.0 * log2(size) / 2);
   max_num = 1 << 2 * base;
 }
 
