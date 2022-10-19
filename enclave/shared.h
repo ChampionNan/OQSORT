@@ -53,7 +53,6 @@ bool cmpHelper(int *a, int *b);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
 void padWithDummy(int structureId, int start, int realNum, int secSize);
 int moveDummy(int *a, int size);
-bool isTargetIterK(int randomKey, int iter, int k, int num);
 void swapRow(int *a, int *b);
 void swapRow(Bucket_x *a, Bucket_x *b);
 

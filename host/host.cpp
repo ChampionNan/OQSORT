@@ -93,9 +93,10 @@ int main(int argc, const char* argv[]) {
     std::cout << "Parameters setting wrong!\n";
     return 0;
   }
-  int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2];
+  int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2], M = (int)params[1];
+  int FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  int sortId = 0;
+  int sortId = 2;
   int inputId = 0;
 
   // step1: init test numbers
@@ -109,13 +110,21 @@ int main(int argc, const char* argv[]) {
     arrayAddr[inputId] = X;
     init(arrayAddr, inputId, paddedSize);
   } else if (sortId == 2) {
-    // srand((unsigned)time(NULL));
+    // inputId = 0;
+    double z1 = 6 * (KAPPA + log(2*N));
+    double z2 = 6 * (KAPPA + log(2.0*N/z1));
+    BUCKET_SIZE = BLOCK_DATA_SIZE * ceil(1.0*z2/BLOCK_DATA_SIZE);
+    std::cout << "BUCKET_SIZE: " << BUCKET_SIZE << std::endl;
+    double thresh = 1.0*M/BUCKET_SIZE;
+    std::cout << "Threash: " << thresh << std::endl;
+    FAN_OUT = greatestPowerOfTwoLessThan(thresh);
     assert(FAN_OUT >= 2 && "M/Z must greater than 2");
-    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), FAN_OUT);
+    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), 2);
     int bucketSize = bucketNum * BUCKET_SIZE;
-    std::cout << "BUCKET NUMBER: " << bucketNum << std::endl;
     std::cout << "TOTAL BUCKET SIZE: " << bucketSize << std::endl;
-    std::cout << "Iterations: " << log(bucketNum)/log(FAN_OUT) << std::endl; 
+    std::cout << "BUCKET NUMBER: " << bucketNum << std::endl;
+    std::cout << "BUCKET SIZE: " << BUCKET_SIZE << std::endl; 
+    std::cout << "FAN_OUT: " << FAN_OUT << std::endl;  
     bucketx1 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     memset(bucketx1, 0xff, bucketSize*sizeof(Bucket_x));

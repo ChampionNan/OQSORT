@@ -16,6 +16,14 @@ int smallestPowerOfKLargerThan(int n, int k) {
   return num;
 }
 
+int greatestPowerOfTwoLessThan(double n) {
+    int k = 1;
+    while (k > 0 && k < n) {
+        k = k << 1;
+    }
+    return k >> 1;
+}
+
 void swapRow(int *a, int *b) {
   int *temp = (int*)malloc(sizeof(int));
   memmove(temp, a, sizeof(int));
@@ -73,6 +81,10 @@ void test(int **arrayAddr, int structureId, int size) {
   if(structureSize[structureId] == 4) {
     for (i = 1; i < size; i++) {
       pass &= ((arrayAddr[structureId])[i-1] <= (arrayAddr[structureId])[i]);
+      if (!pass) {
+        printf("%d, %d\n", (arrayAddr[structureId])[i-1], (arrayAddr[structureId])[i]);
+        break;
+      }
       if ((arrayAddr[structureId])[i] == 0) {
         pass = 0;
         break;
@@ -81,6 +93,9 @@ void test(int **arrayAddr, int structureId, int size) {
   } else if (structureSize[structureId] == 8) {
     for (i = 1; i < size; i++) {
       pass &= (((Bucket_x*)arrayAddr[structureId])[i-1].x <= ((Bucket_x*)arrayAddr[structureId])[i].x);
+      if (!pass) {
+
+      }
       if (((Bucket_x*)arrayAddr[structureId])[i].x == 0) {
         pass = 0;
         break;

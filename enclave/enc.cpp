@@ -2,6 +2,7 @@
 #include "sort/bitonic.h"
 #include "sort/bucket.h"
 #include "sort/quick.h"
+#include "sort/merge.h"
 #include "sort/oq.h"
 #include "shared.h"
 
@@ -39,6 +40,8 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
     bitonicSort(structureId, 0, size, 0, row1, row2);
     free(row1);
     free(row2);
+  } else if (sortId == 4) {
+    *resId = merge_sort(structureId, structureId+1, paddedSize);
   }
 }
 

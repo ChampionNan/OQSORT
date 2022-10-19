@@ -6,11 +6,12 @@
 #define DUMMY 0xffffffff
 #define NULLCHAR '\0'
 
-#define FAN_OUT 20
-#define BUCKET_SIZE 337//256
-#define MERGE_BATCH_SIZE 256 // merge split hepler
-#define HEAP_NODE_SIZE 20//8192. heap node size
-#define WRITE_BUFFER_SIZE 20
+#define KAPPA 28
+// #define FAN_OUT 20
+// #define BUCKET_SIZE 337//256
+// #define MERGE_BATCH_SIZE 256 // merge split hepler
+// #define HEAP_NODE_SIZE 20//8192. heap node size
+// #define WRITE_BUFFER_SIZE 20
 
 /*
 #define N 20000000

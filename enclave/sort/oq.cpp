@@ -64,10 +64,10 @@ void pseudo_init(int size) {
 
 int Hypergeometric(int NN, int Msize, int n_prime) {
   int m = 0;
-  srand((unsigned)time(0));
+  // srand((unsigned)time(0));
   double rate = double(n_prime) / NN;
   for (int j = 0; j < Msize; ++j) {
-    if (rand() / double(RAND_MAX) < rate) {
+    if (oe_rdrand() / double(RAND_MAX) < rate) {
       m += 1;
       n_prime -= 1;
     }
@@ -234,7 +234,6 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
   int total_blocks = ceil(1.0 * inSize / BLOCK_DATA_SIZE);
   int *trustedM3 = (int*)malloc(sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   memset(trustedM3, DUMMY, sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
-  int *shuffleB = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
   std::vector<int> partitionIdx;
   // Finish FFSEM implementation in c++
   pseudo_init(total_blocks);
@@ -278,7 +277,7 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
     partitionIdx.clear();
   }
   free(trustedM3);
-  free(shuffleB);
+  mbedtls_aes_free(&aes);
   if (bucketSize0 > M) {
     printf("Each section size is greater than M, adjst parameters: %d, %d", bucketSize0, M);
   }

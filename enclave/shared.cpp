@@ -182,15 +182,6 @@ int moveDummy(int *a, int size) {
   return k;
 }
 
-bool isTargetIterK(int randomKey, int iter, int k, int num) {
-  while (iter) {
-    randomKey = randomKey / k;
-    iter--;
-  }
-  // return (randomKey & (0x01 << (iter - 1))) == 0 ? false : true;
-  return (randomKey % k) == num;
-}
-
 void swapRow(int *a, int *b) {
   int *temp = (int*)malloc(sizeof(int));
   memmove(temp, a, sizeof(int));
