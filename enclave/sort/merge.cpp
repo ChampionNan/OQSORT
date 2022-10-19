@@ -3,10 +3,10 @@
 
 int merge_sort(int inStructureId, int outStructureId, int size) {
   int bucketNum = ceil(1.0 * size / M);
-  std::cout << "Bucket Number: " << bucketNum << std::endl;
-  HEAP_NODE_SIZE = floor(1.0 * M / (bucketNum + 1));
-  MERGE_BATCH_SIZE = HEAP_NODE_SIZE;
-  std::cout << "HEAP_NODE_SIZE: " << HEAP_NODE_SIZE << std::endl;
+  printf("Bucket Number: %d", bucketNum);
+  int setSize = floor(1.0 * M / (bucketNum + 1));
+  initMerge(size);
+  printf("HEAP_NODE_SIZE: %d\n", setSize);
   int avg = size / bucketNum;
   int remainder = size % bucketNum;
   int *bucketAddr = (int*)malloc(bucketNum * sizeof(int));

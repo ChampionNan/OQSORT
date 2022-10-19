@@ -70,6 +70,11 @@ void mergeSplit(int inputStructureId, int outputStructureId, int *inputId, int *
   free(inputBuffer);
 }
 
+void initMerge(int size) {
+  HEAP_NODE_SIZE = size;
+  MERGE_BATCH_SIZE = size;
+}
+
 void kWayMergeSort(int inputStructureId, int outputStructureId, int* numRow1, int* bucketAddr, int bucketNum) {
   int mergeSortBatchSize = HEAP_NODE_SIZE; // 256
   int writeBufferSize = (int)MERGE_BATCH_SIZE; // 8192

@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cassert>
+#include <random>
 #include <openenclave/host.h>
 
 #include "../include/IOTools.h"
@@ -69,6 +70,26 @@ void freeAllocate(int structureIdM, int structureIdF, int size) {
   return ;
 }
 
+// support int version only
+void fyShuffle(int structureId, int size, int B) {
+  int total_blocks = ceil(1.0 * size / B);
+  int *trustedM3 = (int*)malloc(sizeof(int) * B);
+  int k;
+  std::random_device rd;
+  std::default_random_engine generator(rd());
+  int Msize1, Msize2;
+  for (int i = total_blocks-1; i >= 0; i--) {
+    std::uniform_int_distribution<int> distribution(0, i);
+    k = distribution(generator);
+    Msize1 = std::min(B, size - k * B);
+    memcpy(trustedM3, arrayAddr[structureId] + k * B, Msize1 * sizeof(int));
+    Msize2 = std::min(B, size - i * B);
+    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, Msize2 * sizeof(int));
+    memcpy(arrayAddr[structureId] + i * B, trustedM3, Msize1);
+  }
+  std::cout << "Finished floyd shuffle\n";
+}
+
 
 /* main function */
 int main(int argc, const char* argv[]) {
@@ -96,7 +117,7 @@ int main(int argc, const char* argv[]) {
   int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2], M = (int)params[1];
   int FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  int sortId = 2;
+  int sortId = 0;
   int inputId = 0;
 
   // step1: init test numbers

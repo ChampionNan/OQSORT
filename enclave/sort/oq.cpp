@@ -230,36 +230,19 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
   freeAllocate(outStructureId1, outStructureId1, boundary1 * smallSectionSize * p0);
   
   int Msize1, Msize2, index1, index2, writeBackNum;
-  int blocks_done = 0;
   int total_blocks = ceil(1.0 * inSize / BLOCK_DATA_SIZE);
   int *trustedM3 = (int*)malloc(sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   memset(trustedM3, DUMMY, sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   std::vector<int> partitionIdx;
+  // OCall
+  fyShuffle(inStructureId, inSize, BLOCK_DATA_SIZE);
   // Finish FFSEM implementation in c++
-  pseudo_init(total_blocks);
-  int index_range = max_num;
-  int k = 0, read_index;
+  // pseudo_init(total_blocks);
   for (int i = 0; i < boundary1; ++i) {
-    for (int j = 0; j < boundary2; ++j) {
-      read_index = encrypt(k);
-      while (read_index >= total_blocks) {
-        k += 1;
-        if (k == index_range) {
-          k = -1;
-          break;
-        }
-        read_index = encrypt(k);
-      }
-      if (k == -1) {
-        break;
-      }
-      Msize1 = std::min(BLOCK_DATA_SIZE, inSize - read_index * BLOCK_DATA_SIZE);
-      opOneLinearScanBlock(read_index * BLOCK_DATA_SIZE, &trustedM3[j*BLOCK_DATA_SIZE], Msize1, inStructureId, 0, 0);
-      k += 1;
-      if (k == index_range) {
-        break;
-      }
-    }
+    // Read one M' memory block after fisher-yates shuffle
+    Msize1 = std::min(boundary2 * BLOCK_DATA_SIZE, inSize - i * boundary2 * BLOCK_DATA_SIZE);
+    opOneLinearScanBlock(i * boundary2 * BLOCK_DATA_SIZE, trustedM3, Msize1, inStructureId, 0, 0);
+
     int blockNum = moveDummy(trustedM3, dataBoundary);
     quickSortMulti(trustedM3, 0, blockNum-1, samples, 1, p0, partitionIdx);
     sort(partitionIdx.begin(), partitionIdx.end());
@@ -269,7 +252,7 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
       index2 = partitionIdx[j+1];
       writeBackNum = index2 - index1 + 1;
       if (writeBackNum > smallSectionSize) {
-        printf("Overflow in small section M/p0: %d", writeBackNum);
+        printf("Overflow in small section M/p0: %d > %d\n", writeBackNum, smallSectionSize);
       }
       opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outStructureId1, 1, smallSectionSize - writeBackNum);
     }
