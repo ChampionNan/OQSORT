@@ -22,7 +22,7 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
       *resId = ObliviousTightSort2(structureId, paddedSize, structureId+1, structureId+2, structureId+1, structureId);
     }
   } else if (sortId == 1) {
-    if (paddedSize / M < 100) {
+    if (paddedSize / M <= 128) {
       std::pair<int, int> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId, 0);
       *resId = ans.first;
       *resN = ans.second;
