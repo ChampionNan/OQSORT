@@ -60,8 +60,9 @@ class OQSORT:
         self.is_tight = is_tight
         
 if __name__ == '__main__':
-    N, M, B, is_tight = 8000000, 1000000, 4, 1
-    print("N, M, B: " + str(N) + ', ' +str(M) + ', ' + str(B))
+    M = 16777216
+    N, B, is_tight = 8*M, 4, 1
+    print("N, M, B: " + str(N) + ', ' +str(M) + ', ' + str(B)) 
     # N, M, B, is_tight = 335544320, 16777216, 4, 1
     sortCase1 = OQSORT(N, M, B)
     if N / M <= 128:

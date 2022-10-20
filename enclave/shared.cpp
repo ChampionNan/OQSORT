@@ -169,6 +169,7 @@ void padWithDummy(int structureId, int start, int realNum, int secSize) {
 
 int moveDummy(int *a, int size) {
   // k: #elem != DUMMY
+  // printf("In move Dummy\n");
   int k = 0;
   for (int i = 0; i < size; ++i) {
     if (a[i] != DUMMY) {
@@ -179,6 +180,7 @@ int moveDummy(int *a, int size) {
       }
     }
   }
+  // printf("After move Dummy\n");
   return k;
 }
 

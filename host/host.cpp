@@ -75,17 +75,22 @@ void fyShuffle(int structureId, int size, int B) {
   int total_blocks = ceil(1.0 * size / B);
   int *trustedM3 = (int*)malloc(sizeof(int) * B);
   int k;
-  std::random_device rd;
-  std::default_random_engine generator(rd());
+  // std::random_device rd;
+  // std::default_random_engine generator(rd());
+  srand((unsigned)time(0));
   int Msize1, Msize2;
   for (int i = total_blocks-1; i >= 0; i--) {
-    std::uniform_int_distribution<int> distribution(0, i);
-    k = distribution(generator);
+    // std::uniform_int_distribution<int> distribution(0, i);
+    if (i != 0) {
+      k = rand() % (i+1);
+    } else {
+      break;
+    }
     Msize1 = std::min(B, size - k * B);
     memcpy(trustedM3, arrayAddr[structureId] + k * B, Msize1 * sizeof(int));
     Msize2 = std::min(B, size - i * B);
     memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, Msize2 * sizeof(int));
-    memcpy(arrayAddr[structureId] + i * B, trustedM3, Msize1);
+    memcpy(arrayAddr[structureId] + i * B, trustedM3, Msize1 * sizeof(int));
   }
   std::cout << "Finished floyd shuffle\n";
 }

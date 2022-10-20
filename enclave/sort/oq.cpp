@@ -64,10 +64,10 @@ void pseudo_init(int size) {
 
 int Hypergeometric(int NN, int Msize, int n_prime) {
   int m = 0;
-  // srand((unsigned)time(0));
+  srand((unsigned)time(0));
   double rate = double(n_prime) / NN;
   for (int j = 0; j < Msize; ++j) {
-    if (oe_rdrand() / double(RAND_MAX) < rate) {
+    if (rand() / double(INT_MAX) < rate) {
       m += 1;
       n_prime -= 1;
     }
@@ -78,10 +78,10 @@ int Hypergeometric(int NN, int Msize, int n_prime) {
 }
 
 void shuffle(int *array, int n) {
-  srand((unsigned)time(0));
+  // srand((unsigned)time(0));
   if (n > 1) {
     for (int i = 0; i < n - 1; ++i) {
-      int j = i + rand() / (RAND_MAX / (n - i) + 1);
+      int j = i + rand() / (INT_MAX / (n - i) + 1);
       int t = array[j];
       array[j] = array[i];
       array[i] = t;
@@ -94,15 +94,18 @@ void floydSampler(int n, int k, std::vector<int> &x) {
   for (int i = n - k; i < n; ++i) {
     x.push_back(i);
   }
-  unsigned int seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-  std::default_random_engine e(seed1);
+  // unsigned int seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+  // std::default_random_engine e(seed1);
+  srand((unsigned)time(0));
   int r, j, temp;
   for (int i = 0; i < k; ++i) {
-    std::uniform_int_distribution<int> dist{0, n-k+1+i};
-    r = dist(e); // get random numbers with PRNG
+    // std::uniform_int_distribution<int> dist{0, n-k+1+i};
+    // r = dist(e); // get random numbers with PRNG
+    r = rand() % (n-k+2+i);
     if (H.count(r)) {
-      std::uniform_int_distribution<int> dist2{0, i};
-      j = dist2(e);
+      // std::uniform_int_distribution<int> dist2{0, i};
+      // j = dist2(e);
+      j = rand() % (i + 1);
       temp = x[i];
       x[i] = x[j];
       x[j] = temp;
@@ -116,6 +119,7 @@ void floydSampler(int n, int k, std::vector<int> &x) {
 }
 
 int Sample(int inStructureId, int sampleSize, std::vector<int> &trustedM2, int is_tight, int is_rec) {
+  printf("In sample\n");
   int N_prime = sampleSize;
   double alpha = (!is_rec) ? ALPHA : _ALPHA;
   int n_prime = ceil(1.0 * alpha * N_prime);
@@ -202,9 +206,11 @@ int partitionMulti(int *arr, int low, int high, int pivot) {
 
 void quickSortMulti(int *arr, int low, int high, std::vector<int> pivots, int left, int right, std::vector<int> &partitionIdx) {
   int pivotIdx, pivot, mid;
+  // printf("Pivots' size: ", pivots.size());
   if (right >= left) {
     pivotIdx = (left + right) >> 1;
     pivot = pivots[pivotIdx];
+    // printf("left: %d, right %d, pivot: \n", left, right, pivot);
     mid = partitionMulti(arr, low, high, pivot);
     partitionIdx.push_back(mid);
     quickSortMulti(arr, low, mid, pivots, left, pivotIdx-1, partitionIdx);
@@ -216,6 +222,7 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
   if (inSize <= M) {
     return {inSize, 1};
   }
+  printf("In OneLevelPartition\n");
   double beta = (!is_rec) ? BETA : _BETA;
   int hatN = ceil(1.0 * (1 + 2 * beta) * inSize);
   int M_prime = ceil(1.0 * M / (1 + 2 * beta));
@@ -238,6 +245,7 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
   fyShuffle(inStructureId, inSize, BLOCK_DATA_SIZE);
   // Finish FFSEM implementation in c++
   // pseudo_init(total_blocks);
+  // printf("Before partition\n");
   for (int i = 0; i < boundary1; ++i) {
     // Read one M' memory block after fisher-yates shuffle
     Msize1 = std::min(boundary2 * BLOCK_DATA_SIZE, inSize - i * boundary2 * BLOCK_DATA_SIZE);
@@ -260,7 +268,7 @@ std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector
     partitionIdx.clear();
   }
   free(trustedM3);
-  mbedtls_aes_free(&aes);
+  // mbedtls_aes_free(&aes);
   if (bucketSize0 > M) {
     printf("Each section size is greater than M, adjst parameters: %d, %d", bucketSize0, M);
   }
@@ -277,34 +285,26 @@ std::pair<int, int> TwoLevelPartition(int inStructureId, std::vector<std::vector
   int bucketSize0 = boundary1 * smallSectionSize;
   freeAllocate(outStructureId1, outStructureId1, boundary1 * smallSectionSize * p0);
   int k, Msize1, Msize2, index1, index2, writeBackNum;
-  int blocks_done = 0;
   int total_blocks = ceil(1.0 * N / BLOCK_DATA_SIZE);
   int *trustedM3 = (int*)malloc(sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
   memset(trustedM3, DUMMY, sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
-  int *shuffleB = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
   std::vector<int> partitionIdx;
+  // OCall 
+  printf("Before 1Level\n");
+  fyShuffle(inStructureId, N, BLOCK_DATA_SIZE);
   for (int i = 0; i < boundary1; ++i) {
-    for (int j = 0; j < boundary2; ++j) {
-      if (total_blocks - 1 - blocks_done == 0) {
-        k = 0;
-      } else {
-        k = rand() % (total_blocks - blocks_done);
-      }
-      Msize1 = std::min(BLOCK_DATA_SIZE, N - k * BLOCK_DATA_SIZE);
-      opOneLinearScanBlock(k * BLOCK_DATA_SIZE, &trustedM3[j*BLOCK_DATA_SIZE], Msize1, inStructureId, 0, 0);
-      memset(shuffleB, DUMMY, sizeof(int) * BLOCK_DATA_SIZE);
-      Msize2 = std::min(BLOCK_DATA_SIZE, N - (total_blocks-1-blocks_done) * BLOCK_DATA_SIZE);
-      opOneLinearScanBlock((total_blocks-1-blocks_done) * BLOCK_DATA_SIZE, shuffleB, Msize2, inStructureId, 0, 0);
-      opOneLinearScanBlock(k * BLOCK_DATA_SIZE, shuffleB, BLOCK_DATA_SIZE, inStructureId, 1, 0);
-      blocks_done += 1;
-      if (blocks_done == total_blocks) {
-        break;
-      }
-    }
+    printf("Before read: %d\n", i);
+    Msize1 = std::min(boundary2 * BLOCK_DATA_SIZE, N - i * boundary2 * BLOCK_DATA_SIZE);
+    opOneLinearScanBlock(i * boundary2 * BLOCK_DATA_SIZE, trustedM3, Msize1, inStructureId, 0, 0);
+    printf("After read\n");
     int blockNum = moveDummy(trustedM3, dataBoundary);
+    printf("blockNum: %d \n", blockNum);
     quickSortMulti(trustedM3, 0, blockNum-1, pivots[0], 1, p0, partitionIdx);
+    // (trustedM3, 0, blockNum-1, pivots[0], 1, p0, partitionIdx);
+    printf("After quick\n");
     sort(partitionIdx.begin(), partitionIdx.end());
     partitionIdx.insert(partitionIdx.begin(), -1);
+    printf("Before small sec\n");
     for (int j = 0; j < p0; ++j) {
       index1 = partitionIdx[j]+1;
       index2 = partitionIdx[j+1];
@@ -315,11 +315,12 @@ std::pair<int, int> TwoLevelPartition(int inStructureId, std::vector<std::vector
       opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outStructureId1, 1, smallSectionSize - writeBackNum);
     }
     memset(trustedM3, DUMMY, sizeof(int) * boundary2 * BLOCK_DATA_SIZE);
+    printf("After small sec\n");
     partitionIdx.clear();
   }
   free(trustedM3);
-  free(shuffleB);
   // Level2
+  printf("Before 2Level\n");
   int p1 = p0 * p, readSize, readSize2, k1, k2;
   int boundary3 = ceil(1.0 * bucketSize0 / M);
   int bucketSize1 = boundary3 * smallSectionSize;
@@ -382,6 +383,7 @@ int ObliviousTightSort(int inStructureId, int inSize, int outStructureId1, int o
   freeAllocate(outStructureId2, outStructureId2, inSize);
   trustedM = (int*)malloc(sizeof(int) * M);
   int j = 0, k;
+  printf("In final\n");
   for (int i = 0; i < sectionNum; ++i) {
     opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outStructureId1, 0, 0);
     k = moveDummy(trustedM, sectionSize);
