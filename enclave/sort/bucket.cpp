@@ -6,15 +6,19 @@ int FAN_OUT;
 int HEAP_NODE_SIZE;
 int MERGE_BATCH_SIZE;
 int finalFlag = 0;
-int oldK;
+int oldk;
 
 bool isTargetIterK(int randomKey, int iter, int k, int num) {
+  /*
   while (iter) {
     randomKey = randomKey / oldK;
     iter--;
+  }*/
+  if (iter != 0 && iter < 4) {
+    randomKey = randomKey >> (iter * oldk);
   }
-  // return (randomKey & (0x01 << (iter - 1))) == 0 ? false : true;
-  return (randomKey % k) == num;
+  int flag = ((1 << (int)log2(k)) - 1);
+  return (randomKey & flag) == num;
 }
 
 void mergeSplitHelper(Bucket_x *inputBuffer, int* numRow1, int* numRow2, int* inputId, int* outputId, int iter, int k, int* bucketAddr, int outputStructureId) {
@@ -220,7 +224,8 @@ int bucketOSort(int structureId, int size) {
   // TODO: change k to tempk, i != last level, k = FAN_OUT
   // last level k = k % k1, 2N/Z < 2^k, 2^k1 < M/Z
   int k1 = (int)log2(k);
-  oldK = (int)pow(2, k1);
+  // oldK = (int)pow(2, k1);
+  oldk = k1;
   for (int i = 0; i < ranBinAssignIters; ++i) {
     expo = std::min(k1, (int)log2(bucketNum)-i*k1);
     tempk = (int)pow(2, expo);

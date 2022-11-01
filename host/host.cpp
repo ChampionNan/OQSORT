@@ -75,17 +75,13 @@ void fyShuffle(int structureId, int size, int B) {
   int total_blocks = ceil(1.0 * size / B);
   int *trustedM3 = (int*)malloc(sizeof(int) * B);
   int k;
-  // std::random_device rd;
-  // std::default_random_engine generator(rd());
+  std::random_device dev;
+  std::mt19937 rng(dev()); 
   srand((unsigned)time(0));
   int Msize1, Msize2;
   for (int i = total_blocks-1; i >= 0; i--) {
-    // std::uniform_int_distribution<int> distribution(0, i);
-    if (i != 0) {
-      k = rand() % (i+1);
-    } else {
-      break;
-    }
+    std::uniform_int_distribution<int> dist(0, i);
+    k = dist(rng);
     Msize1 = std::min(B, size - k * B);
     memcpy(trustedM3, arrayAddr[structureId] + k * B, Msize1 * sizeof(int));
     Msize2 = std::min(B, size - i * B);
@@ -121,8 +117,8 @@ int main(int argc, const char* argv[]) {
   }
   int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2], M = (int)params[1];
   int FAN_OUT, BUCKET_SIZE;
-  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  int sortId = 0;
+  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort, 4: merge_sort
+  int sortId = 4;
   int inputId = 0;
 
   // step1: init test numbers
@@ -135,15 +131,24 @@ int main(int argc, const char* argv[]) {
     paddedSize = N + addi;
     arrayAddr[inputId] = X;
     init(arrayAddr, inputId, paddedSize);
+  } else if (sortId == 4) {
+    inputId = 1;
+    arrayAddr[inputId] = X;
+    bucketx1 = (Bucket_x*)malloc(N * sizeof(Bucket_x));
+    bucketx2 = (Bucket_x*)malloc(N * sizeof(Bucket_x));
+    arrayAddr[inputId] = (int*)bucketx1;
+    arrayAddr[inputId+1] = (int*)bucketx2;
+    paddedSize = N;
+    init(arrayAddr, inputId, paddedSize);
   } else if (sortId == 2) {
     // inputId = 0;
-    double z1 = 6 * (KAPPA + log(2*N));
+    double z1 = 6 * (KAPPA + log(2.0*N));
     double z2 = 6 * (KAPPA + log(2.0*N/z1));
     BUCKET_SIZE = BLOCK_DATA_SIZE * ceil(1.0*z2/BLOCK_DATA_SIZE);
     std::cout << "BUCKET_SIZE: " << BUCKET_SIZE << std::endl;
     double thresh = 1.0*M/BUCKET_SIZE;
     std::cout << "Threash: " << thresh << std::endl;
-    FAN_OUT = greatestPowerOfTwoLessThan(thresh);
+    FAN_OUT = greatestPowerOfTwoLessThan(thresh)/2;
     assert(FAN_OUT >= 2 && "M/Z must greater than 2");
     int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), 2);
     int bucketSize = bucketNum * BUCKET_SIZE;
@@ -191,6 +196,12 @@ int main(int argc, const char* argv[]) {
     std::cout << "Result ID: " << *resId << std::endl;
     *resN = N;
     // print(arrayAddr, *resId, N);
+    test(arrayAddr, *resId, paddedSize);
+  } else if (sortId == 4) {
+    std::cout << "Test merge_sort... " << std::endl;
+    callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
+    std::cout << "Result ID: " << *resId << std::endl;
+    *resN = N;
     test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     std::cout << "Test OQSort... " << std::endl;

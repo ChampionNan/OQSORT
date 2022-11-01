@@ -61,7 +61,7 @@ class OQSORT:
         
 if __name__ == '__main__':
     M = 16777216
-    N, B, is_tight = 64*M, 4, 1
+    N, B, is_tight = 8*M, 4, 0
     print("N, M, B: " + str(N) + ', ' +str(M) + ', ' + str(B)) 
     # N, M, B, is_tight = 335544320, 16777216, 4, 1
     sortCase1 = OQSORT(N, M, B)
