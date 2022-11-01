@@ -3,9 +3,9 @@
 
 #include "../shared.h"
 
-int partition(int *arr, int low, int high);
-int partition(Bucket_x *arr, int low, int high);
-void quickSort(int *arr, int low, int high);
-void quickSort(Bucket_x *arr, int low, int high);
+int64_t partition(int64_t *arr, int64_t low, int64_t high);
+void quickSort(int64_t *arr, int64_t low, int64_t high);
+int64_t partition(Bucket_x *arr, int64_t low, int64_t high);
+void quickSort(Bucket_x *arr, int64_t low, int64_t high);
 
 #endif // !QUICK_SORT_H

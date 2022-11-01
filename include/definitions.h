@@ -3,10 +3,10 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define DUMMY 0xffffffff
+#define DUMMY -1
 #define NULLCHAR '\0'
 
-#define KAPPA 28
+#define KAPPA 27.8
 // #define FAN_OUT 20
 // #define BUCKET_SIZE 337//256
 // #define MERGE_BATCH_SIZE 256 // merge split hepler

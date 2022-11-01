@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cmath>
 #include <cassert>
+#include <cstdint>
 #include <random>
 #include <openenclave/host.h>
 
@@ -13,16 +14,18 @@
 
 #include "oqsort_u.h"
 
-int *X;
+// Globals
+int64_t *X;
+//structureId=3, write back array
+int64_t *Y;
 //structureId=1, bucket1 in bucket sort; input
 Bucket_x *bucketx1;
 //structureId=2, bucket 2 in bucket sort
 Bucket_x *bucketx2;
-//structureId=3, write back array
-int *Y;
-int *arrayAddr[NUM_STRUCTURES];
-int paddedSize;
-int IOcost = 0;
+
+int64_t *arrayAddr[NUM_STRUCTURES];
+int64_t paddedSize;
+double IOcost = 0;
 
 /* OCall functions */
 void ocall_print_string(const char *str) {
@@ -33,7 +36,7 @@ void ocall_print_string(const char *str) {
   fflush(stdout);
 }
 
-void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
+void OcallReadBlock(int64_t index, int64_t* buffer, int64_t blockSize, int structureId) {
   if (blockSize == 0) {
     // printf("Unknown data size");
     return;
@@ -43,7 +46,7 @@ void OcallReadBlock(int index, int* buffer, size_t blockSize, int structureId) {
   IOcost += 1;
 }
 
-void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) {
+void OcallWriteBlock(int64_t index, int64_t* buffer, int64_t blockSize, int structureId) {
   if (blockSize == 0) {
     // printf("Unknown data size");
     return;
@@ -54,7 +57,7 @@ void OcallWriteBlock(int index, int* buffer, size_t blockSize, int structureId) 
 }
 
 // TODO: Set this function as OCALL
-void freeAllocate(int structureIdM, int structureIdF, int size) {
+void freeAllocate(int structureIdM, int structureIdF, int64_t size) {
   // 1. Free arrayAddr[structureId]
   if (arrayAddr[structureIdF]) {
     free(arrayAddr[structureIdF]);
@@ -63,30 +66,30 @@ void freeAllocate(int structureIdM, int structureIdF, int size) {
   if (size <= 0) {
     return;
   }
-  int *addr = (int*)malloc(size * sizeof(int));
-  memset(addr, DUMMY, size * sizeof(int));
+  int64_t *addr = (int64_t*)malloc(size * sizeof(int64_t));
+  memset(addr, DUMMY, size * sizeof(int64_t));
   // 3. assign malloc address to arrayAddr
   arrayAddr[structureIdM] = addr;
   return ;
 }
 
 // support int version only
-void fyShuffle(int structureId, int size, int B) {
-  int total_blocks = ceil(1.0 * size / B);
-  int *trustedM3 = (int*)malloc(sizeof(int) * B);
+void fyShuffle(int structureId, int64_t size, int64_t B) {
+  int64_t total_blocks = ceil(1.0 * size / B);
+  int64_t *trustedM3 = (int64_t*)malloc(sizeof(int64_t) * B);
   int k;
   std::random_device dev;
   std::mt19937 rng(dev()); 
   srand((unsigned)time(0));
-  int Msize1, Msize2;
-  for (int i = total_blocks-1; i >= 0; i--) {
-    std::uniform_int_distribution<int> dist(0, i);
+  int64_t Msize1, Msize2;
+  for (int64_t i = total_blocks-1; i >= 0; i--) {
+    std::uniform_int_distribution<int64_t> dist(0, i);
     k = dist(rng);
     Msize1 = std::min(B, size - k * B);
-    memcpy(trustedM3, arrayAddr[structureId] + k * B, Msize1 * sizeof(int));
+    memcpy(trustedM3, arrayAddr[structureId] + k * B, Msize1 * sizeof(int64_t));
     Msize2 = std::min(B, size - i * B);
-    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, Msize2 * sizeof(int));
-    memcpy(arrayAddr[structureId] + i * B, trustedM3, Msize1 * sizeof(int));
+    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, Msize2 * sizeof(int64_t));
+    memcpy(arrayAddr[structureId] + i * B, trustedM3, Msize1 * sizeof(int64_t));
   }
   std::cout << "Finished floyd shuffle\n";
 }
@@ -96,7 +99,7 @@ void fyShuffle(int structureId, int size, int B) {
 int main(int argc, const char* argv[]) {
   int ret = 1;
   int *resId = (int*)malloc(sizeof(int));
-  int *resN = (int*)malloc(sizeof(int));
+  int64_t *resN = (int64_t*)malloc(sizeof(int64_t));
   oe_result_t result;
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
@@ -115,29 +118,30 @@ int main(int argc, const char* argv[]) {
     std::cout << "Parameters setting wrong!\n";
     return 0;
   }
-  int N = (int)params[0], BLOCK_DATA_SIZE = (int)params[2], M = (int)params[1];
-  int FAN_OUT, BUCKET_SIZE;
+  int64_t N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
+  int64_t FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort, 4: merge_sort
   int sortId = 4;
   int inputId = 0;
 
   // step1: init test numbers
   if (sortId == 3) {
-    int addi = 0;
+    // inputId = 0;
+    int64_t addi = 0;
     if (N % BLOCK_DATA_SIZE != 0) {
       addi = ((N / BLOCK_DATA_SIZE) + 1) * BLOCK_DATA_SIZE - N;
     }
-    X = (int*)malloc((N + addi) * sizeof(int));
+    X = (int64_t*)malloc((N + addi) * sizeof(int64_t));
     paddedSize = N + addi;
     arrayAddr[inputId] = X;
     init(arrayAddr, inputId, paddedSize);
   } else if (sortId == 4) {
     inputId = 1;
-    arrayAddr[inputId] = X;
+    // arrayAddr[inputId] = X;
     bucketx1 = (Bucket_x*)malloc(N * sizeof(Bucket_x));
     bucketx2 = (Bucket_x*)malloc(N * sizeof(Bucket_x));
-    arrayAddr[inputId] = (int*)bucketx1;
-    arrayAddr[inputId+1] = (int*)bucketx2;
+    arrayAddr[inputId] = (int64_t*)bucketx1;
+    arrayAddr[inputId+1] = (int64_t*)bucketx2;
     paddedSize = N;
     init(arrayAddr, inputId, paddedSize);
   } else if (sortId == 2) {
@@ -150,8 +154,8 @@ int main(int argc, const char* argv[]) {
     std::cout << "Threash: " << thresh << std::endl;
     FAN_OUT = greatestPowerOfTwoLessThan(thresh)/2;
     assert(FAN_OUT >= 2 && "M/Z must greater than 2");
-    int bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), 2);
-    int bucketSize = bucketNum * BUCKET_SIZE;
+    int64_t bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / BUCKET_SIZE), 2);
+    int64_t bucketSize = bucketNum * BUCKET_SIZE;
     std::cout << "TOTAL BUCKET SIZE: " << bucketSize << std::endl;
     std::cout << "BUCKET NUMBER: " << bucketNum << std::endl;
     std::cout << "BUCKET SIZE: " << BUCKET_SIZE << std::endl; 
@@ -160,15 +164,16 @@ int main(int argc, const char* argv[]) {
     bucketx2 = (Bucket_x*)malloc(bucketSize * sizeof(Bucket_x));
     memset(bucketx1, 0xff, bucketSize*sizeof(Bucket_x));
     memset(bucketx2, 0xff, bucketSize*sizeof(Bucket_x));
-    arrayAddr[1] = (int*)bucketx1;
-    arrayAddr[2] = (int*)bucketx2;
-    X = (int *) malloc(N * sizeof(int));
+    std::cout << "After bucket malloc\n";
+    arrayAddr[1] = (int64_t*)bucketx1;
+    arrayAddr[2] = (int64_t*)bucketx2;
+    X = (int64_t*) malloc(N * sizeof(int64_t));
     arrayAddr[inputId] = X;
     paddedSize = N;
     init(arrayAddr, inputId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     inputId = 3;
-    X = (int *)malloc(N * sizeof(int));
+    X = (int64_t*)malloc(N * sizeof(int64_t));
     arrayAddr[inputId] = X;
     paddedSize = N;
     init(arrayAddr, inputId, paddedSize);
@@ -177,40 +182,33 @@ int main(int argc, const char* argv[]) {
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
   result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
-  if (result != OE_OK) {
-    fprintf(stderr,
-            "oe_create_oqsort_enclave(): result=%u (%s)\n",
-            result,
-            oe_result_str(result));
-    goto exit;
-  }
-  // step3: call sort algorithms
-  start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
-    result = callSort(enclave, sortId, 0, paddedSize, resId, resN, params);
-    test(arrayAddr, 0, paddedSize);
-  } else if (sortId == 2) {
-    std::cout << "Test bucket oblivious sort... " << std::endl;
-    result = callSort(enclave, sortId, 1, paddedSize, resId, resN, params);
-    std::cout << "Result ID: " << *resId << std::endl;
-    *resN = N;
-    // print(arrayAddr, *resId, N);
-    test(arrayAddr, *resId, paddedSize);
+    callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
+    test(arrayAddr, inputId, paddedSize);
   } else if (sortId == 4) {
     std::cout << "Test merge_sort... " << std::endl;
     callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
     *resN = N;
     test(arrayAddr, *resId, paddedSize);
+  } else if (sortId == 2) {
+    std::cout << "Test bucket oblivious sort... " << std::endl;
+    callSort(enclave, sortId, inputId + 1, paddedSize, resId, resN, params);
+    std::cout << "Result ID: " << *resId << std::endl;
+    *resN = N;
+    // print(arrayAddr, *resId, N);
+    test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     std::cout << "Test OQSort... " << std::endl;
     callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
-    if (sortId == 0) {
+    if (*resId == -1) {
+      std::cout << "TEST Failed\n";
+    } else if (sortId == 0) {
       test(arrayAddr, *resId, paddedSize);
       *resN = N;
-    } else {
+    } else if (sortId == 1) {
       // Sample Loose has different test & print
       testWithDummy(arrayAddr, *resId, *resN);
     }

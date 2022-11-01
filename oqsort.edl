@@ -4,24 +4,24 @@ enclave {
 
   trusted {
     public void callSort(int sortId,
-                         int structureId, int paddedSize,
+                         int structureId, int64_t paddedSize,
        [in, out, count=1]int *resId,
-       [in, out, count=1]int *resN,
-       [in, count=9]double *params);
+       [in, out, count=1]int64_t *resN,
+       [in, count=6]double *params);
   };
 
   untrusted {
     void OcallReadBlock(
-      int index, 
-      [out, size=blockSize]int* buffer,
-      size_t blockSize,
+      int64_t index, 
+      [out, size=blockSize]int64_t* buffer,
+      int64_t blockSize,
       int structureId);
     void OcallWriteBlock(
-      int index, 
-      [in, size=blockSize]int* buffer,
-      size_t blockSize, int structureId);
+      int64_t index, 
+      [in, size=blockSize]int64_t* buffer,
+      int64_t blockSize, int structureId);
     void ocall_print_string([in, string] const char *str);
-    void freeAllocate(int structureIdM, int structureIdF, int size);
-    void fyShuffle(int structureId, int size, int B);
+    void freeAllocate(int structureIdM, int structureIdF, int64_t size);
+    void fyShuffle(int structureId, int64_t size, int64_t B);
   };
 };

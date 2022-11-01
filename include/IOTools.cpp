@@ -8,56 +8,60 @@
 #include <fstream>
 #include <algorithm>
 
-int smallestPowerOfKLargerThan(int n, int k) {
-  int num = 1;
-  while (num > 0 && num < n) {
-    num = num * k;
-  }
-  return num;
-}
-
-int greatestPowerOfTwoLessThan(double n) {
-    int k = 1;
+int64_t greatestPowerOfTwoLessThan(double n) {
+    int64_t k = 1;
     while (k > 0 && k < n) {
         k = k << 1;
     }
     return k >> 1;
 }
 
-void swapRow(int *a, int *b) {
-  int *temp = (int*)malloc(sizeof(int));
-  memmove(temp, a, sizeof(int));
-  memmove(a, b, sizeof(int));
-  memmove(b, temp, sizeof(int));
+int64_t smallestPowerOfKLargerThan(int64_t n, int64_t k) {
+  int64_t num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
+  }
+  return num;
+}
+
+void swapRow(int64_t *a, int64_t *b) {
+  int64_t *temp = (int64_t*)malloc(sizeof(int64_t));
+  memmove(temp, a, sizeof(int64_t));
+  memmove(a, b, sizeof(int64_t));
+  memmove(b, temp, sizeof(int64_t));
   free(temp);
 }
 
-void init(int **arrayAddr, int structurId, int size) {
-  int i;
-  int *addr = (int*)arrayAddr[structurId];
-  for (i = 0; i < size; i++) {
-    addr[i] = (size - i);
+void init(int64_t **arrayAddr, int structureId, int64_t size) {
+  int64_t i;
+  if (structureSize[structureId] == 8) {
+    int64_t *addr = (int64_t*)arrayAddr[structureId];
+    for (i = 0; i < size; i++) {
+      addr[i] = (size - i);
+    }
+  } else if (structureSize[structureId] == 16) {
+    Bucket_x *addr = (Bucket_x*)arrayAddr[structureId];
+    for (i = 0; i < size; ++i) {
+      // TODO: size overflow, become negative
+      addr[i].x = size - i;
+    }
   }
-  /*
-  for(i = size - 1; i >= 1; --i) {
-    swapRow(addr + i, addr + (rand() % i));
-  }*/
 }
 
-void print(int **arrayAddr, int structureId, int size) {
-  int i;
+void print(int64_t **arrayAddr, int structureId, int64_t size) {
+  int64_t i;
   std::ofstream fout("/home/chenbingnan/mysamples/OQSORT/out.txt");
-  if(structureSize[structureId] == 4) {
-    int *addr = (int*)arrayAddr[structureId];
+  if(structureSize[structureId] == 8) {
+    int64_t *addr = (int64_t*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       // printf("%d ", addr[i]);
       fout << addr[i] << " ";
-      if ((i != 0) && (i % 5 == 0)) {
+      if ((i != 0) && (i % 8 == 0)) {
         // printf("\n");
         fout << std::endl;
       }
     }
-  } else if (structureSize[structureId] == 8) {
+  } else if (structureSize[structureId] == 16) {
     Bucket_x *addr = (Bucket_x*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       // printf("(%d, %d) ", addr[i].x, addr[i].key);
@@ -74,15 +78,15 @@ void print(int **arrayAddr, int structureId, int size) {
 }
 
 // TODO: change nt types
-void test(int **arrayAddr, int structureId, int size) {
+void test(int64_t **arrayAddr, int structureId, int64_t size) {
   int pass = 1;
-  int i;
+  int64_t i;
   // print(structureId);
   if(structureSize[structureId] == 4) {
     for (i = 1; i < size; i++) {
       pass &= ((arrayAddr[structureId])[i-1] <= (arrayAddr[structureId])[i]);
       if (!pass) {
-        printf("%d, %d\n", (arrayAddr[structureId])[i-1], (arrayAddr[structureId])[i]);
+        printf("%ld, %ld\n", (arrayAddr[structureId])[i-1], (arrayAddr[structureId])[i]);
         break;
       }
       if ((arrayAddr[structureId])[i] == 0) {
@@ -105,9 +109,9 @@ void test(int **arrayAddr, int structureId, int size) {
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
 }
 
-void testWithDummy(int **arrayAddr, int structureId, int size) {
-  int i = 0;
-  int j = 0;
+void testWithDummy(int64_t **arrayAddr, int structureId, int64_t size) {
+  int64_t i = 0;
+  int64_t j = 0;
   // print(structureId);
   if(structureSize[structureId] == 4) {
     for (i = 0; i < size; ++i) {

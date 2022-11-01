@@ -3,15 +3,17 @@
 
 // #include <cstdio>
 #include "definitions.h"
+#include <cstdint>
 
 typedef struct {
-  int x;
-  int key;
+  int64_t x;
+  int64_t key;
 } Bucket_x;
 
-const int structureSize[NUM_STRUCTURES] = {sizeof(int),
-  sizeof(Bucket_x), sizeof(Bucket_x),
-  sizeof(int), sizeof(int), sizeof(int), sizeof(int)};
+// TODO: set up structure size
+const int structureSize[NUM_STRUCTURES] = {sizeof(int64_t),
+  2 * sizeof(int64_t), 2 * sizeof(int64_t),
+  sizeof(int64_t), sizeof(int64_t), sizeof(int64_t), sizeof(int64_t)};
 
 // Print Message
 #define DBGprint(...) { \

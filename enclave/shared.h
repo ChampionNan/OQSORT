@@ -12,6 +12,7 @@
 #include <random>
 #include <cassert>
 #include <cmath>
+#include <cstdint>  
 #include <algorithm>
 #include <cstring>
 #include <cstdarg>
@@ -21,39 +22,39 @@
 #include "oqsort_t.h"
 
 extern double ALPHA, BETA, P, _ALPHA, _BETA, _P;
-extern int N, M, BLOCK_DATA_SIZE;
+extern int64_t N, M, BLOCK_DATA_SIZE;
+extern int is_tight;
 
 struct HeapNode {
   Bucket_x *data;
-  int bucketIdx;
-  int elemIdx;
+  int64_t bucketIdx;
+  int64_t elemIdx;
 };
 
 class Heap {
   HeapNode *harr;
-  int heapSize;
-  int batchSize;
+  int64_t heapSize;
+  int64_t batchSize;
 public:
-  Heap(HeapNode *a, int size, int bsize);
-  void Heapify(int i);
-  int left(int i);
-  int right (int i);
+  Heap(HeapNode *a, int64_t size, int64_t bsize);
+  void Heapify(int64_t i);
+  int64_t left(int64_t i);
+  int64_t right (int64_t i);
   void swapHeapNode(HeapNode *a, HeapNode *b);
   HeapNode *getRoot();
-  int getHeapSize();
+  int64_t getHeapSize();
   bool reduceSizeByOne();
   void replaceRoot(HeapNode x);
 };
 
 int printf(const char *fmt, ...);
-int greatestPowerOfTwoLessThan(int n);
-int smallestPowerOfKLargerThan(int n, int k);
-void opOneLinearScanBlock(int index, int* block, size_t blockSize, int structureId, int write, int dummyNum);
-bool cmpHelper(int *a, int *b);
+int64_t greatestPowerOfTwoLessThan(double n);
+int64_t smallestPowerOfKLargerThan(int64_t n, int64_t k);
+void opOneLinearScanBlock(int64_t index, int64_t* block, int64_t blockSize, int structureId, int write, int64_t dummyNum);
+bool cmpHelper(int64_t *a, int64_t *b);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
-void padWithDummy(int structureId, int start, int realNum, int secSize);
-int moveDummy(int *a, int size);
-void swapRow(int *a, int *b);
+int64_t moveDummy(int64_t *a, int64_t size);
+void swapRow(int64_t *a, int64_t *b);
 void swapRow(Bucket_x *a, Bucket_x *b);
 
 #endif // !SHARED_H
