@@ -121,7 +121,7 @@ int main(int argc, const char* argv[]) {
   int64_t N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
   int64_t FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort, 4: merge_sort
-  int sortId = 4;
+  int sortId = 1;
   int inputId = 0;
 
   // step1: init test numbers
@@ -182,15 +182,18 @@ int main(int argc, const char* argv[]) {
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
   result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
     callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
+    // end = std::chrono::high_resolution_clock::now();
     test(arrayAddr, inputId, paddedSize);
   } else if (sortId == 4) {
     std::cout << "Test merge_sort... " << std::endl;
     callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
     *resN = N;
+    // end = std::chrono::high_resolution_clock::now();
     test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 2) {
     std::cout << "Test bucket oblivious sort... " << std::endl;
@@ -198,19 +201,21 @@ int main(int argc, const char* argv[]) {
     std::cout << "Result ID: " << *resId << std::endl;
     *resN = N;
     // print(arrayAddr, *resId, N);
+    // end = std::chrono::high_resolution_clock::now();
     test(arrayAddr, *resId, paddedSize);
   } else if (sortId == 0 || sortId == 1) {
     std::cout << "Test OQSort... " << std::endl;
     callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     std::cout << "Result ID: " << *resId << std::endl;
+    // end = std::chrono::high_resolution_clock::now();
     if (*resId == -1) {
       std::cout << "TEST Failed\n";
     } else if (sortId == 0) {
-      test(arrayAddr, *resId, paddedSize);
+      // test(arrayAddr, *resId, paddedSize);
       *resN = N;
     } else if (sortId == 1) {
       // Sample Loose has different test & print
-      testWithDummy(arrayAddr, *resId, *resN);
+      // testWithDummy(arrayAddr, *resId, *resN);
     }
   }
   end = std::chrono::high_resolution_clock::now();
@@ -226,7 +231,7 @@ int main(int argc, const char* argv[]) {
   // step4: std::cout execution time
   duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  std::cout << "IOcost: " << 1.0*IOcost/N*BLOCK_DATA_SIZE << std::endl;
+  printf("IO cost: %f, total: %f\n", 1.0*IOcost/N*BLOCK_DATA_SIZE, IOcost);
   print(arrayAddr, *resId, *resN);
 
   // step5: exix part
