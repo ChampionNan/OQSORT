@@ -106,20 +106,21 @@ void opOneLinearScanBlock(int64_t index, int64_t* block, int64_t blockSize, int 
     printf("Dummy padding error!");
     return ;
   }
-  int64_t boundary = (int64_t)((blockSize + BLOCK_DATA_SIZE - 1 )/ BLOCK_DATA_SIZE);
-  int64_t Msize, i;
   int multi = structureSize[structureId] / sizeof(int64_t);
+  int64_t encBsize = BLOCK_DATA_SIZE / multi;
+  int64_t boundary = (int64_t)((blockSize + encBsize - 1 )/ encBsize);
+  int64_t Msize, i;
   if (!write) {
     // OcallReadBlock(index, block, blockSize * structureSize[structureId], structureId);
     for (i = 0; i < boundary; ++i) {
-      Msize = std::min((int64_t)BLOCK_DATA_SIZE, blockSize - i * BLOCK_DATA_SIZE);
-      OcallReadBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+      Msize = std::min(encBsize, blockSize - i * encBsize);
+      OcallReadBlock(index + multi * i * encBsize, &block[i * encBsize * multi], Msize * structureSize[structureId], structureId);
     }
   } else {
     // OcallWriteBlock(index, block, blockSize * structureSize[structureId], structureId);
     for (i = 0; i < boundary; ++i) {
-      Msize = std::min((int64_t)BLOCK_DATA_SIZE, blockSize - i * BLOCK_DATA_SIZE);
-      OcallWriteBlock(index + multi * i * BLOCK_DATA_SIZE, &block[i * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+      Msize = std::min(encBsize, blockSize - i * encBsize);
+      OcallWriteBlock(index + multi * i * encBsize, &block[i * encBsize * multi], Msize * structureSize[structureId], structureId);
     }
     if (dummyNum > 0) {
       int64_t *junk = (int64_t*)malloc(dummyNum * multi * sizeof(int64_t));
@@ -127,11 +128,12 @@ void opOneLinearScanBlock(int64_t index, int64_t* block, int64_t blockSize, int 
         junk[j] = DUMMY;
       }
       int64_t startIdx = index + multi * blockSize;
-      boundary = ceil(1.0 * dummyNum / BLOCK_DATA_SIZE);
+      boundary = ceil(1.0 * dummyNum / encBsize);
       for (int64_t j = 0; j < boundary; ++j) {
-        Msize = std::min((int64_t)BLOCK_DATA_SIZE, dummyNum - j * BLOCK_DATA_SIZE);
-        OcallWriteBlock(startIdx + multi * j * BLOCK_DATA_SIZE, &junk[j * BLOCK_DATA_SIZE * multi], Msize * structureSize[structureId], structureId);
+        Msize = std::min(encBsize, dummyNum - j * encBsize);
+        OcallWriteBlock(startIdx + multi * j * encBsize, &junk[j * encBsize * multi], Msize * structureSize[structureId], structureId);
       }
+      free(junk);
     }
   }
   return;
