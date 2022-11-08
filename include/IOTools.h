@@ -3,12 +3,15 @@
 
 #include <cstdint>
 
-int64_t greatestPowerOfTwoLessThan(double n);
-int64_t smallestPowerOfKLargerThan(int64_t n, int64_t k);
-void swapRow(int64_t *a, int64_t *b);
-void init(int64_t **arrayAddr, int structureId, int64_t size);
-void print(int64_t **arrayAddr, int structureId, int64_t size);
-void test(int64_t **arrayAddr, int structureId, int64_t size);
-void testWithDummy(int64_t **arrayAddr, int structureId, int64_t size);
+int greatestPowerOfTwoLessThan(double n);
+int smallestPowerOfKLargerThan(int n, int k);
+void swapRow(int *a, int *b);
+void init(int **arrayAddr, int structureId, int size);
+void print(int **arrayAddr, int structureId, int size);
+void printEnc(int **arrayAddr, int structureId, int size);
+void test(int **arrayAddr, int structureId, int size);
+void testEnc(int **arrayAddr, int structureId, int size);
+void testWithDummy(int **arrayAddr, int structureId, int size);
+void initEnc(int **arrayAddr, int structureId, int size);
 
 #endif // !IOTOOLS_H

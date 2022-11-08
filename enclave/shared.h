@@ -4,6 +4,10 @@
 #include "../include/common.h"
 #include "../include/definitions.h"
 
+#include <mbedtls/aes.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+
 #include <openenclave/enclave.h>
 #include <openenclave/corelibc/stdlib.h>
 #include <openenclave/debugmalloc.h>
@@ -22,39 +26,45 @@
 #include "oqsort_t.h"
 
 extern double ALPHA, BETA, P, _ALPHA, _BETA, _P;
-extern int64_t N, M, BLOCK_DATA_SIZE;
+extern int N, M, BLOCK_DATA_SIZE;
 extern int is_tight;
+extern int nonEnc;
 
 struct HeapNode {
   Bucket_x *data;
-  int64_t bucketIdx;
-  int64_t elemIdx;
+  int bucketIdx;
+  int elemIdx;
 };
 
 class Heap {
   HeapNode *harr;
-  int64_t heapSize;
-  int64_t batchSize;
+  int heapSize;
+  int batchSize;
 public:
-  Heap(HeapNode *a, int64_t size, int64_t bsize);
-  void Heapify(int64_t i);
-  int64_t left(int64_t i);
-  int64_t right (int64_t i);
+  Heap(HeapNode *a, int size, int bsize);
+  void Heapify(int i);
+  int left(int i);
+  int right (int i);
   void swapHeapNode(HeapNode *a, HeapNode *b);
   HeapNode *getRoot();
-  int64_t getHeapSize();
+  int getHeapSize();
   bool reduceSizeByOne();
   void replaceRoot(HeapNode x);
 };
 
 int printf(const char *fmt, ...);
-int64_t greatestPowerOfTwoLessThan(double n);
-int64_t smallestPowerOfKLargerThan(int64_t n, int64_t k);
-void opOneLinearScanBlock(int64_t index, int64_t* block, int64_t blockSize, int structureId, int write, int64_t dummyNum);
-bool cmpHelper(int64_t *a, int64_t *b);
+int greatestPowerOfTwoLessThan(double n);
+int smallestPowerOfKLargerThan(int n, int k);
+void aes_init();
+void cbc_encrypt(EncBlock* buffer, int blockSize);
+void cbc_decrypt(EncBlock* buffer, int blockSize);
+void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
+void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
+void opOneLinearScanBlock(int index, int* block, int blockSize, int structureId, int write, int dummyNum=0);
+bool cmpHelper(int *a, int *b);
 bool cmpHelper(Bucket_x *a, Bucket_x *b);
-int64_t moveDummy(int64_t *a, int64_t size);
-void swapRow(int64_t *a, int64_t *b);
+int moveDummy(int *a, int size);
+void swapRow(int *a, int *b);
 void swapRow(Bucket_x *a, Bucket_x *b);
 
 #endif // !SHARED_H

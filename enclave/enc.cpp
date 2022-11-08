@@ -7,11 +7,24 @@
 #include "shared.h"
 
 double ALPHA, BETA, P;
-int64_t N, M, BLOCK_DATA_SIZE;
+int N, M, BLOCK_DATA_SIZE;
 int is_tight;
 
+void testIO(int IOnum, int inId) {
+  int totalB = IOnum / 2;
+  int *buffer = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
+  freeAllocate(inId, inId, totalB*BLOCK_DATA_SIZE);
+  for (int i = 0; i < totalB; ++i) {
+    opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 0, 0);
+  }
+  for (int i = 0; i < totalB; ++i) {
+    opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
+  }
+  free(buffer);
+}
+
 // trusted function
-void callSort(int sortId, int structureId, int64_t paddedSize, int *resId, int64_t *resN, double *params) {
+void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN, double *params) {
   // TODO: Utilize Memory alloction -- structureId
   N = params[0]; M = params[1]; BLOCK_DATA_SIZE = params[2];
   ALPHA = params[3];BETA = params[4];P = params[5];
@@ -23,7 +36,7 @@ void callSort(int sortId, int structureId, int64_t paddedSize, int *resId, int64
   } else if (sortId == 1) {
     if (paddedSize / M <= 128) {
       is_tight = 0;
-      std::pair<int, int64_t> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId);
+      std::pair<int, int> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId);
       *resId = ans.first;
       *resN = ans.second;
     }
@@ -31,13 +44,15 @@ void callSort(int sortId, int structureId, int64_t paddedSize, int *resId, int64
      *resId = bucketOSort(structureId, paddedSize);
   } else if (sortId == 3) {
     int size = paddedSize / BLOCK_DATA_SIZE;
-    int64_t *row1 = (int64_t*)malloc(BLOCK_DATA_SIZE * sizeof(int64_t));
-    int64_t *row2 = (int64_t*)malloc(BLOCK_DATA_SIZE * sizeof(int64_t));
+    int *row1 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
+    int *row2 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
     bitonicSort(structureId, 0, size, 0, row1, row2);
     free(row1);
     free(row2);
   } else if (sortId == 4) {
     *resId = merge_sort(structureId, structureId+1);
+  } else if (sortId == 5) {
+    testIO(949635298, structureId);
   }
 }
 

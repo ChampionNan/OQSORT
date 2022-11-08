@@ -6,14 +6,17 @@
 #include <cstdint>
 
 typedef struct {
-  int64_t x;
-  int64_t key;
+  int x;
+  int key;
 } Bucket_x;
 
-// TODO: set up structure size
-const int structureSize[NUM_STRUCTURES] = {sizeof(int64_t),
-  2 * sizeof(int64_t), 2 * sizeof(int64_t),
-  sizeof(int64_t), sizeof(int64_t), sizeof(int64_t), sizeof(int64_t)};
+typedef struct {
+  __uint128_t x;
+  __uint128_t iv;
+} EncBlock;
+
+// BOS: 0, 1, 2; ODS: 3, 4
+const int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x), sizeof(int), sizeof(int)};
 
 // Print Message
 #define DBGprint(...) { \

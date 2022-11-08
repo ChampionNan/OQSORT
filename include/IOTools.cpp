@@ -2,40 +2,41 @@
 #include "../include/common.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <utility>
 #include <fstream>
 #include <algorithm>
 
-int64_t greatestPowerOfTwoLessThan(double n) {
-    int64_t k = 1;
+int greatestPowerOfTwoLessThan(double n) {
+    int k = 1;
     while (k > 0 && k < n) {
         k = k << 1;
     }
     return k >> 1;
 }
 
-int64_t smallestPowerOfKLargerThan(int64_t n, int64_t k) {
-  int64_t num = 1;
+int smallestPowerOfKLargerThan(int n, int k) {
+  int num = 1;
   while (num > 0 && num < n) {
     num = num * k;
   }
   return num;
 }
 
-void swapRow(int64_t *a, int64_t *b) {
-  int64_t *temp = (int64_t*)malloc(sizeof(int64_t));
-  memmove(temp, a, sizeof(int64_t));
-  memmove(a, b, sizeof(int64_t));
-  memmove(b, temp, sizeof(int64_t));
+void swapRow(int *a, int *b) {
+  int *temp = (int*)malloc(sizeof(int));
+  memmove(temp, a, sizeof(int));
+  memmove(a, b, sizeof(int));
+  memmove(b, temp, sizeof(int));
   free(temp);
 }
 
-void init(int64_t **arrayAddr, int structureId, int64_t size) {
-  int64_t i;
+void init(int **arrayAddr, int structureId, int size) {
+  int i;
   if (structureSize[structureId] == 8) {
-    int64_t *addr = (int64_t*)arrayAddr[structureId];
+    int *addr = (int*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       addr[i] = (size - i);
     }
@@ -48,11 +49,34 @@ void init(int64_t **arrayAddr, int structureId, int64_t size) {
   }
 }
 
-void print(int64_t **arrayAddr, int structureId, int64_t size) {
-  int64_t i;
+// size: real numbers, no encrypt but still EncB structure
+void initEnc(int **arrayAddr, int structureId, int size) {
+  int i = 0, j, blockNumber;
+  EncBlock *addr = (EncBlock*)arrayAddr[structureId];
+  if (structureSize[structureId] == 4) {
+    blockNumber = (int)ceil(1.0*size/4);
+    for (i = 0; i < blockNumber; i++) {
+      int *addx = (int*)(&addr[i]);
+      for (j = 0; j < 4; ++j) {
+        addx[j] = size - (i * 4 + j);
+      }
+    }
+  } else if (structureSize[structureId] == 8) {
+    blockNumber = (int)ceil(1.0*size/2); 
+    for (i = 0; i < blockNumber; ++i) {
+      Bucket_x *addx = (Bucket_x*)(&addr[i]);
+      for (j = 0; j < 2; ++j) {
+        addx[j].x = size - (i * 2 + j);
+      }
+    }
+  }
+}
+
+void print(int **arrayAddr, int structureId, int size) {
+  int i;
   std::ofstream fout("/home/chenbingnan/mysamples/OQSORT/out.txt");
   if(structureSize[structureId] == 8) {
-    int64_t *addr = (int64_t*)arrayAddr[structureId];
+    int *addr = (int*)arrayAddr[structureId];
     for (i = 0; i < size; i++) {
       // printf("%d ", addr[i]);
       fout << addr[i] << " ";
@@ -77,16 +101,50 @@ void print(int64_t **arrayAddr, int structureId, int64_t size) {
   fout.close();
 }
 
+// size: real numbers
+void printEnc(int **arrayAddr, int structureId, int size) {
+  int i, j, blockNumber;
+  std::ofstream fout("/home/chenbingnan/mysamples/OQSORT/res.txt");
+  EncBlock *addr = (EncBlock*)arrayAddr[structureId];
+  if(structureSize[structureId] == 4) {
+    blockNumber = (int)ceil(1.0*size/4);
+    for (i = 0; i < blockNumber; i++) {
+      int *addx = (int*)(&(addr[i]));
+      for (j = 0; j < 4; ++j) {
+        fout << addx[j] << ' ';
+      }
+      if (i % 5 == 0) {
+        fout << std::endl;
+      }
+    }
+  } else if (structureSize[structureId] == 8) {
+    blockNumber = (int)ceil(1.0*size/2);
+    for (i = 0; i < blockNumber; i++) {
+      Bucket_x *addx = (Bucket_x*)(&(addr[i]));
+      for (j = 0; j < 2; ++j) {
+        fout << "(" << addx[j].x << ", " << addx[j].key << ") ";
+      }
+      if (i % 5 == 0) {
+        fout << std::endl;
+      }
+    }
+  }
+  // printf("\n");
+  fout << std::endl;
+  // // // std::cout<< "\nFinished printEnc. \n";
+  fout.close();
+}
+
 // TODO: change nt types
-void test(int64_t **arrayAddr, int structureId, int64_t size) {
+void test(int **arrayAddr, int structureId, int size) {
   int pass = 1;
-  int64_t i;
+  int i;
   // print(structureId);
   if(structureSize[structureId] == 4) {
     for (i = 1; i < size; i++) {
       pass &= ((arrayAddr[structureId])[i-1] <= (arrayAddr[structureId])[i]);
       if (!pass) {
-        printf("%ld, %ld\n", (arrayAddr[structureId])[i-1], (arrayAddr[structureId])[i]);
+        printf("%d, %d\n", (arrayAddr[structureId])[i-1], (arrayAddr[structureId])[i]);
         break;
       }
       if ((arrayAddr[structureId])[i] == 0) {
@@ -109,9 +167,33 @@ void test(int64_t **arrayAddr, int structureId, int64_t size) {
   printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
 }
 
-void testWithDummy(int64_t **arrayAddr, int structureId, int64_t size) {
-  int64_t i = 0;
-  int64_t j = 0;
+void testEnc(int **arrayAddr, int structureId, int size) {
+  int pass = 1;
+  int i, j, blockNumber;
+  EncBlock *addr = (EncBlock*)arrayAddr[structureId];
+  if(structureSize[structureId] == 4) {
+    // int type
+    blockNumber = (int)ceil(1.0*size/4);
+    for (i = 0; i < blockNumber; i++) {
+      int *addx = (int*)(&(addr[i]));
+      for (j = 0; j < 3; ++j) {
+        pass &= (addx[j] <= addx[j+1]);
+      }
+    }
+  } else {
+    // Bucket Type
+    blockNumber = (int)ceil(1.0*size/2);
+    for (i = 0; i < blockNumber; i++) {
+      Bucket_x *addx = (Bucket_x*)(&(addr[i]));
+      pass &= (addx[0].x <= addx[1].x);
+    }
+  }
+  printf(" TEST %s\n",(pass) ? "PASSed" : "FAILed");
+}
+
+void testWithDummy(int **arrayAddr, int structureId, int size) {
+  int i = 0;
+  int j = 0;
   // print(structureId);
   if(structureSize[structureId] == 4) {
     for (i = 0; i < size; ++i) {

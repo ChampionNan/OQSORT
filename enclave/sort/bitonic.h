@@ -3,10 +3,10 @@
 
 #include "../shared.h"
 
-void smallBitonicMerge(int64_t *a, int64_t start, int64_t size, int64_t flipped);
-void smallBitonicSort(int64_t *a, int64_t start, int64_t size, int64_t flipped);
-void bitonicMerge(int structureId, int64_t start, int64_t size, int64_t flipped, int64_t* row1, int64_t* row2);
-void bitonicSort(int structureId, int64_t start, int64_t size, int64_t flipped, int64_t* row1, int64_t* row2);
-int64_t greatestPowerOfTwoLessThan(int64_t n);
+void smallBitonicMerge(int *a, int start, int size, int flipped);
+void smallBitonicSort(int *a, int start, int size, int flipped);
+void bitonicMerge(int structureId, int start, int size, int flipped, int* row1, int* row2);
+void bitonicSort(int structureId, int start, int size, int flipped, int* row1, int* row2);
+int greatestPowerOfTwoLessThan(int n);
 
 #endif // !BITONIC_H
