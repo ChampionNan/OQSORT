@@ -14,10 +14,17 @@ void testIO(int IOnum, int inId) {
   int totalB = IOnum / 2;
   int *buffer = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
   freeAllocate(inId, inId, totalB*BLOCK_DATA_SIZE);
+  // std::random_device dev;
+  // std::mt19937 rng(dev());
+  // std::uniform_int_distribution<int> dist{0, totalB-1};
+  int index;
+  nonEnc = 1;
   for (int i = 0; i < totalB; ++i) {
+    // index = dist(rng);
     opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 0, 0);
   }
   for (int i = 0; i < totalB; ++i) {
+    // index = dist(rng);
     opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
   }
   free(buffer);
@@ -52,7 +59,7 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
   } else if (sortId == 4) {
     *resId = merge_sort(structureId, structureId+1);
   } else if (sortId == 5) {
-    testIO(949635298, structureId);
+    testIO(10000000, structureId);
   }
 }
 

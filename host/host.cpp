@@ -98,7 +98,7 @@ int main(int argc, const char* argv[]) {
   oe_result_t result;
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::seconds duration;
+  std::chrono::milliseconds duration;
   srand((unsigned)time(NULL));
   double params[9] = {-1};
   int i = 0;
@@ -116,7 +116,7 @@ int main(int argc, const char* argv[]) {
   int N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
   int FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort(x), 4: merge_sort(x), 5: IO test
-  int sortId = 1;
+  int sortId = 5;
   int inputId = 0;
 
   // step1: init test numbers
@@ -168,7 +168,16 @@ int main(int argc, const char* argv[]) {
 
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  // transition_using_threads
+  oe_enclave_setting_context_switchless_t switchless_setting = {
+        1,  // number of host worker threads
+        1}; // number of enclave worker threads.
+  oe_enclave_setting_t settings[] = {{
+        .setting_type = OE_ENCLAVE_SETTING_CONTEXT_SWITCHLESS,
+        .u.context_switchless_setting = &switchless_setting,
+    }};
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
+  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
@@ -203,9 +212,9 @@ int main(int argc, const char* argv[]) {
     } else if (sortId == 1) {
       // Sample Loose has different test & print
       // testWithDummy(arrayAddr, *resId, *resN);
-    } else if (sortId == 5) {
-      callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
     }
+  } else if (sortId == 5) {
+      callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
   }
   end = std::chrono::high_resolution_clock::now();
 
@@ -218,7 +227,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // step4: std::cout execution time
-  duration = std::chrono::duration_cast<std::chrono::seconds>(end - start);
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
   int multi = (sortId == 2 || sortId == 4) ? 2 : 1;
   printf("IOcost: %f, %f\n", 1.0*IOcost/N*(BLOCK_DATA_SIZE/multi), IOcost);
