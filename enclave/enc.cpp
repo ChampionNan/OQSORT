@@ -18,15 +18,17 @@ void testIO(int IOnum, int inId) {
   // std::mt19937 rng(dev());
   // std::uniform_int_distribution<int> dist{0, totalB-1};
   int index;
-  nonEnc = 1;
+  aes_init();
+  nonEnc = 0;
   for (int i = 0; i < totalB; ++i) {
     // index = dist(rng);
     opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 0, 0);
-  }
+    opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
+  }/*
   for (int i = 0; i < totalB; ++i) {
     // index = dist(rng);
     opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
-  }
+  }*/
   free(buffer);
 }
 

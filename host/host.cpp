@@ -228,7 +228,7 @@ int main(int argc, const char* argv[]) {
 
   // step4: std::cout execution time
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-  std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
+  std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
   int multi = (sortId == 2 || sortId == 4) ? 2 : 1;
   printf("IOcost: %f, %f\n", 1.0*IOcost/N*(BLOCK_DATA_SIZE/multi), IOcost);
   printEnc(arrayAddr, *resId, *resN);
