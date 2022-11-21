@@ -15,13 +15,13 @@ enclave {
       int index,
       [out, size=blockSize]int* buffer,
       int blockSize,
-      int structureId) transition_using_threads;
+      int structureId);
     void OcallWB(
       int index,
       int offset,
       [in, size=blockSize]int* buffer,
       int blockSize,
-      int structureId) transition_using_threads;
+      int structureId);
     void ocall_print_string([in, string] const char *str);
     void freeAllocate(int structureIdM, int structureIdF, int size);
     void fyShuffle(int structureId, int size, int B);

@@ -98,7 +98,7 @@ int main(int argc, const char* argv[]) {
   oe_result_t result;
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::milliseconds duration;
+  std::chrono::nanoseconds duration;
   srand((unsigned)time(NULL));
   double params[9] = {-1};
   int i = 0;
@@ -115,8 +115,8 @@ int main(int argc, const char* argv[]) {
   }
   int N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
   int FAN_OUT, BUCKET_SIZE;
-  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort(x), 4: merge_sort(x), 5: IO test
-  int sortId = 5;
+  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort(x), 4: merge_sort(x), 5: IO test, 6: testEncDec, 7: testPageFault
+  int sortId = 7;
   int inputId = 0;
 
   // step1: init test numbers
@@ -176,8 +176,8 @@ int main(int argc, const char* argv[]) {
         .setting_type = OE_ENCLAVE_SETTING_CONTEXT_SWITCHLESS,
         .u.context_switchless_setting = &switchless_setting,
     }};
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
-  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;
@@ -213,7 +213,7 @@ int main(int argc, const char* argv[]) {
       // Sample Loose has different test & print
       // testWithDummy(arrayAddr, *resId, *resN);
     }
-  } else if (sortId == 5) {
+  } else if (sortId == 5 || sortId == 6) {
       callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
   }
   end = std::chrono::high_resolution_clock::now();
@@ -227,7 +227,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // step4: std::cout execution time
-  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
   int multi = (sortId == 2 || sortId == 4) ? 2 : 1;
   printf("IOcost: %f, %f\n", 1.0*IOcost/N*(BLOCK_DATA_SIZE/multi), IOcost);

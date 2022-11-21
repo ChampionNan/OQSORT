@@ -1,10 +1,13 @@
 #include "shared.h"
 
-unsigned char key2[16];
+// unsigned char key2[16];
+unsigned char key2[] = {0xff, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f, 0xff, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b, 0x0c, 0x0d, 0x0e, 0x0f};
 mbedtls_aes_context aes2;
 mbedtls_ctr_drbg_context ctr_drbg;
 mbedtls_entropy_context entropy;
 size_t iv_offset, iv_offset1;
+
+mbedtls_gcm_context aes3;
 
 Heap::Heap(HeapNode *a, int size, int bsize) {
   heapSize = size;
@@ -104,7 +107,8 @@ int smallestPowerOfKLargerThan(int n, int k) {
 }
 
 void aes_init() {
-  mbedtls_aes_init(&aes2);
+  mbedtls_aes_init(&aes2); // 1.
+  // mbedtls_gcm_init(&aes2); // 2.
   char *pers = "aes2 generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -117,12 +121,15 @@ void aes_init() {
     printf(" failed\n ! mbedtls_ctr_drbg_random returned -0x%04x\n", -ret);
     return ;
   }
-  mbedtls_aes_setkey_enc(&aes2, key2, 128);
-  mbedtls_aes_setkey_dec(&aes2, key2, 128);
+  mbedtls_aes_setkey_enc(&aes2, key2, 128); // 1.
+  // mbedtls_gcm_setkey(&aes2, MBEDTLS_CIPHER_ID_AES, key2, 128); // 2.
 }
+
 // Assume blockSize = 16 * k
 void cbc_encrypt(EncBlock* buffer, int blockSize) {
   // std::cout<< "In cbc_encrypt\n";
+  mbedtls_aes_init(&aes2);
+  mbedtls_aes_setkey_enc(&aes2, key2, 256);
   mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->iv)), 16);
   // // std::cout<< "memcpy iv\n";
   unsigned char iv[16];
@@ -130,6 +137,7 @@ void cbc_encrypt(EncBlock* buffer, int blockSize) {
   memcpy(iv, (uint8_t*)(&(buffer->iv)), blockSize);
   mbedtls_aes_crypt_ofb(&aes2, blockSize, &iv_offset, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
   memcpy((uint8_t*)(&(buffer->iv)), iv, blockSize);
+  mbedtls_aes_free(&aes2);
   return;
 }
 
@@ -137,10 +145,40 @@ void cbc_encrypt(EncBlock* buffer, int blockSize) {
 void cbc_decrypt(EncBlock* buffer, int blockSize) {
   // std::cout<< "In cbc_decrypt\n";
   // mbedtls_aes_crypt_cfb8(&aes2, MBEDTLS_AES_DECRYPT, blockSize, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
+  mbedtls_aes_init(&aes2);
+  mbedtls_aes_setkey_enc(&aes2, key2, 256);
   iv_offset1 = 0;
   mbedtls_aes_crypt_ofb(&aes2, blockSize, &iv_offset1, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
+  mbedtls_aes_free(&aes2);
   return;
 }
+
+void gcm_encrypt(EncBlock* buffer, int blockSize) {
+  mbedtls_gcm_init( &aes3 );
+  mbedtls_gcm_setkey( &aes3, MBEDTLS_CIPHER_ID_AES, (const unsigned char*) key2, 128);
+  mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->iv)), 16);
+  unsigned char iv[16];
+  memcpy(iv, (uint8_t*)(&(buffer->iv)), blockSize);
+  // Initialise the GCM cipher...
+  mbedtls_gcm_starts(&aes3, MBEDTLS_GCM_ENCRYPT, (const unsigned char*)iv, sizeof(iv),NULL, 0);
+  // Send the intialised cipher some data and store it...
+  mbedtls_gcm_update(&aes3, blockSize, (uint8_t*)buffer, (uint8_t*)buffer);
+  memcpy((uint8_t*)(&(buffer->iv)), iv, blockSize);
+  // Free up the context.
+  mbedtls_gcm_free( &aes3 );
+  return;
+}
+
+// Assume blockSize = 16 * k
+void gcm_decrypt(EncBlock* buffer, int blockSize) {
+  mbedtls_gcm_init( &aes3 );
+  mbedtls_gcm_setkey(&aes3, MBEDTLS_CIPHER_ID_AES, (const unsigned char*) key2, 128);
+  mbedtls_gcm_starts(&aes3, MBEDTLS_GCM_DECRYPT, (uint8_t*)(&(buffer->iv)), sizeof(buffer->iv), NULL, 0);
+  mbedtls_gcm_update(&aes3, blockSize, (uint8_t*)buffer, (uint8_t*)buffer);
+  mbedtls_gcm_free( &aes3 );
+  return;
+}
+
 // startIdx: index of blocks, offset: data offset in the block, blockSize: bytes of real data
 void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId) {
   if (blockSize == 0) {
@@ -154,7 +192,8 @@ void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int st
     memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   } else {
     OcallRB(startIdx, (int*)readBuffer, sizeof(EncBlock), structureId);
-    cbc_decrypt(readBuffer, sizeof(EncBlock)/2);
+    // cbc_decrypt(readBuffer, sizeof(EncBlock)/2);
+    gcm_decrypt(readBuffer, sizeof(EncBlock)/2); 
     memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   }
   free(readBuffer);
@@ -172,14 +211,17 @@ void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int s
     if (offset == 0) { // could write the whole block
       // printf("In OcallWriteBlock1\n");
       memcpy((int*)writeBuf, buffer, blockSize);
-      cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
+      // cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
+      gcm_encrypt(writeBuf, sizeof(EncBlock)/2); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     } else { // read&decrypt first, later write&encrypt
       // printf("In OcallWriteBlock2\n");
       OcallRB(startIdx, (int*)writeBuf, sizeof(EncBlock), structureId);
-      cbc_decrypt(writeBuf, sizeof(EncBlock)/2);
+      // cbc_decrypt(writeBuf, sizeof(EncBlock)/2);
+      gcm_decrypt(writeBuf, sizeof(EncBlock)/2); 
       memcpy((int*)writeBuf+offset*(structureSize[structureId]/sizeof(int)), buffer, blockSize);
-      cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
+      // cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
+      gcm_encrypt(writeBuf, sizeof(EncBlock)/2); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     }
   }

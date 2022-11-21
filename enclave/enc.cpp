@@ -11,25 +11,53 @@ int N, M, BLOCK_DATA_SIZE;
 int is_tight;
 
 void testIO(int IOnum, int inId) {
-  int totalB = IOnum / 2;
+  printf("In testIO\n");
+  int totalB = IOnum;
   int *buffer = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
   freeAllocate(inId, inId, totalB*BLOCK_DATA_SIZE);
-  // std::random_device dev;
-  // std::mt19937 rng(dev());
-  // std::uniform_int_distribution<int> dist{0, totalB-1};
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_int_distribution<int> dist{0, totalB-1};
   int index;
-  aes_init();
-  nonEnc = 0;
+  // aes_init();
+  nonEnc = 1;
   for (int i = 0; i < totalB; ++i) {
     // index = dist(rng);
     opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 0, 0);
-    opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
-  }/*
-  for (int i = 0; i < totalB; ++i) {
-    // index = dist(rng);
-    opOneLinearScanBlock(i * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 1, 0);
-  }*/
+  }
   free(buffer);
+}
+
+// IOnum: # EncBlock 2200
+void testEncDec(int IOnum) {
+  printf("In testEncDec\n");
+  int onePassEncNum = IOnum;
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_int_distribution<int> dist{0, onePassEncNum-1};
+  int randx = dist(rng);
+  // aes_init();
+  EncBlock x;
+  x.x = randx;
+  int size = sizeof(EncBlock)/2;
+  for (int i = 0; i < onePassEncNum; ++i) {
+    // gcm_encrypt(&x, size);
+    // cbc_encrypt(&x, size); 
+    gcm_decrypt(&x, size);
+    // cbc_decrypt(&x, size);
+    x.x = dist(rng);
+  }
+}
+
+void testPageFault() {
+  int pagesize = 4096;
+  uint8_t *page;
+  uint8_t *a = (uint8_t*)malloc(pagesize);
+  for (int i = 0; i < 100000; ++i) {
+    uint8_t *page = (uint8_t*)malloc(pagesize);
+    memset(page, i, 4096);
+    memcpy(a, page, 4096);
+  }
 }
 
 // trusted function
@@ -61,7 +89,10 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
   } else if (sortId == 4) {
     *resId = merge_sort(structureId, structureId+1);
   } else if (sortId == 5) {
-    testIO(10000000, structureId);
+    testIO(128, structureId);
+  } else if (sortId == 6) {
+    testEncDec(256);
+  } else if (sortId == 7) {
+    testPageFault();
   }
 }
-

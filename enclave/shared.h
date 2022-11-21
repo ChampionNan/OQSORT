@@ -5,6 +5,7 @@
 #include "../include/definitions.h"
 
 #include <mbedtls/aes.h>
+#include <mbedtls/gcm.h>
 #include <mbedtls/entropy.h>
 #include <mbedtls/ctr_drbg.h>
 
@@ -58,6 +59,8 @@ int smallestPowerOfKLargerThan(int n, int k);
 void aes_init();
 void cbc_encrypt(EncBlock* buffer, int blockSize);
 void cbc_decrypt(EncBlock* buffer, int blockSize);
+void gcm_encrypt(EncBlock* buffer, int blockSize);
+void gcm_decrypt(EncBlock* buffer, int blockSize);
 void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
 void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
 void opOneLinearScanBlock(int index, int* block, int blockSize, int structureId, int write, int dummyNum=0);
