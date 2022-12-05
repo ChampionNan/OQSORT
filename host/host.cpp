@@ -116,7 +116,7 @@ int main(int argc, const char* argv[]) {
   int N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
   int FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort(x), 4: merge_sort(x), 5: IO test, 6: testEncDec, 7: testPageFault
-  int sortId = 7;
+  int sortId = 5;
   int inputId = 0;
 
   // step1: init test numbers
@@ -164,6 +164,8 @@ int main(int argc, const char* argv[]) {
     freeAllocate(inputId, inputId, ceil(1.0*N/4));
     paddedSize = N;
     initEnc(arrayAddr, inputId, paddedSize);
+  } else if (sortId == 5) {
+    freeAllocate(0, 0, ceil(26214400/BLOCK_DATA_SIZE));
   }
 
   // step2: Create the enclave
@@ -176,8 +178,8 @@ int main(int argc, const char* argv[]) {
         .setting_type = OE_ENCLAVE_SETTING_CONTEXT_SWITCHLESS,
         .u.context_switchless_setting = &switchless_setting,
     }};
-  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
+  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   start = std::chrono::high_resolution_clock::now();
   if (sortId == 3) {
     std::cout << "Test bitonic sort... " << std::endl;

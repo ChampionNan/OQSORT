@@ -1,6 +1,7 @@
 #ifndef DEFINITIONS_H
 #define DEFINITIONS_H 
 
+#define ENCB_SIZE 2
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
 #define DUMMY -1

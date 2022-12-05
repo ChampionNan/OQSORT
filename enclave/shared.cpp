@@ -134,9 +134,9 @@ void cbc_encrypt(EncBlock* buffer, int blockSize) {
   // // std::cout<< "memcpy iv\n";
   unsigned char iv[16];
   iv_offset = 0;
-  memcpy(iv, (uint8_t*)(&(buffer->iv)), blockSize);
+  memcpy(iv, (uint8_t*)(&(buffer->iv)), 16);
   mbedtls_aes_crypt_ofb(&aes2, blockSize, &iv_offset, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
-  memcpy((uint8_t*)(&(buffer->iv)), iv, blockSize);
+  memcpy((uint8_t*)(&(buffer->iv)), iv, 16);
   mbedtls_aes_free(&aes2);
   return;
 }
@@ -158,12 +158,12 @@ void gcm_encrypt(EncBlock* buffer, int blockSize) {
   mbedtls_gcm_setkey( &aes3, MBEDTLS_CIPHER_ID_AES, (const unsigned char*) key2, 128);
   mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->iv)), 16);
   unsigned char iv[16];
-  memcpy(iv, (uint8_t*)(&(buffer->iv)), blockSize);
+  memcpy(iv, (uint8_t*)(&(buffer->iv)), 16);
   // Initialise the GCM cipher...
   mbedtls_gcm_starts(&aes3, MBEDTLS_GCM_ENCRYPT, (const unsigned char*)iv, sizeof(iv),NULL, 0);
   // Send the intialised cipher some data and store it...
   mbedtls_gcm_update(&aes3, blockSize, (uint8_t*)buffer, (uint8_t*)buffer);
-  memcpy((uint8_t*)(&(buffer->iv)), iv, blockSize);
+  memcpy((uint8_t*)(&(buffer->iv)), iv, 16);
   // Free up the context.
   mbedtls_gcm_free( &aes3 );
   return;
@@ -192,8 +192,8 @@ void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int st
     memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   } else {
     OcallRB(startIdx, (int*)readBuffer, sizeof(EncBlock), structureId);
-    // cbc_decrypt(readBuffer, sizeof(EncBlock)/2);
-    gcm_decrypt(readBuffer, sizeof(EncBlock)/2); 
+    cbc_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE);
+    // gcm_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE); 
     memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   }
   free(readBuffer);
@@ -211,17 +211,17 @@ void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int s
     if (offset == 0) { // could write the whole block
       // printf("In OcallWriteBlock1\n");
       memcpy((int*)writeBuf, buffer, blockSize);
-      // cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
-      gcm_encrypt(writeBuf, sizeof(EncBlock)/2); 
+      cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      // gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     } else { // read&decrypt first, later write&encrypt
       // printf("In OcallWriteBlock2\n");
       OcallRB(startIdx, (int*)writeBuf, sizeof(EncBlock), structureId);
-      // cbc_decrypt(writeBuf, sizeof(EncBlock)/2);
-      gcm_decrypt(writeBuf, sizeof(EncBlock)/2); 
+      cbc_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      // gcm_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       memcpy((int*)writeBuf+offset*(structureSize[structureId]/sizeof(int)), buffer, blockSize);
-      // cbc_encrypt(writeBuf, sizeof(EncBlock)/2);
-      gcm_encrypt(writeBuf, sizeof(EncBlock)/2); 
+      cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      // gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     }
   }

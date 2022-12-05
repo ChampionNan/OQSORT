@@ -11,7 +11,7 @@ typedef struct {
 } Bucket_x;
 
 typedef struct {
-  __uint128_t x;
+  uint32_t x[ENCB_SIZE];
   __uint128_t iv;
 } EncBlock;
 
