@@ -62,7 +62,7 @@ void freeAllocate(int structureIdM, int structureIdF, int size) {
     return;
   }
   int *addr = (int*)malloc(size * sizeof(EncBlock));
-  memset(addr, DUMMY, size * sizeof(EncBlock));
+  memset(addr, 1, size * sizeof(EncBlock));
   // 3. assign malloc address to arrayAddr
   arrayAddr[structureIdM] = addr;
   return ;
@@ -98,7 +98,7 @@ int main(int argc, const char* argv[]) {
   oe_result_t result;
   oe_enclave_t* enclave = NULL;
   std::chrono::high_resolution_clock::time_point start, end;
-  std::chrono::nanoseconds duration;
+  std::chrono::milliseconds duration;
   srand((unsigned)time(NULL));
   double params[9] = {-1};
   int i = 0;
@@ -111,12 +111,12 @@ int main(int argc, const char* argv[]) {
   }
   if (params[3] == -1) {
     std::cout << "Parameters setting wrong!\n";
-    return 0;
+    // return 0;
   }
   int N = params[0], BLOCK_DATA_SIZE = params[2], M = params[1];
   int FAN_OUT, BUCKET_SIZE;
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort(x), 4: merge_sort(x), 5: IO test, 6: testEncDec, 7: testPageFault
-  int sortId = 5;
+  int sortId = 8;
   int inputId = 0;
 
   // step1: init test numbers
@@ -165,6 +165,8 @@ int main(int argc, const char* argv[]) {
     paddedSize = N;
     initEnc(arrayAddr, inputId, paddedSize);
   } else if (sortId == 5) {
+    freeAllocate(0, 0, ceil(26214400/BLOCK_DATA_SIZE));
+  } else {
     freeAllocate(0, 0, ceil(26214400/BLOCK_DATA_SIZE));
   }
 
@@ -215,8 +217,9 @@ int main(int argc, const char* argv[]) {
       // Sample Loose has different test & print
       // testWithDummy(arrayAddr, *resId, *resN);
     }
-  } else if (sortId == 5 || sortId == 6) {
+  } else {
       callSort(enclave, sortId, inputId, paddedSize, resId, resN, params);
+      // printf("Time taken by testSwap function: %d\n", *resN);
   }
   end = std::chrono::high_resolution_clock::now();
 
@@ -229,7 +232,7 @@ int main(int argc, const char* argv[]) {
   }
 
   // step4: std::cout execution time
-  duration = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+  duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
   int multi = (sortId == 2 || sortId == 4) ? 2 : 1;
   printf("IOcost: %f, %f\n", 1.0*IOcost/N*(BLOCK_DATA_SIZE/multi), IOcost);

@@ -184,19 +184,22 @@ void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int st
   if (blockSize == 0) {
     return;
   }
-  // // std::cout<< "In OcallReadBlock\n";
+  // printf("In OcallReadBlock: %d\n", sizeof(EncBlock));
   EncBlock *readBuffer = (EncBlock*)malloc(sizeof(EncBlock));
+  // EncBlock readBuffer; 
+  // printf("In OcallReadBlock2\n"); 
   if (nonEnc) {
     OcallRB(startIdx, (int*)readBuffer, sizeof(EncBlock), structureId);
-    int *a = (int*)readBuffer;
-    memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
+    int *a = (int*)readBuffer; // readBuffer
+    memcpy(buffer, (int*)(&readBuffer)+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   } else {
+    // printf("In readEnc\n");
     OcallRB(startIdx, (int*)readBuffer, sizeof(EncBlock), structureId);
-    cbc_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE);
-    // gcm_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE); 
+    // cbc_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE);
+    gcm_decrypt(readBuffer, sizeof(int)*BLOCK_DATA_SIZE); 
     memcpy(buffer, (int*)readBuffer+offset*(structureSize[structureId]/sizeof(int)), blockSize);
   }
-  free(readBuffer);
+  // free(readBuffer);
 }
 // startIdx: index of blocks, offset(int): data offset in the block, blockSize: bytes of real data
 void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId) {
@@ -211,17 +214,17 @@ void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int s
     if (offset == 0) { // could write the whole block
       // printf("In OcallWriteBlock1\n");
       memcpy((int*)writeBuf, buffer, blockSize);
-      cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
-      // gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
+      // cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     } else { // read&decrypt first, later write&encrypt
       // printf("In OcallWriteBlock2\n");
       OcallRB(startIdx, (int*)writeBuf, sizeof(EncBlock), structureId);
-      cbc_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
-      // gcm_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
+      // cbc_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      gcm_decrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       memcpy((int*)writeBuf+offset*(structureSize[structureId]/sizeof(int)), buffer, blockSize);
-      cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
-      // gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
+      // cbc_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE);
+      gcm_encrypt(writeBuf, sizeof(int)*BLOCK_DATA_SIZE); 
       OcallWB(startIdx, 0, (int*)writeBuf, sizeof(EncBlock), structureId);
     }
   }
@@ -229,7 +232,7 @@ void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int s
 }
 // index: start index counted by elements (count from 0), blockSize: #elements
 void opOneLinearScanBlock(int index, int* block, int blockSize, int structureId, int write, int dummyNum) {
-  // std::cout<< "In opOneLinearScanBlock\n";
+  // printf("In opOneLinearScanBlock\n");
   if (blockSize + dummyNum == 0) {
     return ;
   }
@@ -246,7 +249,7 @@ void opOneLinearScanBlock(int index, int* block, int blockSize, int structureId,
   int opStart = 0;
   int Msize, offset = 0;
   if (!write) {
-    // // // std::cout<< "In reading B: \n";
+    // printf("In reading B: \n");
     for (int i = 0; i < boundary; ++i) {
       if (i != 0 && (i != boundary - 1)) {
         Msize = B;

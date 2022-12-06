@@ -60,12 +60,12 @@ class OQSORT:
         
 if __name__ == '__main__':
     M = 1048576 # ODS: 8388608, BS: 4194304
-    N, B, is_tight = 8*M, 2, 0
+    N, B, is_tight = 8*M, 1020, 0
     print("N, M, B: " + str(N) + ', ' +str(M) + ', ' + str(B)) 
     # N, M, B, is_tight = 335544320, 16777216, 4, 1
     sortCase1 = OQSORT(N, M, B)
     if N / M <= 128:
-        sortCase1.onelevel(N, is_tight)
+        # sortCase1.onelevel(N, is_tight)
         f = open("/home/chenbingnan/mysamples/OQSORT/params.txt", "w")
         f.write(str(N) + '\n')
         f.write(str(M) + '\n')

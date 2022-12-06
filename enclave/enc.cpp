@@ -37,14 +37,14 @@ void testEncDec(int IOnum) {
   int randx = dist(rng);
   // aes_init();
   EncBlock x;
-  x.x = randx;
+  // x.x = randx;
   int size = sizeof(EncBlock)/2;
   for (int i = 0; i < onePassEncNum; ++i) {
     // gcm_encrypt(&x, size);
     // cbc_encrypt(&x, size); 
     gcm_decrypt(&x, size);
     // cbc_decrypt(&x, size);
-    x.x = dist(rng);
+    // x.x = dist(rng);
   }
 }
 
@@ -57,6 +57,43 @@ void testPageFault() {
     memset(page, i, 4096);
     memcpy(a, page, 4096);
   }
+}
+
+void loadN() {
+  printf("In loadN\n");
+  int *buffer = (int*)malloc(sizeof(int) * 26214400); // 100MB data
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_int_distribution<int> dist{0, 10};
+  int index;
+  nonEnc = 0;
+  for (int i = 0; i < 25600; ++i) {
+    index = dist(rng);
+    opOneLinearScanBlock(index * BLOCK_DATA_SIZE, &buffer[index * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, 0, 0, 0);
+  }
+  // printf("Time taken by loadN function: %ld\n", duration.count());
+  free(buffer);
+}
+
+void swap(int *a, int i, int j) {
+  int temp;
+  temp = a[i];
+  a[i] = a[j];
+  a[j] = temp;
+}
+
+void testSwap() {
+  // printf("In testSwap\n");
+  int *a = (int*)malloc(sizeof(int) * 26214400); // 100MB data
+  std::random_device dev;
+  std::mt19937 rng(dev());
+  std::uniform_int_distribution<int> dist{0, 26214399};
+  int i;
+  for (int p = 0; p < 26214400; ++p) {
+    i = dist(rng);
+    swap(a, i, p);
+  }
+  free(a);
 }
 
 // trusted function
@@ -93,5 +130,9 @@ void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN
     testEncDec(256);
   } else if (sortId == 7) {
     testPageFault();
+  } else if (sortId == 8) {
+    loadN();
+  } else if (sortId == 9) {
+    testSwap();
   }
 }
