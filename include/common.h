@@ -1,28 +1,83 @@
 #ifndef COMMON_STRUCTURE_H
 #define COMMON_STRUCTURE_H
 
-// #include <cstdio>
-#include "definitions.h"
 #include <cstdint>
+#include <limits>
+#include <cmath>
 
-typedef struct {
+template<typename T>
+constexpr T DUMMY() {
+    return std::numeric_limits<T>::max();
+}
+
+enum SortType {
+  ODSTIGHT,
+  ODSLOOSE,
+  BUCKET,
+  BITONIC
+};
+
+enum OutputType {
+  TERMINAL, 
+  FILEOUT
+};
+
+enum EncMode {
+  OFB,
+  GCM
+};
+
+struct Bucket_x {
   int x;
   int key;
-} Bucket_x;
+};
 
-typedef struct {
-  uint32_t x[ENCB_SIZE];
-  __uint128_t iv;
-} EncBlock;
+struct EncOneBlock {
+  int sortKey;    // used for sorting 
+  int primaryKey; // tie-breaker when soryKey equals
+  int payLoad;
+  int key;        // bucket sort random key
+  __uint128_t iv; // used for encryption & decryption
+  EncOneBlock() {
+    sortKey = DUMMY<int>(); // TODO: ?
+  };
+};
 
-// BOS: 0, 1, 2; ODS: 3, 4
-const int structureSize[NUM_STRUCTURES] = {sizeof(int), sizeof(Bucket_x), sizeof(Bucket_x), sizeof(int), sizeof(int)};
+// TODO: set up these two
+int64_t greatestPowerOfTwoLessThan(double n) {
+    int64_t k = 1;
+    while (k > 0 && k < n) {
+        k = k << 1;
+    }
+    return k >> 1;
+}
 
-// Print Message
-#define DBGprint(...) { \
-  fprintf(stderr, "%s: Line %d:\t", __FILE__, __LINE__); \
-  fprintf(stderr, __VA_ARGS__); \
-  fprintf(stderr, "\n"); \
+int64_t smallestPowerOfKLargerThan(int64_t n, int k) {
+  int64_t num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
+  }
+  return num;
+}
+
+int64_t calBucketSize(int sigma, int64_t N, int64_t M, int B) {
+  double kappa = 1.0 * sigma * 0.693147;
+  double Z = 6 * (kappa + log(2.0 * N));
+  Z = 6 * (kappa + log(2.0 * N / Z));
+  Z = ceil(Z / B) * B;
+  double thresh = 1.0 * M / Z;
+  int FAN_OUT = greatestPowerOfTwoLessThan(thresh)/2;
+  int64_t bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / Z), 2);
+  int64_t bucketSize = bucketNum * Z;
+  return bucketSize;
+}
+
+int64_t ceil_divide(int64_t n, int64_t q) {
+  int64_t p = n / q;
+  if (n % q == 0) {
+    return p;
+  }
+  return p + 1;
 }
 
 #endif // !COMMON_STRUCTURE_H

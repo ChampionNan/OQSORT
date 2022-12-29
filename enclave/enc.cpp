@@ -2,137 +2,42 @@
 #include "sort/bitonic.h"
 #include "sort/bucket.h"
 #include "sort/quick.h"
-#include "sort/merge.h"
 #include "sort/oq.h"
 #include "shared.h"
 
-double ALPHA, BETA, P;
-int N, M, BLOCK_DATA_SIZE;
-int is_tight;
+void callSort(int *resId, int *resN, double *params) {
+  int sortId = params[0];
+  int inputId = params[1];
+  int64_t N = params[2];
+  int64_t M = params[3];
+  int B = params[4];
+  double sigma = params[5];
+  double alpha = params[6];
+  double beta = params[7];
+  double gamma = params[8];
+  int P = params[9];
+  EncMode GCM;
+  EnclaveServer eServer(N, M, B, GCM);
 
-void testIO(int IOnum, int inId) {
-  printf("In testIO\n");
-  int totalB = IOnum;
-  int *buffer = (int*)malloc(sizeof(int) * BLOCK_DATA_SIZE);
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_int_distribution<int> dist{0, totalB-1};
-  int index;
-  aes_init();
-  nonEnc = 0;
-  for (int i = 0; i < totalB; ++i) {
-    index = dist(rng);
-    opOneLinearScanBlock(index * BLOCK_DATA_SIZE, buffer, BLOCK_DATA_SIZE, inId, 0, 0);
-  }
-  free(buffer);
-}
-
-// IOnum: # EncBlock 2200
-void testEncDec(int IOnum) {
-  printf("In testEncDec\n");
-  int onePassEncNum = IOnum;
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_int_distribution<int> dist{0, onePassEncNum-1};
-  int randx = dist(rng);
-  // aes_init();
-  EncBlock x;
-  // x.x = randx;
-  int size = sizeof(EncBlock)/2;
-  for (int i = 0; i < onePassEncNum; ++i) {
-    // gcm_encrypt(&x, size);
-    // cbc_encrypt(&x, size); 
-    gcm_decrypt(&x, size);
-    // cbc_decrypt(&x, size);
-    // x.x = dist(rng);
-  }
-}
-
-void testPageFault() {
-  int pagesize = 4096;
-  uint8_t *page;
-  uint8_t *a = (uint8_t*)malloc(pagesize);
-  for (int i = 0; i < 100000; ++i) {
-    uint8_t *page = (uint8_t*)malloc(pagesize);
-    memset(page, i, 4096);
-    memcpy(a, page, 4096);
-  }
-}
-
-void loadN() {
-  printf("In loadN\n");
-  int *buffer = (int*)malloc(sizeof(int) * 26214400); // 100MB data
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_int_distribution<int> dist{0, 10};
-  int index;
-  nonEnc = 0;
-  for (int i = 0; i < 25600; ++i) {
-    index = dist(rng);
-    opOneLinearScanBlock(index * BLOCK_DATA_SIZE, &buffer[index * BLOCK_DATA_SIZE], BLOCK_DATA_SIZE, 0, 0, 0);
-  }
-  // printf("Time taken by loadN function: %ld\n", duration.count());
-  free(buffer);
-}
-
-void swap(int *a, int i, int j) {
-  int temp;
-  temp = a[i];
-  a[i] = a[j];
-  a[j] = temp;
-}
-
-void testSwap() {
-  // printf("In testSwap\n");
-  int *a = (int*)malloc(sizeof(int) * 26214400); // 100MB data
-  std::random_device dev;
-  std::mt19937 rng(dev());
-  std::uniform_int_distribution<int> dist{0, 26214399};
-  int i;
-  for (int p = 0; p < 26214400; ++p) {
-    i = dist(rng);
-    swap(a, i, p);
-  }
-  free(a);
-}
-
-// trusted function
-void callSort(int sortId, int structureId, int paddedSize, int *resId, int *resN, double *params) {
-  // TODO: Utilize Memory alloction -- structureId
-  N = params[0]; M = params[1]; BLOCK_DATA_SIZE = params[2];
-  ALPHA = params[3];BETA = params[4];P = params[5];
-  if (sortId == 0) {
-    if (paddedSize / M <= 128) {
-      is_tight = 1;
-      *resId = ObliviousTightSort(structureId, paddedSize, structureId + 1, structureId);
-    }
-  } else if (sortId == 1) {
-    if (paddedSize / M <= 128) {
-      is_tight = 0;
-      std::pair<int, int> ans = ObliviousLooseSort(structureId, paddedSize, structureId + 1, structureId);
-      *resId = ans.first;
-      *resN = ans.second;
-    }
-  } else if (sortId == 2) {
-     *resId = bucketOSort(structureId, paddedSize);
+  if (sortId == 0) { // ODS-Tight
+    ODS odsTight(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P);
+    odsTight.ObliviousSort();
+    *resId = odsTight.resultId;
+    *resN = odsTight.resultN;
+  } else if (sortId == 1) { // ODS_Loose
+    ODS odsLoose(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P);
+    odsLoose.ObliviousSort();
+    *resId = odsLoose.resultId;
+    *resN = odsLoose.resultN;
+  } else if (sortId == 2) { // bucket oblivious sort
+    Bucket bksort(eServer, inputId - 1);
+    *resId = bksort.bucketOSort();
+    *resN = N;
   } else if (sortId == 3) {
-    int size = paddedSize / BLOCK_DATA_SIZE;
-    int *row1 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
-    int *row2 = (int*)malloc(BLOCK_DATA_SIZE * sizeof(int));
-    bitonicSort(structureId, 0, size, 0, row1, row2);
-    free(row1);
-    free(row2);
-  } else if (sortId == 4) {
-    *resId = merge_sort(structureId, structureId+1);
-  } else if (sortId == 5) {
-    testIO(4369067, 0);
-  } else if (sortId == 6) {
-    testEncDec(256);
-  } else if (sortId == 7) {
-    testPageFault();
-  } else if (sortId == 8) {
-    loadN();
-  } else if (sortId == 9) {
-    testSwap();
+    int64_t size = N / B;
+    Bitonic bisort(eServer, inputId, 0, size);
+    bisort.bitonicSort(0, size, 0);
+    *resId = inputId;
+    *resN = N;
   }
 }

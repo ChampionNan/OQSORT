@@ -4,16 +4,32 @@
 #include "../shared.h"
 #include <utility>
 
-__uint128_t prf(__uint128_t a);
-int encrypt(int index);
-void pseudo_init(int size);
-void floydSampler(int n, int k, std::vector<int> &x);
-int Sample(int inStructureId, int sampleSize, std::vector<int> &trustedM2, int is_tight, int is_rec);
-void quantileCal(std::vector<int> &samples, int start, int end, int p);
-int partitionMulti(int *arr, int low, int high, int pivot);
-void quickSortMulti(int *arr, int low, int high, std::vector<int> pivots, int left, int right, std::vector<int> &partitionIdx);
-std::pair<int, int> OneLevelPartition(int inStructureId, int inSize, std::vector<int> &samples, int sampleSize, int p, int outStructureId1, int is_rec);
-int ObliviousTightSort(int inStructureId, int inSize, int outStructureId1, int outStructureId2);
-std::pair<int, int> ObliviousLooseSort(int inStructureId, int inSize, int outStructureId1, int outStructureId2);
+class ODS {
+  public:
+    ODS(EnclaveServer &eServer, SortType sorttype, int inputId, double alpha, double beta, double gamma, int P, int is_tight);
+    void floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x);
+    int Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2);
+    void quantileCal(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p);
+    int partitionMulti(EncOneBlock *arr, int64_t low, int64_t high, EncOneBlock pivot);
+    void quickSortMulti(EncOneBlock *arr, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx);
+    std::pair<int, int> OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p, int ouputId1);
+    void ObliviousSort();
+
+  public:
+    int resultId;
+    int64_t resultN;
+
+  private:
+    EnclaveServer &eServer;
+    int64_t N, M;
+    int B;
+    int is_rec, is_tight;
+    int inputId, outputId1, outputId2;
+    double alpha, beta, gamma;
+    int P;
+    SortType sorttype;
+    std::random_device dev;
+    std::mt19937 rng(dev()); 
+}
 
 #endif // !OQ_SORT_H
