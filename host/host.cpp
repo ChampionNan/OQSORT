@@ -118,6 +118,33 @@ po::variables_map read_options(int argc, char *argv[]) {
   return vm;
 }
 
+void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int &B, int &sigma, int &sortId, double &alpha, double &beta, double &gamma, int &P, int &argc, const char* argv[]) {
+  if (inputtype == BOOST) {
+    auto vm = read_options(argc, argv);
+    datatype = vm["datatype"].as<int>();
+    M = ((vm["memory"].as<int64_t>()) << 20) / datatype;
+    N = vm["c"].as<int>() * M;
+    B = vm["block_size"].as<int>();
+    sigma = vm["sigma"].as<int>();
+    sortId = vm["sort_type"].as<int>();
+    alpha = vm["alpha"].as<double>();
+    beta = vm["beta"].as<double>();
+    gamma = vm["gamma"].as<double>();
+    P = vm["P"].as<int>();
+  } else if (inputtype == SETINMAIN) {
+    datatype = 4;
+    M = (128 << 20) / 16; // (MB << 20) / 1 element bytes
+    N = 500 * M;
+    B = (4 << 10) / 32; // 4KB pagesize
+    sigma = 40;
+    sortId = 1;
+    alpha = 0.01;
+    beta = 0.04;
+    gamma = 0.08;
+    P = 565;
+  }
+}
+
 int main(int argc, const char* argv[]) {
   int ret = 1;
   int *resId = new int;
@@ -128,18 +155,11 @@ int main(int argc, const char* argv[]) {
   high_resolution_clock::time_point start, end;
   milliseconds duration;
   // step1: init test numbers
-  auto vm = read_options(argc, argv);
-  int datatype = vm["datatype"].as<int>();
-  int64_t M = ((vm["memory"].as<int64_t>()) << 20) / datatype;
-  int64_t N = vm["c"].as<int>() * M;
-  int B = vm["block_size"].as<int>();
-  int sigma = vm["sigma"].as<int>();
-  int sortId = vm["sort_type"].as<int>();
-  double alpha = vm["alpha"].as<double>();
-  double beta = vm["beta"].as<double>();
-  double gamma = vm["gamma"].as<double>();
-  int P = vm["P"].as<int>();
-
+  InputType inputtype = SETINMAIN;
+  int datatype, B, sigma, sortId, P;
+  int64_t N, M;
+  double alpha, beta, gamma;
+  readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, argc, argv);
   double params[10] = {sortId, inputId, N, M, B, sigma, alpha, beta, gamma, P};
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);

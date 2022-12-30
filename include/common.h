@@ -17,6 +17,11 @@ enum SortType {
   BITONIC
 };
 
+enum InputType {
+  BOOST, 
+  SETINMAIN
+};
+
 enum OutputType {
   TERMINAL, 
   FILEOUT
