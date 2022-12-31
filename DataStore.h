@@ -24,13 +24,14 @@ class DataStore {
     void print(int structureId, int64_t size, OutputType outputtype, const char* filepath);
     void test(int structureId, int64_t size, SortType sorttype);
     int64_t RandRange(int64_t start, int64_t end);
+  public:
+    char *filepath = "/home/data/bchenba/out.txt";
+    OutputType type = FILEOUT;
   private:
     EncOneBlock **arrayAddr;
     vector<int> delArray;
     int64_t N, M;
     int B;
-    char *filepath = "/home/chenbingnan/mysamples/OQSORT/out.txt";
-    OutputType type = FILEOUT;
     std::random_device dev;
     std::mt19937 rng(dev()); 
 };

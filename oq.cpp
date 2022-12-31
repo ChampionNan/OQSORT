@@ -38,7 +38,6 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   printf("In sample\n");
   int64_t N_prime = sampleSize;
   // double alpha = (!is_rec) ? ALPHA : _ALPHA;
-  double alpha = ALPHA;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
   int64_t boundary = ceil(1.0 * N_prime / B);
   int64_t j = 0, Msize;
@@ -48,14 +47,14 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   floydSampler(N_prime, n_prime, sampleIdx);
   for (int64_t i = 0; i < boundary; ++i) {
     if (is_tight) {
-      Msize = std::min(B, N_prime - i * B);
+      Msize = std::min((int64_t)B, N_prime - i * B);
       eServer.opOneLinearScanBlock(i * B, trustedM1, Msize, inStructureId, 0, 0);
       while ((j < n_prime) && (sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
         trustedM2.push_back(trustedM1[sampleIdx[j] % B]);
         j += 1;
       }
     } else if ((!is_tight) && (sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
-      Msize = std::min((int)B, N_prime - i * B);
+      Msize = std::min((int64_t)B, N_prime - i * B);
       eServer.opOneLinearScanBlock(i * B, trustedM1, Msize, inStructureId, 0, 0);
       while ((sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
         trustedM2.push_back(trustedM1[sampleIdx[j] % B]);
@@ -75,8 +74,8 @@ void ODS::quantileCal(std::vector<EncOneBlock> &samples, int64_t start, int64_t 
   for (int i = 1; i < p; ++i) {
     samples[i] = samples[i * sampleSize / p];
   }
-  samples[0] = INT_MIN;
-  samples[p] = INT_MAX;
+  samples[0].sortKey = INT_MIN;
+  samples[p].sortKey = INT_MAX;
   samples.resize(p+1);
   samples.shrink_to_fit();
   return ;
@@ -138,7 +137,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     eServer.nonEnc = 1;
     eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
-    int64_t blockNum = moveDummy(trustedM3, dataBoundary);
+    int64_t blockNum = eServer.moveDummy(trustedM3, dataBoundary);
     quickSortMulti(trustedM3, 0, blockNum-1, samples, 1, p0, partitionIdx);
     sort(partitionIdx.begin(), partitionIdx.end());
     partitionIdx.insert(partitionIdx.begin(), -1);
@@ -163,7 +162,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   return {bucketSize0, p0};
 }
 
-void ODS::ObliviousSort() {
+void ODS::ObliviousSort(int64_t inSize) {
   EncOneBlock *trustedM;
   printf("In ObliviousTightSort\n");
   if (inSize <= M) {
@@ -171,31 +170,33 @@ void ODS::ObliviousSort() {
     eServer.nonEnc = 1;
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
     Quick qsort(eServer, trustedM);
-    qsort.quickSort(trustedM, 0, N - 1);
-    freeAllocate(ouputId1, ouputId1, N);
+    qsort.quickSort(0, inSize - 1);
+    freeAllocate(outputId1, outputId1, inSize);
     eServer.nonEnc = 0;
-    eServer.opOneLinearScanBlock(0, trustedM, N, ouputId1, 1, 0);
+    eServer.opOneLinearScanBlock(0, trustedM, inSize, outputId1, 1, 0);
     delete [] trustedM;
-    return ouputId1;
+    resultId = outputId1;
+    resultN = inSize;
   }
   std::vector<EncOneBlock> trustedM2;
-  int64_t realNum = Sample(inputId, N, trustedM2);
-  std::pair<int64_t, int> section = OneLevelPartition(inputId, N, trustedM2, realNum, P, ouputId1, 0);
+  int64_t realNum = Sample(inputId, inSize, trustedM2);
+  std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, realNum, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   if (sorttype == ODSTIGHT) {
-    freeAllocate(ouputId2, ouputId2, N);
+    freeAllocate(outputId2, outputId2, inSize);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
     printf("In final\n");
     for (int i = 0; i < sectionNum; ++i) {
       eServer.nonEnc = 0;
-      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, ouputId1, 0, 0);
-      k = moveDummy(trustedM, sectionSize);
-      quickSort(trustedM, 0, k-1);
+      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
+      k = eServer.moveDummy(trustedM, sectionSize);
+      Quick qsort(eServer, trustedM);
+      qsort.quickSort(0, k-1);
       eServer.nonEnc = 1;
-      eServer.opOneLinearScanBlock(j, trustedM, k, ouputId2, 1, 0);
+      eServer.opOneLinearScanBlock(j, trustedM, k, outputId2, 1, 0);
       j += k;
     }
     delete [] trustedM;
@@ -203,15 +204,16 @@ void ODS::ObliviousSort() {
     resultN = N;
   } else if (sorttype == ODSLOOSE) {
     int64_t totalLevelSize = sectionNum * sectionSize;
-    freeAllocate(ouputId2, ouputId2, totalLevelSize);
+    freeAllocate(outputId2, outputId2, totalLevelSize);
     trustedM = new EncOneBlock[M];
     for (int i = 0; i < sectionNum; ++i) {
       eServer.nonEnc = 0;
-      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, ouputId1, 0, 0);
-      k = moveDummy(trustedM, sectionSize);
-      quickSort(trustedM, 0, k - 1);
+      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
+      k = eServer.moveDummy(trustedM, sectionSize);
+      Quick qsort(eServer, trustedM);
+      qsort.quickSort(0, k - 1);
       eServer.nonEnc = 1;
-      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, ouputId2, 1, 0);
+      eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId2, 1, 0);
     }
     delete [] trustedM;
     resultId = outputId2;

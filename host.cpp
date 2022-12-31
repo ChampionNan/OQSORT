@@ -22,7 +22,7 @@ namespace po = boost::program_options;
 EncOneBlock *arrayAddr[NUM_STRUCTURES];
 double IOcost = 0;
 
-po::variables_map read_options(int argc, char *argv[]) {
+po::variables_map read_options(int argc, const char *argv[]) {
   int m, c;
   po::variables_map vm;
   try {
@@ -38,7 +38,7 @@ po::variables_map read_options(int argc, char *argv[]) {
     ("beta,b", po::value<double>()->default_value(-1), "Parameter for ODS")
     ("gamma,g", po::value<double>()->default_value(-1), "Parameter for ODS")
     ("P,P", po::value<int>()->default_value(1), "Parameter for ODS")
-    ("sort_type,ST", po::value<int>->default_value(1), "Selections for sorting type: 0: ODSTight, 1: ODSLoose, 2: bucketOSort, 3: bitonicSort, 4: mergeSort")
+    ("sort_type,ST", po::value<int>()->default_value(1), "Selections for sorting type: 0: ODSTight, 1: ODSLoose, 2: bucketOSort, 3: bitonicSort, 4: mergeSort")
     ("datatype,DT", po::value<int>()->default_value(4), "#bytes for this kind of datatype, normally int32_t or int64_t");
     po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);
@@ -118,7 +118,7 @@ int main(int argc, const char* argv[]) {
     int64_t addi = addi = ((N / B) + 1) * B - N;
     N += addi;
   }
-  DataStore data(N, M, B);
+  DataStore data(arrayAddr, N, M, B);
   start = high_resolution_clock::now();
   if (sortId == 2) {
     int64_t totalSize = calBucketSize(sigma, N, M, B);
@@ -130,16 +130,17 @@ int main(int argc, const char* argv[]) {
   }
   callSort(resId, resN, params);
   end = high_resolution_clock::now();
+  /*
   if (result != OE_OK) {
     fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
     ret = -1;
-  }
+  }*/
   // step4: std::cout execution time
   duration = duration_cast<milliseconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
   printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   // testEnc(arrayAddr, *resId, *resN);
-  data.print(*resId, *resN);
+  data.print(*resId, *resN, FILEOUT, data.filepath);
   // step5: exix part
   exit:
     /*

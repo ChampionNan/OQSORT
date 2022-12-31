@@ -118,7 +118,7 @@ void Bucket::kWayMergeSort(int inputStructureId, int outputStructureId, int64_t*
     
     if (temp->elemIdx < numRow1[temp->bucketIdx] && (temp->elemIdx % HEAP_NODE_SIZE) == 0) {
       eServer.opOneLinearScanBlock(readBucketAddr[temp->bucketIdx], temp->data, std::min((int64_t)HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx), inputStructureId, 0, 0);
-      readBucketAddr[temp->bucketIdx] += std::min(HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx);
+      readBucketAddr[temp->bucketIdx] += std::min((int64_t)HEAP_NODE_SIZE, numRow1[temp->bucketIdx]-temp->elemIdx);
       heap.Heapify(0);
     } else if (temp->elemIdx >= numRow1[temp->bucketIdx]) {
       bool res = heap.reduceSizeByOne();

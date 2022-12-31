@@ -1,8 +1,8 @@
 // #include "enc.h"
-#include "sort/bitonic.h"
-#include "sort/bucket.h"
-#include "sort/quick.h"
-#include "sort/oq.h"
+#include "bitonic.h"
+#include "bucket.h"
+#include "quick.h"
+#include "oq.h"
 #include "shared.h"
 #include "enc.h"
 
@@ -21,13 +21,13 @@ void callSort(int *resId, int *resN, double *params) {
   EnclaveServer eServer(N, M, B, GCM);
 
   if (sortId == 0) { // ODS-Tight
-    ODS odsTight(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P);
-    odsTight.ObliviousSort();
+    ODS odsTight(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P, 1);
+    odsTight.ObliviousSort(N);
     *resId = odsTight.resultId;
     *resN = odsTight.resultN;
   } else if (sortId == 1) { // ODS_Loose
-    ODS odsLoose(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P);
-    odsLoose.ObliviousSort();
+    ODS odsLoose(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P, 0);
+    odsLoose.ObliviousSort(N);
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
   } else if (sortId == 2) { // bucket oblivious sort
