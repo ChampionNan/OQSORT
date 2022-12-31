@@ -1,20 +1,19 @@
 {
   "configurations": [
     {
-      "name": "Mac",
+      "name": "Linux",
       "includePath": [
-        "${default}",
         "${workspaceFolder}/**",
-        "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include/**",
-        "/usr/local/Cellar/**",
-        "/Users/apple/anaconda3/include/**"
+        "/usr/include/**",
+        "/usr/local/include/**",
+        "/homes/bchenba/mbedtls/include"
       ],
       "defines": [],
-      "macFrameworkPath": [],
-      "compilerPath": "/usr/local/bin/gcc-9",
-      "cStandard": "gnu17",
-      "cppStandard": "gnu++14",
-      "intelliSenseMode": "macos-gcc-x64"
+      "compilerPath": "/usr/local/bin/clang",
+      "cStandard": "c17",
+      "cppStandard": "c++14",
+      "intelliSenseMode": "linux-clang-x64",
+      "configurationProvider": "ms-vscode.makefile-tools"
     }
   ],
   "version": 4

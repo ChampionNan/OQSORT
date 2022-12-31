@@ -94,5 +94,6 @@
     "future": "cpp",
     "filesystem": "cpp",
     "__functional_03": "cpp"
-  }
+  },
+  "files.saveConflictResolution": "overwriteFileOnDisk"
 }
