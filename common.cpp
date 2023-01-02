@@ -45,14 +45,14 @@ void ocall_print_string(const char *str) {
 
 // index: Block Index, blockSize: bytes
 void OcallRB(int64_t index, int* buffer, size_t blockSize, int structureId) {
-  // std::cout<< "In OcallRB\n";
+  std::cout<< "In OcallRB\n";
   memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
   IOcost += 1;
 }
 
 // index: Block index, blockSize: bytes
 void OcallWB(int64_t index, int* buffer, size_t blockSize, int structureId) {
-  // std::cout<< "In OcallWB\n";
+  std::cout<< "In OcallWB\n";
   memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
   IOcost += 1;
 }

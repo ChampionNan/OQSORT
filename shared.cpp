@@ -151,12 +151,15 @@ void EnclaveServer::gcm_decrypt(EncOneBlock* buffer, int encSize) {
 // startIdx: index of blocks, 
 // pageSize: number of real data
 void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId) {
+  // printf("In OcallReadPage\n");
   if (pageSize == 0) {
     return;
   }
   if (nonEnc) {
+    printf("Before Read nonEnc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
   } else {
+    printf("Before Read Enc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -172,7 +175,7 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
 // startIdx: index of blocks, 
 // pageSize: number of real data
 void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId) {
-  // std::cout<< "In OcallWriteBlock\n";
+  printf("In OcallWritePage\n");
   if (pageSize == 0) {
     return;
   }
@@ -193,6 +196,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
 }
 // index: start index counted by elements (count from 0), elementNum: #elements
 void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum) {
+  // printf("In oponelinear scan block\n");
   if (elementNum + dummyNum == 0) {
     return ;
   }

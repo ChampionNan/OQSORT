@@ -71,15 +71,15 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     P = vm["P"].as<int>();
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
-    M = (128 << 20) / 16; // (MB << 20) / 1 element bytes
-    N = 500 * M;
-    B = (4 << 10) / 32; // 4KB pagesize
+    M = (128 << 20) / 32; // (MB << 20) / 1 element bytes
+    N = 16 * M;
+    B = 4; // (4 << 10) / 32; // 4KB pagesize
     sigma = 40;
     sortId = 1;
-    alpha = 0.01;
-    beta = 0.04;
-    gamma = 0.08;
-    P = 565;
+    alpha = 0.036152;
+    beta = 0.037094;
+    gamma = 0.037094;
+    P = 18;
   }
 }
 
