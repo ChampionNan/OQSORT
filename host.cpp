@@ -90,7 +90,6 @@ int main(int argc, const char* argv[]) {
   int FAN_OUT, BUCKET_SIZE;
   int inputId = 1;
   // oe_enclave_t* enclave = NULL;
-  printf("Starting\n");
   high_resolution_clock::time_point start, end;
   milliseconds duration;
   // step1: init test numbers
@@ -99,7 +98,6 @@ int main(int argc, const char* argv[]) {
   int64_t N, M;
   double alpha, beta, gamma;
   readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, argc, argv);
-  printf("After read params\n");
   double params[10] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P};
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);

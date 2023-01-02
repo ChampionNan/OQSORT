@@ -72,24 +72,24 @@ struct EncOneBlock {
     return res;
   }
   friend bool operator<(const EncOneBlock &a, const EncOneBlock &b) {
-    if (a.sortKey > b.sortKey) {
+    if (a.sortKey < b.sortKey) {
       return true;
-    } else if (a.sortKey < b.sortKey) {
+    } else if (a.sortKey > b.sortKey) {
       return false;
     } else {
-      if (a.primaryKey > b.primaryKey) {
+      if (a.primaryKey < b.primaryKey) {
         return true;
-      } else if (a.primaryKey < b.primaryKey) {
+      } else if (a.primaryKey > b.primaryKey) {
         return false;
       } else {
-        if (a.payLoad > b.payLoad) {
+        if (a.payLoad < b.payLoad) {
           return true;
-        } else if (a.payLoad < b.payLoad) {
+        } else if (a.payLoad > b.payLoad) {
           return false;
         } else {
-          if (a.randomKey > b.randomKey) {
+          if (a.randomKey < b.randomKey) {
             return true;
-          } else if (a.randomKey < b.randomKey) {
+          } else if (a.randomKey > b.randomKey) {
             return false;
           }
         }

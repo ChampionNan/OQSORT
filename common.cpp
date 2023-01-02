@@ -45,14 +45,14 @@ void ocall_print_string(const char *str) {
 
 // index: Block Index, blockSize: bytes
 void OcallRB(int64_t index, int* buffer, size_t blockSize, int structureId) {
-  std::cout<< "In OcallRB\n";
+  // std::cout<< "In OcallRB\n";
   memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
   IOcost += 1;
 }
 
 // index: Block index, blockSize: bytes
 void OcallWB(int64_t index, int* buffer, size_t blockSize, int structureId) {
-  std::cout<< "In OcallWB\n";
+  // std::cout<< "In OcallWB\n";
   memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
   IOcost += 1;
 }
@@ -81,17 +81,17 @@ void fyShuffle(int structureId, size_t size, int B) {
     return ;
   }
   int64_t total_blocks = size / B;
-  EncOneBlock *trustedM3 = new EncOneBlock;
+  EncOneBlock *trustedM3 = new EncOneBlock[B];
   int64_t k;
-  std::random_device dev;
-  std::mt19937 rng(dev()); 
+  std::random_device rd;
+  std::mt19937 rng{rd()};
   // switch block i & block k
   for (int64_t i = total_blocks-1; i >= 0; i--) {
     std::uniform_int_distribution<int64_t> dist(0, i);
     k = dist(rng);
-    memcpy(trustedM3, arrayAddr[structureId] + k, sizeof(EncOneBlock));
-    memcpy(arrayAddr[structureId] + k, arrayAddr[structureId] + i, sizeof(EncOneBlock));
-    memcpy(arrayAddr[structureId] + i, trustedM3, sizeof(EncOneBlock));
+    memcpy(trustedM3, arrayAddr[structureId] + k * B, sizeof(EncOneBlock) * B);
+    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, sizeof(EncOneBlock) * B);
+    memcpy(arrayAddr[structureId] + i * B, trustedM3, sizeof(EncOneBlock) * B);
   }
   std::cout << "Finished floyd shuffle\n";
 }

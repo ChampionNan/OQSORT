@@ -156,10 +156,10 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
     return;
   }
   if (nonEnc) {
-    printf("Before Read nonEnc: \n");
+    // printf("Before Read nonEnc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
   } else {
-    printf("Before Read Enc: \n");
+    // printf("Before Read Enc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -175,7 +175,7 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
 // startIdx: index of blocks, 
 // pageSize: number of real data
 void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId) {
-  printf("In OcallWritePage\n");
+  // printf("In OcallWritePage\n");
   if (pageSize == 0) {
     return;
   }
@@ -204,17 +204,18 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
     printf("Dummy padding error!");
     return ;
   }
-  int64_t remain = elementNum % B;
   int64_t boundary = ceil(1.0 * elementNum / B);
+  // printf("boundary: %d, remain: %d, B: %d\n", boundary, remain, B);
   int Msize;
   if (!write) { // read
     for (int64_t i = 0; i < boundary; ++i) {
-      Msize = (i == boundary - 1) ? remain : B;
+      Msize = std::min((int64_t)B, elementNum - i * B);
+      // printf("in Op Read, B: %d\n", Msize);
       OcallReadPage(index + i * B, &block[i * B], Msize, structureId);
     }
   } else { // write
     for (int64_t i = 0; i < boundary; ++i) {
-      Msize = (i == boundary - 1) ? remain : B;
+       Msize = std::min((int64_t)B, elementNum - i * B);
       OcallWritePage(index + i * B, &block[i * B], Msize, structureId);
     }
     if (dummyNum > 0) {
@@ -223,9 +224,8 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
         junk[j].sortKey = DUMMY<int>();
       }
       int64_t dummyBoundary = ceil(1.0 * dummyNum / B);
-      remain = dummyNum % B;
       for (int64_t j = 0; j < dummyBoundary; ++j) {
-        Msize = (j == dummyBoundary - 1) ? remain : B;
+        Msize = std::min((int64_t)B, dummyNum - j * B);
         OcallWritePage(index + elementNum + j * B, &junk[j * B], Msize, structureId);
       }
       delete [] junk;

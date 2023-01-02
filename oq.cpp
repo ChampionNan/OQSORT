@@ -35,7 +35,6 @@ void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
 }
 
 int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2) {
-  printf("In sample\n");
   int64_t N_prime = sampleSize;
   // double alpha = (!is_rec) ? ALPHA : _ALPHA;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
@@ -74,8 +73,8 @@ void ODS::quantileCal(std::vector<EncOneBlock> &samples, int64_t start, int64_t 
   for (int i = 1; i < p; ++i) {
     samples[i] = samples[i * sampleSize / p];
   }
-  samples[0].sortKey = INT_MIN;
-  samples[p].sortKey = INT_MAX;
+  samples[0].sortKey = std::numeric_limits<int>::min();
+  samples[p].sortKey = std::numeric_limits<int>::max();
   samples.resize(p+1);
   samples.shrink_to_fit();
   return ;
@@ -113,10 +112,14 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   }
   printf("In OneLevelPartition\n");
   int64_t hatN = ceil(1.0 * (1 + beta + gamma) * inSize);
-  int64_t M_prime = ceil(1.0 * M / (1 + 2 * beta));
+  int64_t M_prime = ceil(1.0 * M / (1 + beta + gamma));
   int r = ceil(1.0 * log(hatN / M) / log(p));
   int p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
   quantileCal(samples, 0, sampleSize, p0);
+  for (int i = 0;i < samples.size(); ++i) {
+    printf("%d ", samples[i].sortKey);
+  }
+  printf("\n");
   int64_t boundary1 = ceil(1.0 * inSize / M_prime);
   int64_t boundary2 = ceil(1.0 * M_prime / B);
   int64_t dataBoundary = boundary2 * B;
@@ -132,14 +135,21 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   // TODO: ? change B to 1
   fyShuffle(inStructureId, inSize, B);
   for (int64_t i = 0; i < boundary1; ++i) {
-    // Read one M' memory block after fisher-yates shuffle
-    printf("OneLevel %d/%d\n", i, boundary1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
+    printf("Memory Block %d, memory size: %d\n", i, Msize1);
     eServer.nonEnc = 1;
     eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
-    int64_t blockNum = eServer.moveDummy(trustedM3, dataBoundary);
+    // TODO: Simplify only for one level version, no dummy, input only
+    // eServer.moveDummy(trustedM3, dataBoundary);
+    int64_t blockNum = Msize1;
+    printf("Real block number: %d\n", blockNum);
     quickSortMulti(trustedM3, 0, blockNum-1, samples, 1, p0, partitionIdx);
     sort(partitionIdx.begin(), partitionIdx.end());
+    printf("partitionIdx: \n");
+    for (int i = 0; i < partitionIdx.size(); ++i) {
+      printf("%d ", partitionIdx[i]);
+    }
+    printf("\n");
     partitionIdx.insert(partitionIdx.begin(), -1);
     for (int j = 0; j < p0; ++j) {
       index1 = partitionIdx[j]+1;
