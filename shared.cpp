@@ -71,7 +71,7 @@ void Heap::replaceRoot(HeapNode x) {
 EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
   encOneBlockSize = sizeof(EncOneBlock);
   encDataSize = encOneBlockSize - 16; 
-  char *pers = "aes generate keygcm generate key";
+  const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
   mbedtls_ctr_drbg_init(&ctr_drbg);
@@ -94,22 +94,6 @@ int EnclaveServer::printf(const char *fmt, ...) {
   va_end(ap);
   ocall_print_string(buf);
   return ret;
-}
-
-int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
-    int64_t k = 1;
-    while (k > 0 && k < n) {
-        k = k << 1;
-    }
-    return k >> 1;
-}
-
-int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
-  int64_t num = 1;
-  while (num > 0 && num < n) {
-    num = num * k;
-  }
-  return num;
 }
 
 // Assume encSize = 16 * k

@@ -16,16 +16,16 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int
   if (size == 1) {
     return;
   } else {
-    int swap = 0;
-    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    int swap = 0, nswap;
+    int64_t mid = greatestPowerOfTwoLessThan((double)size);
     for (int64_t i = 0; i < size - mid; ++i) {
       EncOneBlock num1 = a[start + i];
       EncOneBlock num2 = a[start + mid + i];
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
-      a[start + i] = Mul(!swap, num1)
-      () + (swap * num2);
-      a[start + i + mid] = (swap * num1) + (!swap * num2);
+      nswap = !swap;
+      a[start + i] = (nswap * num1) + (swap * num2);
+      a[start + i + mid] = (swap * num1) + (nswap * num2);
     }
     smallBitonicMerge(a, start, mid, flipped);
     smallBitonicMerge(a, start + mid, size - mid, flipped);
@@ -38,7 +38,7 @@ void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, int 
   if (size <= 1) {
     return ;
   } else {
-    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = greatestPowerOfTwoLessThan((double)size);
     smallBitonicSort(a, start, mid, 1);
     smallBitonicSort(a, start + mid, size - mid, 0);
     smallBitonicMerge(a, start, size, flipped);
@@ -60,19 +60,20 @@ void Bitonic::bitonicMerge(int64_t start, int64_t size, int flipped) {
     }
     delete trustedMemory;
   } else {
-    int swap = 0;
-    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    int swap = 0, nswap;
+    int64_t mid = greatestPowerOfTwoLessThan((double)size);
     for (int64_t i = 0; i < size - mid; ++i) {
       eServer.opOneLinearScanBlock((start + i) * B, row1, B, inputId, 0, 0);
       eServer.opOneLinearScanBlock((start + mid + i) * B, row2, B, inputId, 0, 0);
       EncOneBlock num1 = row1[0], num2 = row2[0];
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
+      nswap = !swap;
       for (int j = 0; j < B; ++j) {
         EncOneBlock v1 = row1[j];
         EncOneBlock v2 = row2[j];
-        row1[j] = (!swap * v1) + (swap * v2);
-        row2[j] = (swap * v1) + (!swap * v2);
+        row1[j] = (nswap * v1) + (swap * v2);
+        row2[j] = (swap * v1) + (nswap * v2);
       }
       eServer.opOneLinearScanBlock((start + i) * B, row1, B, inputId, 1, 0);
       eServer.opOneLinearScanBlock((start + mid + i) * B, row2, B, inputId, 1, 0);
@@ -98,7 +99,7 @@ void Bitonic::bitonicSort(int64_t start, int64_t size, int flipped) {
     }
     delete trustedMemory;
   } else {
-    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = greatestPowerOfTwoLessThan((double)size);
     bitonicSort(start, mid, 1);
     bitonicSort(start + mid, size - mid, 0);
     bitonicMerge(start, size, flipped);

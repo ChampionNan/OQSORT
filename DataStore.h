@@ -8,7 +8,7 @@
 #include <random>
 #include <chrono>
 #include <unordered_map>
-#include <omp.h>
+// #include <omp.h>
 
 #include <boost/sort/sort.hpp>
 #include <boost/math/tools/roots.hpp>
@@ -25,15 +25,15 @@ class DataStore {
     void test(int structureId, int64_t size, SortType sorttype);
     int64_t RandRange(int64_t start, int64_t end);
   public:
-    char *filepath = "/home/data/bchenba/out.txt";
+    const char *filepath = "/home/data/bchenba/out.txt";
     OutputType type = FILEOUT;
   private:
     EncOneBlock **arrayAddr;
-    vector<int> delArray;
+    std::vector<int> delArray;
     int64_t N, M;
     int B;
-    std::random_device dev;
-    std::mt19937 rng(dev()); 
+    std::random_device rd;
+    std::mt19937 rng{rd()};
 };
 
 #endif // !IOTOOLS_H

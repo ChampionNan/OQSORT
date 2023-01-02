@@ -2,6 +2,7 @@
 #define BUCKET_SORT_H
 
 #include "shared.h"
+#include <random>
 
 class Bucket {
   public:
@@ -14,7 +15,7 @@ class Bucket {
     int bucketOSort();
 
   private:
-    EnclaveServer &eServer;
+    EnclaveServer eServer;
     int64_t N, M;
     int B;
     int inStructureId, outId1, outId2;
@@ -25,8 +26,8 @@ class Bucket {
     int64_t bucketNum;
     int ranBinAssignIters;
     int64_t k1, oldK;
-    std::random_device dev;
-    std::mt19937 rng(dev());
+    std::random_device rd;
+    std::mt19937 rng{rd()};
 };
 
 #endif // !BUCKET_SORT_H

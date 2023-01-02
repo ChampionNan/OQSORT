@@ -20,7 +20,7 @@ class ODS {
     int64_t resultN;
 
   private:
-    EnclaveServer &eServer;
+    EnclaveServer eServer;
     int64_t N, M;
     int B;
     int is_rec, is_tight;
@@ -28,8 +28,8 @@ class ODS {
     double alpha, beta, gamma;
     int P;
     SortType sorttype;
-    std::random_device dev;
-    std::mt19937 rng(dev()); 
+    std::random_device rd;
+    std::mt19937 rng{rd()};
 };
 
 #endif // !OQ_SORT_H

@@ -20,12 +20,12 @@ void DataStore::init(int structureId, int64_t size) {
   EncOneBlock *addr = arrayAddr[structureId];
   delArray.push_back(structureId);
   // 2. value initialization
-  #pragma omp parallel for
+  // #pragma omp parallel for
   for (int i = 0; i < size; ++i) {
     addr[i].primaryKey = i;
     addr[i].sortKey = N - i;
     addr[i].payLoad = DUMMY<int>();
-    addr[i].key = DUMMY<int>();
+    addr[i].randomKey = DUMMY<int>();
   }
 }
 

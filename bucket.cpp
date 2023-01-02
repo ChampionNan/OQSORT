@@ -13,8 +13,8 @@ Bucket::Bucket(EnclaveServer &eServer, int inStructureId) : eServer{eServer}, in
   Zd = 6 * (kappa + log(2.0 * N / Zd));
   Zd = ceil(Zd / B) * B;
   double thresh = 1.0 * M / Zd;
-  FAN_OUT = eServer.greatestPowerOfTwoLessThan(thresh)/2;
-  bucketNum = eServer.smallestPowerOfKLargerThan(ceil(2.0 * N / Zd), 2);
+  FAN_OUT = greatestPowerOfTwoLessThan(thresh)/2;
+  bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / Zd), 2);
   HEAP_NODE_SIZE = fmax(floor(1.0 * M / (bucketNum + 1)), 1);
   MERGE_BATCH_SIZE = HEAP_NODE_SIZE;
   k1 = log2(FAN_OUT);
