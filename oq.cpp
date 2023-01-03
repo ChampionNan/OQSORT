@@ -3,11 +3,19 @@
 #include "bitonic.h"
 #include "oq.h"
 
-ODS::ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P, int is_tight, SecLevel seclevel) : eServer{eServer}, alpha{alpha}, beta{beta}, gamma{gamma}, P{P}, is_tight{is_tight}, seclevel{seclevel}{
+ODS::ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P, int is_tight, SecLevel seclevel, int sampleId) : eServer{eServer}, alpha{alpha}, beta{beta}, gamma{gamma}, P{P}, is_tight{is_tight}, seclevel{seclevel}, sampleId{sampleId} {
   N = eServer.N;
   M = eServer.M;
   B = eServer.B;
   smallM = log2(M);
+  sortedSampleId = sampleId + 1;
+}
+
+void ODS::calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int &r, int &p0) {
+  hatN = ceil(1.0 * (1 + beta + gamma) * inSize);
+  M_prime = ceil(1.0 * M / (1 + beta + gamma));
+  r = ceil(1.0 * log(hatN / M) / log(p));
+  p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
 }
 
 void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
@@ -34,12 +42,13 @@ void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
   sort(x.begin(), x.end());
 }
 
-int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2) {
+int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype) {
   int64_t N_prime = sampleSize;
   // double alpha = (!is_rec) ? ALPHA : _ALPHA;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
   int64_t boundary = ceil(1.0 * N_prime / B);
   int64_t j = 0, Msize;
+  int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
   EncOneBlock *trustedM1 = new EncOneBlock[B];
   eServer.nonEnc = 1;
   std::vector<int64_t> sampleIdx;
@@ -68,14 +77,99 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   return n_prime;
 }
 
-void ODS::quantileCal(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p) {
-  int64_t sampleSize = end - start;
-  for (int i = 1; i < p; ++i) {
-    samples[i] = samples[i * sampleSize / p];
+// TODO: Change t c++ version
+int64_t ODS::Hypergeometric(int64_t N, int64_t M, int64_t n) {
+  int64_t m = 0;
+  srand((unsigned)time(0));
+  double rate = double(n) / N;
+  for (int j = 0; j < M; ++j) {
+    if (rand() / double(INT_MAX) < rate) {
+      m += 1;
+      n -= 1;
+    }
+    N -= 1;
+    rate = double(n) / double(N);
+  }
+  return m;
+}
+
+int64_t ODS::SampleEx(int inStructureId, int sampleId, int sortedSampleId, SortType sorttype) {
+  int64_t N_prime = N;
+  int64_t n_prime = ceil(1.0 * alpha * N_prime);
+  int64_t boundary = ceil(1.0 * N_prime / M);
+  int64_t realNum = 0;
+  int64_t readStart = 0;
+  int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
+  EncOneBlock *trustedM1 = new EncOneBlock[M];
+  int64_t m = 0, Msize;
+  freeAllocate(sampleId, sampleId, n_prime);
+  for (int64_t i = 0; i < boundary; ++i) {
+    Msize = std::min(M, N_prime - i * M);
+    // TODO: Using boost library, read samples into external memory
+    m = Hypergeometric(N_prime, Msize, n_prime);
+    if (is_tight || (!is_tight && m > 0)) {
+      opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
+      readStart += Msize;
+      eServer.shuffle(trustedM1, Msize);
+      opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
+      realNum += m;
+      n_prime -= m;
+    }
+    N_prime -= Msize;
+  }
+  delete [] trustedM1;
+  return realNum;
+}
+
+// get pivots from external stored samples
+void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
+  printf("In ODSquantileCal\n");
+  std::vector<EncOneBlock> trustedM2;
+  int64_t realNum = Sample(sampleId, sampleSize, trustedM2, ODSLOOSE);
+  int sampleP = ceil((1 + alpha + beta) * sampleSize / M);
+  quantileCal(sampleSize, trustedM2, realNum, sampleP);
+  std::pair<int64_t, int> section = OneLevelPartition(sampleId, sampleSize, trustedM2, sampleP, sortedSampleId);
+  int64_t sectionSize = section.first;
+  int sectionNum = section.second;
+  EncOneBlock *trustedM = new EncOneBlock[M];
+  // Cal pivot index
+  std::vector<int64_t> quantileIdx;
+  for (int64_t i = 1; i < P; ++i) {
+    quantileIdx.push_back(i * sampleSize / P);
+  }
+  int64_t size = ceil(1.0 * sampleSize / P);
+  int j = 0;
+  int64_t k = 0, total = 0;
+  for (int i = 0; i < sectionNum; ++i) {
+    opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
+    k = moveDummy(trustedM, sectionSize);
+    // TODO: Change to fully oblivious version
+    quickSort(trustedM, 0, k-1);
+    total += k;
+    // Cal Level1 pivots
+    while ((j < P-1) && (quantileIdx[j] < total)) {
+      pivots.push_back(trustedM[quantileIdx[j]-(total-k)]);
+      j += 1;
+    }
+  }
+  EncOneBlock a, b;
+  a.sortKey = std::numeric_limits<int>::min();
+  b.sortKey = std::numeric_limits<int>::max();
+  pivots.insert(pivots.begin(), a);
+  pivots.push_back(b);
+  delete [] trustedM;
+}
+
+void ODS::quantileCal(int inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p) {
+  int64_t hatN, M_prime;
+  int r, p0;
+  calParams(inSize, p, hatN, M_prime, r, p0);
+  for (int i = 1; i < p0; ++i) {
+    samples[i] = samples[i * sampleSize / p0];
   }
   samples[0].sortKey = std::numeric_limits<int>::min();
-  samples[p].sortKey = std::numeric_limits<int>::max();
-  samples.resize(p+1);
+  samples[p0].sortKey = std::numeric_limits<int>::max();
+  samples.resize(p0+1);
   samples.shrink_to_fit();
   return ;
 }
@@ -294,17 +388,16 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   delete extD;
 }
 
-std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p, int outId) {
+std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &pivots, int p, int outId) {
   if (inSize <= M) {
     resultId = inStructureId;
     resultN = inSize;
   }
   printf("In OneLevelPartition\n");
-  int64_t hatN = ceil(1.0 * (1 + beta + gamma) * inSize);
-  int64_t M_prime = ceil(1.0 * M / (1 + beta + gamma));
-  int r = ceil(1.0 * log(hatN / M) / log(p));
-  int p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
-  quantileCal(samples, 0, sampleSize, p0);
+  int64_t hatN, M_prime;
+  int r, p0;
+  calParams(inSize, p, hatN, M_prime, r, p0);
+  // quantileCal(samples, 0, sampleSize, p0);
   int64_t boundary1 = ceil(1.0 * inSize / M_prime);
   int64_t boundary2 = ceil(1.0 * M_prime / B);
   int64_t dataBoundary = boundary2 * B;
@@ -328,7 +421,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     // eServer.moveDummy(trustedM3, dataBoundary);
     int64_t blockNum = Msize1;
     if (seclevel == FULLY) {
-      obliviousPWayPartition(trustedM3, indicator, 0, blockNum, samples, 1, samples.size()-2, partitionIdx);
+      obliviousPWayPartition(trustedM3, indicator, 0, blockNum, pivots, 1, pivots.size()-2, partitionIdx);
       sort(partitionIdx.begin(), partitionIdx.end());
       partitionIdx.insert(partitionIdx.begin(), 0);
       partitionIdx.push_back(blockNum);
@@ -343,7 +436,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         eServer.opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outId, 1, smallSectionSize - writeBackNum);
       }
     } else {
-      quickSortMulti(trustedM3, 0, blockNum-1, samples, 1, p0, partitionIdx);
+      quickSortMulti(trustedM3, 0, blockNum-1, pivots, 1, p0, partitionIdx);
       sort(partitionIdx.begin(), partitionIdx.end());
       partitionIdx.insert(partitionIdx.begin(), -1);
       for (int j = 0; j < p0; ++j) {
@@ -386,11 +479,21 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = inSize;
   }
   std::vector<EncOneBlock> trustedM2;
-  int64_t realNum = Sample(inputId, inSize, trustedM2);
-  std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, realNum, P, outputId1);
+  int64_t sampleSize;
+  // step1. get samples & pivots
+  if ((int64_t)ceil(alpha * N) < M) {
+    sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
+    quantileCal(inSize, trustedM2, sampleSize, P);
+  } else {
+    sampleSize = SampleEx(inputId, sampleId, sortedSampleId, ODSLOOSE);
+    ODSquantileCal(sampleId, sampleSize, sortedSampleId, pivots);
+  }
+  // step2. partition
+  std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
+  // step3. Final sort
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);

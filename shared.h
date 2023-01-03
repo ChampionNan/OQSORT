@@ -41,6 +41,7 @@ class EnclaveServer {
     int64_t moveDummy(EncOneBlock *a, int64_t size);
     void setValue(EncOneBlock *a, int64_t size, int value);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
+    void shuffle(EncOneBlock *a, int64_t size);
 
   public:
     int64_t N, M;
@@ -49,12 +50,15 @@ class EnclaveServer {
     int encDataSize;     // sizeof(EncOneBlock) - #iv bytes
     int nonEnc; // no encryption
     EncMode encmode = OFB;
+  private:
     unsigned char key[32];
     mbedtls_aes_context aes;
     mbedtls_gcm_context gcm;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_entropy_context entropy;
     size_t iv_offset, iv_offset1;
+    std::random_device rd;
+    std::mt19937 rng{rd()};
 };
 
 struct HeapNode {

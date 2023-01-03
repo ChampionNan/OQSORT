@@ -22,12 +22,12 @@ void callSort(int *resId, int *resN, double *params) {
   EnclaveServer eServer(N, M, B, encmode);
 
   if (sortId == 0) { // ODS-Tight
-    ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel);
+    ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel, inputId + 2);
     odsTight.ObliviousSort(N, ODSTIGHT, inputId, inputId + 1, inputId);
     *resId = odsTight.resultId;
     *resN = odsTight.resultN;
   } else if (sortId == 1) { // ODS_Loose
-    ODS odsLoose(eServer, alpha, beta, gamma, P, 0, seclevel);
+    ODS odsLoose(eServer, alpha, beta, gamma, P, 0, seclevel, inputId + 2);
     odsLoose.ObliviousSort(N, ODSLOOSE, inputId, inputId + 1, inputId);
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
