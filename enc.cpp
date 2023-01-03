@@ -17,17 +17,18 @@ void callSort(int *resId, int *resN, double *params) {
   double beta = params[7];
   double gamma = params[8];
   int P = params[9];
-  EncMode GCM;
-  EnclaveServer eServer(N, M, B, GCM);
+  EncMode encmode = OFB; // GCM
+  SecLevel seclevel = FULLY;
+  EnclaveServer eServer(N, M, B, encmode);
 
   if (sortId == 0) { // ODS-Tight
-    ODS odsTight(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P, 1);
-    odsTight.ObliviousSort(N);
+    ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel);
+    odsTight.ObliviousSort(N, ODSTIGHT, inputId, inputId + 1, inputId);
     *resId = odsTight.resultId;
     *resN = odsTight.resultN;
   } else if (sortId == 1) { // ODS_Loose
-    ODS odsLoose(eServer, ODSTIGHT, inputId, alpha, beta, gamma, P, 0);
-    odsLoose.ObliviousSort(N);
+    ODS odsLoose(eServer, alpha, beta, gamma, P, 0, seclevel);
+    odsLoose.ObliviousSort(N, ODSLOOSE, inputId, inputId + 1, inputId);
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
   } else if (sortId == 2) { // bucket oblivious sort

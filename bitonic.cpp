@@ -1,5 +1,8 @@
 #include "bitonic.h"
 
+// support for use small bitonic sort only
+Bitonic::Bitonic(EnclaveServer &eServer) : eServer{eServer} {}
+
 Bitonic::Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize) : eServer{eServer}, inputId{inputId}, start{start}, initSize{initSize} {
   M = eServer.M;
   B = eServer.B;

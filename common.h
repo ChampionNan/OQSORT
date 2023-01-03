@@ -38,6 +38,11 @@ enum EncMode {
   GCM
 };
 
+enum SecLevel {
+  FULLY,
+  PARTIAL
+};
+
 struct Bucket_x {
   int x;
   int key;

@@ -272,6 +272,13 @@ int64_t EnclaveServer::moveDummy(EncOneBlock *a, int64_t size) {
   return i;
 }
 
+void EnclaveServer::setValue(EncOneBlock *a, int64_t size, int value) {
+  for (int64_t i = 0; i < size; ++i) {
+    a[i].sortKey = value;
+    a[i].primaryKey = value;
+  }
+}
+
 void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   EncOneBlock *temp = new EncOneBlock;
   memmove(temp, a + i, encOneBlockSize);

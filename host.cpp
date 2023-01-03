@@ -72,14 +72,14 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
     M = (128 << 20) / 32; // (MB << 20) / 1 element bytes
-    N = 16 * M;
+    N = 8 * M;
     B = 4; // (4 << 10) / 32; // 4KB pagesize
     sigma = 40;
     sortId = 1;
-    alpha = 0.036152;
-    beta = 0.037094;
-    gamma = 0.037094;
-    P = 18;
+    alpha = 0.078420;
+    beta = 0.024556;
+    gamma = 0.024556;
+    P = 9;
   }
 }
 
@@ -119,7 +119,6 @@ int main(int argc, const char* argv[]) {
     N += addi;
   }
   DataStore data(arrayAddr, N, M, B);
-  start = high_resolution_clock::now();
   if (sortId == 2) {
     int64_t totalSize = calBucketSize(sigma, N, M, B);
     data.init(inputId, N);
@@ -128,6 +127,7 @@ int main(int argc, const char* argv[]) {
   } else {
     data.init(inputId, N);
   }
+  start = high_resolution_clock::now();
   callSort(resId, resN, params);
   end = high_resolution_clock::now();
   /*

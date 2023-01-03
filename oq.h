@@ -6,14 +6,21 @@
 
 class ODS {
   public:
-    ODS(EnclaveServer &eServer, SortType sorttype, int inputId, double alpha, double beta, double gamma, int P, int is_tight);
+    ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P, int is_tight, SecLevel seclevel);
     void floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x);
     int64_t Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2);
     void quantileCal(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p);
+    void quantileCal2(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p);
     int64_t partitionMulti(EncOneBlock *arr, int64_t low, int64_t high, EncOneBlock pivot);
     void quickSortMulti(EncOneBlock *arr, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx);
+    int64_t sumArray(bool *M, int64_t left, int64_t right);
+    void OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int64_t z);
+    void ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right);
+    int64_t assignM(EncOneBlock *arr, bool *M, int64_t left, int64_t right, EncOneBlock pivot);
+    void obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx);
+    void internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right);
     std::pair<int64_t, int> OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p, int ouputId1);
-    void ObliviousSort(int64_t inSize);
+    void ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outputId1, int outputId2);
 
   public:
     int resultId;
@@ -21,13 +28,12 @@ class ODS {
 
   private:
     EnclaveServer eServer;
-    int64_t N, M;
+    int64_t N, M, smallM;
     int B;
     int is_rec, is_tight;
-    int inputId, outputId1, outputId2;
     double alpha, beta, gamma;
     int P;
-    SortType sorttype;
+    SecLevel seclevel;
     std::random_device rd;
     std::mt19937 rng{rd()};
 };

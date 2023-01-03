@@ -5,6 +5,7 @@
 
 class Bitonic {
   public:
+    Bitonic(EnclaveServer &eServer);
     Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize);
     ~Bitonic();
     void smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int flipped);
