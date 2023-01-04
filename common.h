@@ -53,7 +53,6 @@ struct EncOneBlock {
   int primaryKey; // tie-breaker when soryKey equals
   int payLoad;
   int randomKey;  // bucket sort random key
-  __uint128_t iv; // used for encryption & decryption
 
   EncOneBlock() {
     sortKey = DUMMY<int>();
@@ -64,7 +63,6 @@ struct EncOneBlock {
     res.primaryKey = flag * y.primaryKey;
     res.payLoad = flag * y.payLoad;
     res.randomKey = flag * y.randomKey;
-    res.iv = flag * y.iv;
     return res;
   }
   friend EncOneBlock operator+(const EncOneBlock &x, const EncOneBlock &y) {
@@ -73,7 +71,6 @@ struct EncOneBlock {
     res.primaryKey = x.primaryKey + y.primaryKey;
     res.payLoad = x.payLoad + y.payLoad;
     res.randomKey = x.randomKey + y.randomKey;
-    res.iv = x.iv + y.iv;
     return res;
   }
   friend bool operator<(const EncOneBlock &a, const EncOneBlock &b) {

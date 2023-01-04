@@ -74,24 +74,28 @@ void freeAllocate(int structureIdM, int structureIdF, size_t size) {
   return ;
 }
 
-// support int version only
+// shuffle data in B block size
 void fyShuffle(int structureId, size_t size, int B) {
   if (size % B != 0) {
-    printf("Error! Not B's time.\n");
-    return ;
+    printf("Error! Not B's time.\n"); // Still do the shuffling
   }
   int64_t total_blocks = size / B;
   EncOneBlock *trustedM3 = new EncOneBlock[B];
   int64_t k;
+  int64_t eachSec = size / 100;
+  int swapSize = sizeof(EncOneBlock) * B;
   std::random_device rd;
   std::mt19937 rng{rd()};
   // switch block i & block k
   for (int64_t i = total_blocks-1; i >= 0; i--) {
+    if (i % eachSec == 0) {
+      printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
+    }
     std::uniform_int_distribution<int64_t> dist(0, i);
     k = dist(rng);
-    memcpy(trustedM3, arrayAddr[structureId] + k * B, sizeof(EncOneBlock) * B);
-    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, sizeof(EncOneBlock) * B);
-    memcpy(arrayAddr[structureId] + i * B, trustedM3, sizeof(EncOneBlock) * B);
+    memcpy(trustedM3, arrayAddr[structureId] + k * B, swapSize);
+    memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, swapSize);
+    memcpy(arrayAddr[structureId] + i * B, trustedM3, swapSize);
   }
   std::cout << "Finished floyd shuffle\n";
 }

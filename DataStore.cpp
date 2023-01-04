@@ -21,11 +21,12 @@ void DataStore::init(int structureId, int64_t size) {
   delArray.push_back(structureId);
   // 2. value initialization
   // #pragma omp parallel for
-  for (int i = 0; i < size; ++i) {
+  int MAX = std::numeric_limits<int>::max();
+  for (int64_t i = 0; i < size; ++i) {
     addr[i].primaryKey = i;
-    addr[i].sortKey = N - i;
-    addr[i].payLoad = DUMMY<int>();
-    addr[i].randomKey = DUMMY<int>();
+    addr[i].sortKey = size - i;
+    // addr[i].payLoad = DUMMY<int>();
+    // addr[i].randomKey = DUMMY<int>();
   }
 }
 
@@ -39,7 +40,8 @@ void DataStore::print(int structureId, int64_t size, OutputType outputtype, cons
     cout << endl;
   } else if (outputtype == FILEOUT) {
     ofstream fout(filepath);
-    for (int64_t i = 0; i < size; ++i) {
+    int64_t outsize = size;
+    for (int64_t i = 0; i < outsize; ++i) {
       fout << "addr[" << i << "]: (" << addr[i].primaryKey;
       fout << ", " << addr[i].sortKey << ")" << endl;
     }

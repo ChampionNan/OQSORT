@@ -47,7 +47,6 @@ class EnclaveServer {
     int64_t N, M;
     int B, sigma;
     int encOneBlockSize; // sizeof(EncOneBlock)
-    int encDataSize;     // sizeof(EncOneBlock) - #iv bytes
     int nonEnc; // no encryption
     EncMode encmode = OFB;
   private:
@@ -57,14 +56,13 @@ class EnclaveServer {
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_entropy_context entropy;
     size_t iv_offset, iv_offset1;
-    std::random_device rd;
-    std::mt19937 rng{rd()};
+    unsigned char iv[16];
 };
 
 struct HeapNode {
   EncOneBlock *data;
-  int64_t bucketIdx; // TODO: int64_t
-  int64_t elemIdx; // TODO: int64_t
+  int64_t bucketIdx;
+  int64_t elemIdx;
 };
 
 class Heap {

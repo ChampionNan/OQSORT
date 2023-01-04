@@ -18,7 +18,7 @@ void callSort(int *resId, int *resN, double *params) {
   double gamma = params[8];
   int P = params[9];
   EncMode encmode = OFB; // GCM
-  SecLevel seclevel = FULLY;
+  SecLevel seclevel = PARTIAL;
   EnclaveServer eServer(N, M, B, encmode);
 
   if (sortId == 0) { // ODS-Tight

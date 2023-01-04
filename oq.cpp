@@ -107,11 +107,12 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId, int sortedSampleId, SortT
     Msize = std::min(M, N_prime - i * M);
     // TODO: Using boost library, read samples into external memory
     m = Hypergeometric(N_prime, Msize, n_prime);
+    printf("Sampling progress: %ld / %ld, m: %d\n", i, boundary-1, m);
     if (is_tight || (!is_tight && m > 0)) {
-      opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
+      eServer.opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
       readStart += Msize;
       eServer.shuffle(trustedM1, Msize);
-      opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
+      eServer.opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
       realNum += m;
       n_prime -= m;
     }
@@ -126,7 +127,7 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, s
   printf("In ODSquantileCal\n");
   std::vector<EncOneBlock> trustedM2;
   int64_t realNum = Sample(sampleId, sampleSize, trustedM2, ODSLOOSE);
-  int sampleP = ceil((1 + alpha + beta) * sampleSize / M);
+  int sampleP = ceil((1 + beta + gamma) * sampleSize / M);
   quantileCal(sampleSize, trustedM2, realNum, sampleP);
   std::pair<int64_t, int> section = OneLevelPartition(sampleId, sampleSize, trustedM2, sampleP, sortedSampleId);
   int64_t sectionSize = section.first;
@@ -138,13 +139,14 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, s
     quantileIdx.push_back(i * sampleSize / P);
   }
   int64_t size = ceil(1.0 * sampleSize / P);
-  int j = 0;
+  int64_t j = 0;
   int64_t k = 0, total = 0;
   for (int i = 0; i < sectionNum; ++i) {
-    opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
-    k = moveDummy(trustedM, sectionSize);
+    eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
+    k = eServer.moveDummy(trustedM, sectionSize);
     // TODO: Change to fully oblivious version
-    quickSort(trustedM, 0, k-1);
+    Quick qsort(eServer, trustedM);
+    qsort.quickSort(0, k-1);
     total += k;
     // Cal Level1 pivots
     while ((j < P-1) && (quantileIdx[j] < total)) {
@@ -154,7 +156,9 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, s
   }
   EncOneBlock a, b;
   a.sortKey = std::numeric_limits<int>::min();
+  a.primaryKey = std::numeric_limits<int>::min();
   b.sortKey = std::numeric_limits<int>::max();
+  b.primaryKey = std::numeric_limits<int>::max();
   pivots.insert(pivots.begin(), a);
   pivots.push_back(b);
   delete [] trustedM;
@@ -187,7 +191,7 @@ void ODS::quantileCal2(std::vector<EncOneBlock> &samples, int64_t start, int64_t
 int64_t ODS::partitionMulti(EncOneBlock *arr, int64_t low, int64_t high, EncOneBlock pivot) {
   int64_t i = low - 1;
   for (int64_t j = low; j < high + 1; ++j) {
-    if (eServer.cmpHelper(&pivot, arr + j)) {
+    if (eServer.cmpHelper(&pivot, arr + j)) { 
       i += 1;
       eServer.swapRow(arr, i, j);
     }
@@ -410,10 +414,9 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   bool *indicator = new bool[boundary2 * B];
   // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
   std::vector<int64_t> partitionIdx;
-  // TODO: ? change B to 1
-  fyShuffle(inStructureId, inSize, B);
+  fyShuffle(inStructureId, inSize, 1);
   for (int64_t i = 0; i < boundary1; ++i) {
-    printf("Progress: %ld / %ld\n", i, boundary1-1);
+    printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     eServer.nonEnc = 1;
     eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
@@ -439,6 +442,11 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
       quickSortMulti(trustedM3, 0, blockNum-1, pivots, 1, p0, partitionIdx);
       sort(partitionIdx.begin(), partitionIdx.end());
       partitionIdx.insert(partitionIdx.begin(), -1);
+      printf("Pivots' size: %d, data size: %d \n", partitionIdx.size(), blockNum);
+      for (int i = 0; i < partitionIdx.size(); ++i) {
+        printf("%d ", partitionIdx[i]);
+      }
+      printf("\n");
       for (int j = 0; j < p0; ++j) {
         index1 = partitionIdx[j]+1;
         index2 = partitionIdx[j+1];
@@ -482,12 +490,19 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   int64_t sampleSize;
   // step1. get samples & pivots
   if ((int64_t)ceil(alpha * N) < M) {
+    printf("In memory samples\n");
     sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
     quantileCal(inSize, trustedM2, sampleSize, P);
   } else {
+    printf("External memory samples\n");
     sampleSize = SampleEx(inputId, sampleId, sortedSampleId, ODSLOOSE);
-    ODSquantileCal(sampleId, sampleSize, sortedSampleId, pivots);
+    ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
   }
+  printf("Quantiles %d:\n", trustedM2.size());
+  for (int i = 0; i < trustedM2.size(); ++i) {
+    printf("(%d, %d) ", trustedM2[i].primaryKey, trustedM2[i].sortKey);
+  }
+  printf("\n");
   // step2. partition
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
@@ -500,11 +515,10 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Progress: %ld / %ld\n", i, sectionNum-1);
+      printf("Final progress: %ld / %ld\n", i, sectionNum-1);
       eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
-      printf("After move dummy\n");
       if (seclevel == FULLY) {
         internalObliviousSort(trustedM, 0, k);
       } else {
@@ -524,7 +538,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     freeAllocate(outputId2, outputId2, totalLevelSize);
     trustedM = new EncOneBlock[M];
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Progress: %ld / %ld\n", i, sectionNum-1);
+      printf("Final progress: %ld / %ld\n", i, sectionNum-1);
       eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);

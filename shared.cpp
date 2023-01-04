@@ -70,7 +70,6 @@ void Heap::replaceRoot(HeapNode x) {
 
 EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
   encOneBlockSize = sizeof(EncOneBlock);
-  encDataSize = encOneBlockSize - 16; 
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -100,12 +99,10 @@ int EnclaveServer::printf(const char *fmt, ...) {
 void EnclaveServer::ofb_encrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_aes_init(&aes);
   mbedtls_aes_setkey_enc(&aes, key, 256);
-  mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->iv)), 16);
-  unsigned char iv[16];
+  mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->randomKey)), 4);
   iv_offset = 0;
-  memcpy(iv, (uint8_t*)(&(buffer->iv)), 16);
-  mbedtls_aes_crypt_ofb(&aes, encSize, &iv_offset, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
-  memcpy((uint8_t*)(&(buffer->iv)), iv, 16);
+  memset(iv, 0, sizeof(iv));
+  mbedtls_aes_crypt_ofb(&aes, encSize, &iv_offset, iv, (uint8_t*)buffer, (uint8_t*)buffer);
   mbedtls_aes_free(&aes);
   return;
 }
@@ -115,7 +112,8 @@ void EnclaveServer::ofb_decrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_aes_init(&aes);
   mbedtls_aes_setkey_enc(&aes, key, 256);
   iv_offset1 = 0;
-  mbedtls_aes_crypt_ofb(&aes, encSize, &iv_offset1, (uint8_t*)(&(buffer->iv)), (uint8_t*)buffer, (uint8_t*)buffer);
+  memset(iv, 0, sizeof(iv));
+  mbedtls_aes_crypt_ofb(&aes, encSize, &iv_offset1, iv, (uint8_t*)buffer, (uint8_t*)buffer);
   mbedtls_aes_free(&aes);
   return;
 }
@@ -123,15 +121,13 @@ void EnclaveServer::ofb_decrypt(EncOneBlock* buffer, int encSize) {
 void EnclaveServer::gcm_encrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_gcm_init(&gcm);
   mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, (const unsigned char*)key, 256);
-  mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->iv)), 16);
-  unsigned char iv[16];
-  memcpy(iv, (uint8_t*)(&(buffer->iv)), 16);
+  mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->randomKey)), 4);
+  memset(iv, 0, sizeof(iv));
   // Initialise the GCM cipher...
-  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_ENCRYPT, (const unsigned char*)iv, 16);
+  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_ENCRYPT, iv, 16);
   // Send the intialised cipher some data and store it...
   size_t realOutSize;
   mbedtls_gcm_update(&gcm, (uint8_t*)buffer, encSize, (uint8_t*)buffer, encSize, &realOutSize);
-  memcpy((uint8_t*)(&(buffer->iv)), iv, 16);
   // Free up the context.
   mbedtls_gcm_free(&gcm);
   return;
@@ -141,7 +137,8 @@ void EnclaveServer::gcm_encrypt(EncOneBlock* buffer, int encSize) {
 void EnclaveServer::gcm_decrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_gcm_init(&gcm);
   mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, (const unsigned char*) key, 256);
-  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_DECRYPT, (uint8_t*)(&(buffer->iv)), 16);
+  memset(iv, 0, sizeof(iv));
+  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_DECRYPT, iv, 16);
   size_t realOutSize;
   mbedtls_gcm_update(&gcm, (uint8_t*)buffer, encSize, (uint8_t*)buffer, encSize, &realOutSize);
   mbedtls_gcm_free(&gcm);
@@ -163,11 +160,11 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
-        ofb_decrypt(buffer + i, encDataSize);
+        ofb_decrypt(buffer + i, encOneBlockSize);
       }
     } else if (encmode ==GCM) {
       for (int i = 0; i < pageSize; ++i) {
-        gcm_decrypt(buffer + i, encDataSize);
+        gcm_decrypt(buffer + i, encOneBlockSize);
       }
     }
   }
@@ -184,11 +181,11 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
   } else {
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
-        ofb_encrypt(buffer + i, encDataSize);
+        ofb_encrypt(buffer + i, encOneBlockSize);
       }
     } else if (encmode == GCM) {
       for (int i = 0; i < pageSize; ++i) {
-        gcm_encrypt(buffer + i, encDataSize);
+        gcm_encrypt(buffer + i, encOneBlockSize);
       }
     }
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
@@ -201,7 +198,7 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
     return ;
   }
   if (dummyNum < 0) {
-    printf("Dummy padding error!");
+    printf("Dummy padding error!\n");
     return ;
   }
   int64_t boundary = ceil(1.0 * elementNum / B);
@@ -248,12 +245,6 @@ bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
         return true;
       } else if (a->payLoad < b->payLoad) {
         return false;
-      } else {
-        if (a->randomKey > b->randomKey) {
-          return true;
-        } else if (a->randomKey < b->randomKey) {
-          return false;
-        }
       }
     }
   }
@@ -289,6 +280,8 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
 
 void EnclaveServer::shuffle(EncOneBlock *a, int64_t size) {
   int64_t j;
+  std::random_device rd;
+  std::mt19937 rng{rd()};
   for (int64_t i = size - 1; i > 0; --i) {
     std::uniform_int_distribution<int64_t> dist{0, i};
     j = dist(rng);

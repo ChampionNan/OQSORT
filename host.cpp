@@ -71,14 +71,15 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     P = vm["P"].as<int>();
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
-    M = (128 << 20) / 32; // (MB << 20) / 1 element bytes
+    M = (128 << 20) / 16; // (MB << 20) / 1 element bytes
     N = 8 * M;
-    B = 4; // (4 << 10) / 32; // 4KB pagesize
+    B = 4; // (4 << 10) / 16; // 4KB pagesize
     sigma = 40;
-    sortId = 1;
-    alpha = 0.078420;
-    beta = 0.024556;
-    gamma = 0.024556;
+    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
+    sortId = 0;
+    alpha = 0.082341;
+    beta = 0.016883;
+    gamma = 0.016883;
     P = 9;
   }
 }
@@ -91,7 +92,7 @@ int main(int argc, const char* argv[]) {
   int inputId = 1;
   // oe_enclave_t* enclave = NULL;
   high_resolution_clock::time_point start, end;
-  milliseconds duration;
+  seconds duration;
   // step1: init test numbers
   InputType inputtype = SETINMAIN;
   int datatype, B, sigma, sortId, P;
@@ -136,7 +137,7 @@ int main(int argc, const char* argv[]) {
     ret = -1;
   }*/
   // step4: std::cout execution time
-  duration = duration_cast<milliseconds>(end - start);
+  duration = duration_cast<seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
   printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   // testEnc(arrayAddr, *resId, *resN);
