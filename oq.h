@@ -7,10 +7,10 @@
 class ODS {
   public:
     ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P, int is_tight, SecLevel seclevel, int sampleId);
-    void calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int &r, int &p0);
+    void calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int64_t &r, int64_t &p0);
     void floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x);
     int64_t Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype);
-    int64_t Hypergeometric(int64_t N, int64_t M, int64_t n);
+    int64_t Hypergeometric(int64_t &N, int64_t M, int64_t &n);
     int64_t SampleEx(int inStructureId, int sampleId, int sortedSampleId, SortType sorttype);
     void ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots);
     void quantileCal(int inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p);

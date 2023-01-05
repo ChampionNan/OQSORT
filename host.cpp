@@ -72,15 +72,15 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
     M = (128 << 20) / 16; // (MB << 20) / 1 element bytes
-    N = 8 * M;
-    B = 4; // (4 << 10) / 16; // 4KB pagesize
+    N = 500 * M;
+    B = (4 << 10) / 16; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 0;
-    alpha = 0.082341;
-    beta = 0.016883;
-    gamma = 0.016883;
-    P = 9;
+    sortId = 1;
+    alpha = 0.01;
+    beta = 0.04;
+    gamma = 0.08;
+    P = 565;
   }
 }
 
@@ -138,7 +138,7 @@ int main(int argc, const char* argv[]) {
   }*/
   // step4: std::cout execution time
   duration = duration_cast<seconds>(end - start);
-  std::cout << "Time taken by sorting function: " << duration.count() << " miliseconds" << std::endl;
+  std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
   printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   // testEnc(arrayAddr, *resId, *resN);
   data.print(*resId, *resN, FILEOUT, data.filepath);

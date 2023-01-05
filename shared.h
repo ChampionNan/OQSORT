@@ -26,6 +26,8 @@
 
 // #include "oqsort_t.h"
 
+extern double IOcost;
+
 class EnclaveServer {
   public:
     EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);

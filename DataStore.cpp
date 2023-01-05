@@ -23,8 +23,8 @@ void DataStore::init(int structureId, int64_t size) {
   // #pragma omp parallel for
   int MAX = std::numeric_limits<int>::max();
   for (int64_t i = 0; i < size; ++i) {
-    addr[i].primaryKey = i;
-    addr[i].sortKey = size - i;
+    addr[i].primaryKey = i & 0xffffffff;
+    addr[i].sortKey = (size - i) & 0xffffffff;
     // addr[i].payLoad = DUMMY<int>();
     // addr[i].randomKey = DUMMY<int>();
   }
