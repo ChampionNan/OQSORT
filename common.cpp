@@ -36,6 +36,59 @@ int64_t ceil_divide(int64_t n, int64_t q) {
   return p + 1;
 }
 
+void shuffle(EncOneBlock *a, int64_t sampleSize) {
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  for (int64_t k = 0; k < sampleSize; ++k) {
+    std::uniform_int_distribution<int64_t> unif(k, sampleSize - 1);
+    int64_t l = unif(rng);
+    EncOneBlock temp = a[k];
+    a[k] = a[l];
+    a[l] = temp;
+  }
+}
+
+int64_t Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
+  int64_t m = 0;
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+  double rate = double(n) / N;
+  for (int64_t j = 0; j < M; ++j) {
+    if (dist(rng) < rate) {
+      m += 1;
+      n -= 1;
+    }
+    N -= 1;
+    rate = double(n) / double(N);
+  }
+  return m;
+}
+
+int64_t OcallSample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight) {
+  int64_t N_prime = N;
+  int64_t boundary = ceil(1.0 * N_prime / M);
+  int64_t realNum = 0;
+  int64_t readStart = 0;
+  EncOneBlock *trustedM1 = new EncOneBlock[M];
+  int64_t m = 0, Msize;
+  freeAllocate(sampleId, sampleId, n_prime);
+  for (int64_t i = 0; i < boundary; ++i) {
+    Msize = std::min(M, N - i * M);
+    m = Hypergeometric(N_prime, Msize, n_prime);
+    printf("Sampling progress: %ld / %ld, m: %d\n", i, boundary-1, m);
+    if (is_tight || (!is_tight && m > 0)) {
+      memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
+      readStart += Msize;
+      shuffle(trustedM1, Msize);
+      memcpy(arrayAddr[sampleId] + realNum, trustedM1, m * sizeof(EncOneBlock));
+      realNum += m;
+    }
+  }
+  delete [] trustedM1;
+  return realNum;
+}
+
 /* OCall functions */
 void ocall_print_string(const char *str) {
   /* Proxy/Bridge will check the length and null-terminate the input string to prevent buffer overflow. */
@@ -99,3 +152,4 @@ void fyShuffle(int structureId, size_t size, int B) {
   }
   std::cout << "Finished floyd shuffle\n";
 }
+

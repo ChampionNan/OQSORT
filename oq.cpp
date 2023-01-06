@@ -77,49 +77,6 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   return n_prime;
 }
 
-int64_t ODS::Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
-  int64_t m = 0;
-  std::uniform_real_distribution<double> dist(0.0, 1.0);
-  double rate = double(n) / N;
-  for (int64_t j = 0; j < M; ++j) {
-    if (dist(rng) < rate) {
-      m += 1;
-      n -= 1;
-    }
-    N -= 1;
-    rate = double(n) / double(N);
-  }
-  return m;
-}
-
-int64_t ODS::SampleEx(int inStructureId, int sampleId, int sortedSampleId, SortType sorttype) {
-  int64_t N_prime = N;
-  int64_t n_prime = ceil(1.0 * alpha * N_prime);
-  int64_t boundary = ceil(1.0 * N_prime / M);
-  int64_t realNum = 0;
-  int64_t readStart = 0;
-  int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
-  EncOneBlock *trustedM1 = new EncOneBlock[M];
-  int64_t m = 0, Msize;
-  freeAllocate(sampleId, sampleId, n_prime);
-  for (int64_t i = 0; i < boundary; ++i) {
-    Msize = std::min(M, N - i * M);
-    m = Hypergeometric(N_prime, Msize, n_prime);
-    printf("Sampling progress: %ld / %ld, m: %d\n", i, boundary-1, m);
-    if (is_tight || (!is_tight && m > 0)) {
-      eServer.opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
-      readStart += Msize;
-      eServer.shuffle(trustedM1, Msize);
-      eServer.opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
-      realNum += m;
-      // n_prime -= m;
-    }
-    // N_prime -= Msize;
-  }
-  delete [] trustedM1;
-  return realNum;
-}
-
 // get pivots from external stored samples
 void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
   printf("In ODSquantileCal\n");
@@ -486,8 +443,9 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     quantileCal(inSize, trustedM2, sampleSize, P);
     printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   } else {
+    int64_t n_prime = ceil(1.0 * alpha * N);
     printf("External memory samples\n");
-    sampleSize = SampleEx(inputId, sampleId, sortedSampleId, ODSLOOSE);
+    sampleSize = OcallSample(inputId, sampleId, sortedSampleId, N, M, n_prime, 0);
     ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
     printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   }

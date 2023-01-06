@@ -40,7 +40,7 @@ void DataStore::print(int structureId, int64_t size, OutputType outputtype, cons
     cout << endl;
   } else if (outputtype == FILEOUT) {
     ofstream fout(filepath);
-    int64_t outsize = size;
+    int64_t outsize = size / 1000;
     for (int64_t i = 0; i < outsize; ++i) {
       fout << "addr[" << i << "]: (" << addr[i].primaryKey;
       fout << ", " << addr[i].sortKey << ")" << endl;

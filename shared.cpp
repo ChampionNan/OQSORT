@@ -277,14 +277,3 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   memmove(a + j, temp, encOneBlockSize);
   delete temp;
 }
-
-void EnclaveServer::shuffle(EncOneBlock *a, int64_t size) {
-  int64_t j;
-  std::random_device rd;
-  std::mt19937 rng{rd()};
-  for (int64_t i = size - 1; i > 0; --i) {
-    std::uniform_int_distribution<int64_t> dist{0, i};
-    j = dist(rng);
-    swapRow(a, i, j);
-  }
-}

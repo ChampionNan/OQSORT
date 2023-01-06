@@ -43,7 +43,6 @@ class EnclaveServer {
     int64_t moveDummy(EncOneBlock *a, int64_t size);
     void setValue(EncOneBlock *a, int64_t size, int value);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
-    void shuffle(EncOneBlock *a, int64_t size);
 
   public:
     int64_t N, M;
