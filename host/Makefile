@@ -14,9 +14,10 @@ build:
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
 	$(CXX) -g -c $(CXXFLAGS) host.cpp 
-	$(CXX) -g -c $(CXXFLAGS) ../include/IOTools.cpp
+	$(CXX) -g -c $(CXXFLAGS) ../include/common.cpp
+	$(CXX) -g -c $(CXXFLAGS) ../include/DataStore.cpp
 	$(CC) -g -c $(CFLAGS) oqsort_u.c
-	$(CXX) -o oqsorthost oqsort_u.o host.o IOTools.o $(LDFLAGS)
+	$(CXX) -o oqsorthost oqsort_u.o host.o common.o DataStore.o $(LDFLAGS)
 
 clean:
 	rm -f oqsorthost oqsort_* *.o

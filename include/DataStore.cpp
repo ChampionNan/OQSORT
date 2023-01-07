@@ -1,0 +1,68 @@
+#include "DataStore.h"
+#include "common.h"
+
+using namespace std;
+
+
+DataStore::DataStore(EncOneBlock **arrayAddr, int64_t N, int64_t M, int B) : arrayAddr{arrayAddr}, N{N}, M{M}, B{B} {}
+
+DataStore::~DataStore() {
+  for (int id : delArray) {
+    delete [](arrayAddr[id]);
+  }
+  cout << "Delete DataStore objects\n";
+}
+
+void DataStore::init(int structureId, int64_t size) {
+  int64_t i, j, blockNumber;
+  // 1. allocate memory
+  arrayAddr[structureId] = new EncOneBlock[size];
+  EncOneBlock *addr = arrayAddr[structureId];
+  delArray.push_back(structureId);
+  // 2. value initialization
+  // #pragma omp parallel for
+  int MAX = std::numeric_limits<int>::max();
+  for (int64_t i = 0; i < size; ++i) {
+    addr[i].primaryKey = i & 0xffffffff;
+    addr[i].sortKey = (size - i) & 0xffffffff;
+    // addr[i].payLoad = DUMMY<int>();
+    // addr[i].randomKey = DUMMY<int>();
+  }
+}
+
+void DataStore::print(int structureId, int64_t size, OutputType outputtype, const char *filepath) {
+  EncOneBlock *addr = arrayAddr[structureId];
+  if (outputtype == TERMINAL) {
+    for (int i = 0; i < size; ++i) {
+      cout << "addr[" << i << "]: (" << addr[i].primaryKey;
+      cout << ", " << addr[i].sortKey << ")" << endl;
+    }
+    cout << endl;
+  } else if (outputtype == FILEOUT) {
+    ofstream fout(filepath);
+    int64_t outsize = size / 1000;
+    for (int64_t i = 0; i < outsize; ++i) {
+      fout << "addr[" << i << "]: (" << addr[i].primaryKey;
+      fout << ", " << addr[i].sortKey << ")" << endl;
+    }
+    fout << endl;
+    fout.close();
+  }
+}
+
+void DataStore::test(int structureId, int64_t size, SortType sorttype) {
+  EncOneBlock *addr = arrayAddr[structureId];
+  int v = 1;
+  for (int i = 0; i < size; ++i) {
+    if (addr[i].sortKey == DUMMY<int>() && sorttype != ODSLOOSE) {
+      throw "Dummy found in non-loose sort! ";
+    } else if (addr[i].sortKey != DUMMY<int>() && addr[i].sortKey != v++) {
+      throw "Value error";
+    }
+  }
+}
+
+int64_t DataStore::RandRange(int64_t start, int64_t end) {
+  std::uniform_int_distribution<int64_t> distr(start, end - 1);
+  return distr(rng);
+}

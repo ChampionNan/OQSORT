@@ -2,7 +2,6 @@
 #define SHARED_H
 
 #include "../include/common.h"
-#include "../include/definitions.h"
 
 #include <mbedtls/aes.h>
 #include <mbedtls/gcm.h>
@@ -23,52 +22,65 @@
 #include <cstdarg>
 #include <unordered_set>
 #include <time.h>
-// #include <cstdlib>
 
 #include "oqsort_t.h"
 
-extern double ALPHA, BETA, P, _ALPHA, _BETA, _P;
-extern int N, M, BLOCK_DATA_SIZE;
-extern int is_tight;
-extern int nonEnc;
+extern double IOcost;
+
+class EnclaveServer {
+  public:
+    EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);
+    int printf(const char *fmt, ...);
+    void ofb_encrypt(EncOneBlock* buffer, int blockSize);
+    void ofb_decrypt(EncOneBlock* buffer, int blockSize);
+    void gcm_encrypt(EncOneBlock* buffer, int blockSize);
+    void gcm_decrypt(EncOneBlock* buffer, int blockSize);
+    void OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId);
+    void OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId);
+    void opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum);
+    bool cmpHelper(EncOneBlock *a, EncOneBlock *b);
+    int64_t moveDummy(EncOneBlock *a, int64_t size);
+    void setValue(EncOneBlock *a, int64_t size, int value);
+    void swapRow(EncOneBlock *a, int64_t i, int64_t j);
+
+  public:
+    int64_t N, M;
+    int B, sigma;
+    int encOneBlockSize; // sizeof(EncOneBlock)
+    int nonEnc; // no encryption
+    EncMode encmode = OFB;
+  private:
+    unsigned char key[32];
+    mbedtls_aes_context aes;
+    mbedtls_gcm_context gcm;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_entropy_context entropy;
+    size_t iv_offset, iv_offset1;
+    unsigned char iv[16];
+};
 
 struct HeapNode {
-  Bucket_x *data;
-  int bucketIdx;
-  int elemIdx;
+  EncOneBlock *data;
+  int64_t bucketIdx;
+  int64_t elemIdx;
 };
 
 class Heap {
   HeapNode *harr;
-  int heapSize;
-  int batchSize;
+  int64_t heapSize;
+  int64_t batchSize;
 public:
-  Heap(HeapNode *a, int size, int bsize);
-  void Heapify(int i);
-  int left(int i);
-  int right (int i);
+  Heap(EnclaveServer &eServer, HeapNode *a, int64_t size, int64_t bsize);
+  void Heapify(int64_t i);
+  int64_t left(int64_t i);
+  int64_t right(int64_t i);
   void swapHeapNode(HeapNode *a, HeapNode *b);
   HeapNode *getRoot();
-  int getHeapSize();
+  int64_t getHeapSize();
   bool reduceSizeByOne();
   void replaceRoot(HeapNode x);
+private:
+  EnclaveServer eServer;
 };
-
-int printf(const char *fmt, ...);
-int greatestPowerOfTwoLessThan(double n);
-int smallestPowerOfKLargerThan(int n, int k);
-void aes_init();
-void cbc_encrypt(EncBlock* buffer, int blockSize);
-void cbc_decrypt(EncBlock* buffer, int blockSize);
-void gcm_encrypt(EncBlock* buffer, int blockSize);
-void gcm_decrypt(EncBlock* buffer, int blockSize);
-void OcallReadBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
-void OcallWriteBlock(int startIdx, int offset, int* buffer, int blockSize, int structureId);
-void opOneLinearScanBlock(int index, int* block, int blockSize, int structureId, int write, int dummyNum=0);
-bool cmpHelper(int *a, int *b);
-bool cmpHelper(Bucket_x *a, Bucket_x *b);
-int moveDummy(int *a, int size);
-void swapRow(int *a, int *b);
-void swapRow(Bucket_x *a, Bucket_x *b);
 
 #endif // !SHARED_H

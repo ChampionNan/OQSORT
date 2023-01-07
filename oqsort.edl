@@ -3,27 +3,34 @@ enclave {
   from "openenclave/edl/sgx/platform.edl" import *;
 
   trusted {
-    public void callSort(int sortId,
-                         int structureId, int paddedSize,
-       [in, out, count=1]int *resId,
-       [in, out, count=1]int *resN,
-       [in, count=6]double *params);
+    public void callSort(
+      [in, out, count=1]int *resId,
+      [in, out, count=1]int *resN,
+      [in, count=10]double *params);
   };
 
   untrusted {
+    int64_t OcallSample(
+      int inStructureId, 
+      int sampleId, 
+      int sortedSampleId, 
+      int64_t N, 
+      int64_t M, 
+      int64_t n_prime, 
+      int is_tight)
     void OcallRB(
       int index,
       [out, size=blockSize]int* buffer,
-      int blockSize,
-      int structureId) transition_using_threads;
+      size_t blockSize,
+      int structureId);
     void OcallWB(
       int index,
       int offset,
       [in, size=blockSize]int* buffer,
-      int blockSize,
-      int structureId) transition_using_threads;
+      size_t blockSize,
+      int structureId);
     void ocall_print_string([in, string] const char *str);
-    void freeAllocate(int structureIdM, int structureIdF, int size);
-    void fyShuffle(int structureId, int size, int B);
+    void freeAllocate(int structureIdM, int structureIdF, size_t size);
+    void fyShuffle(int structureId, size_t size, int B);
   };
 };

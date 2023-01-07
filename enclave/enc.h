@@ -1,7 +1,6 @@
-#ifndef _ENC_H_
-#define _ENC_H_
+#ifndef ENC_H
+#define ENC_H
 
-// Function Declaration
-void callSort(int sortId, int structureId);
+void callSort(int *resId, int *resN, double *params);
 
-#endif // !_ENC_H_
+#endif // !ENC_H
