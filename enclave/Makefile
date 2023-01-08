@@ -21,10 +21,10 @@ build:
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
 	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/bitonic.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/bucket.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/quick.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 ./sort/oq.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 bitonic.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 bucket.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 quick.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 oq.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 shared.cpp
 	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
 	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 oqsort_t.c

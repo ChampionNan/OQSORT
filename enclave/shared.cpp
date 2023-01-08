@@ -1,5 +1,4 @@
 #include "shared.h"
-#include "../include/common.h"
 
 Heap::Heap(EnclaveServer &eServer, HeapNode *a, int64_t size, int64_t bsize) : eServer(eServer) {
   heapSize = size;
@@ -70,7 +69,6 @@ void Heap::replaceRoot(HeapNode x) {
 
 EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
   encOneBlockSize = sizeof(EncOneBlock);
-  IOcost = 0;
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -281,12 +279,6 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   delete temp;
 }
 
-int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight) {
-  int64_t sampleSize;
-  OcallSample(inStructureId, sampleId, sortedSampleId, N, M, n_prime, is_tight, &sampleSize);
-  return sampleSize;
-}
-
 int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
   int64_t k = 1;
   while (k > 0 && k < n) {
@@ -301,4 +293,32 @@ int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
     num = num * k;
   }
   return num;
+}
+
+int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight) {
+  int64_t sampleSize;
+  OcallSample(inStructureId, sampleId, N, M, n_prime, is_tight, &sampleSize);
+  return sampleSize;
+}
+
+// NOTE: USed for sorting functions
+bool EnclaveServer::cmpFunc(const EncOneBlock &a, const EncOneBlock &b) {
+  if (a.sortKey < b.sortKey) {
+    return true;
+  } else if (a.sortKey > b.sortKey) {
+    return false;
+  } else {
+    if (a.primaryKey < b.primaryKey) {
+      return true;
+    } else if (a.primaryKey > b.primaryKey) {
+      return false;
+    } else {
+      if (a.payLoad < b.payLoad) {
+        return true;
+      } else if (a.payLoad > b.payLoad) {
+        return false;
+      }
+    }
+  }
+  return true; // equal
 }

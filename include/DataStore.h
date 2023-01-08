@@ -2,6 +2,7 @@
 #define IOTOOLS_H
 
 #include <cstdint>
+#include <cstdlib>
 #include <iostream>
 #include <vector>
 #include <fstream>

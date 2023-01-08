@@ -1,7 +1,7 @@
 #ifndef BUCKET_SORT_H
 #define BUCKET_SORT_H
 
-#include "../shared.h"
+#include "shared.h"
 #include <random>
 
 class Bucket {

@@ -1,7 +1,7 @@
 #ifndef BITONIC_H
 #define BITONIC_H
 
-#include "../shared.h"
+#include "shared.h"
 
 class Bitonic {
   public:

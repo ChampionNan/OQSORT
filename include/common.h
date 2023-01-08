@@ -83,18 +83,6 @@ struct EncOneBlock {
         return true;
       } else if (a.primaryKey > b.primaryKey) {
         return false;
-      } else {
-        if (a.payLoad < b.payLoad) {
-          return true;
-        } else if (a.payLoad > b.payLoad) {
-          return false;
-        } else {
-          if (a.randomKey < b.randomKey) {
-            return true;
-          } else if (a.randomKey > b.randomKey) {
-            return false;
-          }
-        }
       }
     }
     return true; // equal

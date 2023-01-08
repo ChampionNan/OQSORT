@@ -1,7 +1,7 @@
 #ifndef QUICK_SORT_H
 #define QUICK_SORT_H
 
-#include "../shared.h"
+#include "shared.h"
 
 class Quick {
   public:

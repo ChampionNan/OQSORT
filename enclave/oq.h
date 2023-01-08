@@ -1,7 +1,7 @@
 #ifndef OQ_SORT_H
 #define OQ_SORT_H
 
-#include "../shared.h"
+#include "shared.h"
 #include <utility>
 
 class ODS {
@@ -11,7 +11,7 @@ class ODS {
     void floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x);
     int64_t Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype);
     void ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots);
-    void quantileCal(int inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p);
+    void quantileCal(int64_t inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p);
     void quantileCal2(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p);
     int64_t partitionMulti(EncOneBlock *arr, int64_t low, int64_t high, EncOneBlock pivot);
     void quickSortMulti(EncOneBlock *arr, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx);

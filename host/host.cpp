@@ -22,7 +22,7 @@ EncOneBlock *arrayAddr[NUM_STRUCTURES];
 double IOcost = 0;
 
 /* OCall functions */
-void OcallSample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight, int64_t *ret) {
+void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight, int64_t *ret) {
   int64_t N_prime = N;
   int64_t boundary = ceil(1.0 * N_prime / M);
   int64_t realNum = 0;
@@ -127,7 +127,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
-    M = (128 << 20) / 16; // (MB << 20) / 1 element bytes
+    M = (64 << 20) / 16; // (MB << 20) / 1 element bytes
     N = 200 * M;
     B = (4 << 10) / 16; // 4KB pagesize
     sigma = 40;

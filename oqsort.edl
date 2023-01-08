@@ -12,13 +12,12 @@ enclave {
   untrusted {
     void OcallSample(
       int inStructureId, 
-      int sampleId, 
-      int sortedSampleId, 
+      int sampleId,
       int64_t N, 
       int64_t M, 
       int64_t n_prime,
       int is_tight,
-      [out, count=1]int64_t *ret);
+      [in, out, count=1]int64_t *ret);
     void OcallRB(
       size_t index,
       [out, size=blockSize]int* buffer,
