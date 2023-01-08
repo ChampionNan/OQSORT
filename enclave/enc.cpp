@@ -1,10 +1,11 @@
 // #include "enc.h"
-#include "bitonic.h"
-#include "bucket.h"
-#include "quick.h"
-#include "oq.h"
+#include "sort/bitonic.h"
+#include "sort/bucket.h"
+#include "sort/quick.h"
+#include "sort/oq.h"
 #include "shared.h"
-#include "enc.h"
+
+#include <ctime>
 
 void callSort(int *resId, int *resN, double *params) {
   int sortId = params[0];
@@ -41,5 +42,7 @@ void callSort(int *resId, int *resN, double *params) {
     bisort.bitonicSort(0, size, 0);
     *resId = inputId;
     *resN = N;
+  } else {
+    // TODO: 
   }
 }

@@ -20,7 +20,7 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int
     return;
   } else {
     int swap = 0, nswap;
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
     for (int64_t i = 0; i < size - mid; ++i) {
       EncOneBlock num1 = a[start + i];
       EncOneBlock num2 = a[start + mid + i];
@@ -41,7 +41,7 @@ void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, int 
   if (size <= 1) {
     return ;
   } else {
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
     smallBitonicSort(a, start, mid, 1);
     smallBitonicSort(a, start + mid, size - mid, 0);
     smallBitonicMerge(a, start, size, flipped);
@@ -61,10 +61,10 @@ void Bitonic::bitonicMerge(int64_t start, int64_t size, int flipped) {
     for (int64_t i = 0; i < size; ++i) {
       eServer.opOneLinearScanBlock((start + i) * B, &trustedMemory[i * B], B, inputId, 1, 0);
     }
-    delete trustedMemory;
+    delete [] trustedMemory;
   } else {
     int swap = 0, nswap;
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
     for (int64_t i = 0; i < size - mid; ++i) {
       eServer.opOneLinearScanBlock((start + i) * B, row1, B, inputId, 0, 0);
       eServer.opOneLinearScanBlock((start + mid + i) * B, row2, B, inputId, 0, 0);
@@ -100,9 +100,9 @@ void Bitonic::bitonicSort(int64_t start, int64_t size, int flipped) {
     for (int64_t i = 0; i < size; ++i) {
       eServer.opOneLinearScanBlock((start + i) * B, &trustedMemory[i * B], B, inputId, 1, 0);
     }
-    delete trustedMemory;
+    delete [] trustedMemory;
   } else {
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
     bitonicSort(start, mid, 1);
     bitonicSort(start + mid, size - mid, 0);
     bitonicMerge(start, size, flipped);

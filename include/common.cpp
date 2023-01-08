@@ -1,11 +1,11 @@
 #include "common.h"
 
 int64_t greatestPowerOfTwoLessThan(double n) {
-    int64_t k = 1;
-    while (k > 0 && k < n) {
-        k = k << 1;
-    }
-    return k >> 1;
+  int64_t k = 1;
+  while (k > 0 && k < n) {
+      k = k << 1;
+   }
+  return k >> 1;
 }
 
 int64_t smallestPowerOfKLargerThan(int64_t n, int k) {

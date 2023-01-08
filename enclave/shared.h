@@ -25,8 +25,6 @@
 
 #include "oqsort_t.h"
 
-extern double IOcost;
-
 class EnclaveServer {
   public:
     EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);
@@ -42,10 +40,14 @@ class EnclaveServer {
     int64_t moveDummy(EncOneBlock *a, int64_t size);
     void setValue(EncOneBlock *a, int64_t size, int value);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
+    int64_t Sample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight);
+    int64_t greatestPowerOfTwoLessThan(double n);
+    int64_t smallestPowerOfKLargerThan(int64_t n, int k);
 
   public:
     int64_t N, M;
     int B, sigma;
+    int64_t IOcost;
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
     EncMode encmode = OFB;

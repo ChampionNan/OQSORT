@@ -244,9 +244,9 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   int64_t M = right - left;
   int64_t hatM = M + ceil((beta + gamma) * M);
   int64_t n = ceil(1.0 * alpha * M);
-  int r = ceil(log2(1.0 * M / smallM));
-  int p = pow(2, r) - 1; // we need 2^r-1 pivots
-  printf("level number: %d,pivots number: %d\n", r, p);
+  int64_t r = ceil(log2(1.0 * M / smallM));
+  int64_t p = pow(2, r) - 1; // we need 2^r-1 pivots
+  printf("level number: %ld,pivots number: %ld\n", r, p);
   // 1. get D's samples
   std::vector<int64_t> sampleIdx;
   std::vector<EncOneBlock> samples;
@@ -283,7 +283,7 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   int64_t readStart, secSize, realNum, dummyNum, rightRealNum;
   EncOneBlock pivot;
   for (int64_t i = 1; i < r; ++i) { // index of level
-    printf("At level %d / %d\n", i, r-1);
+    printf("At level %ld / %ld\n", i, r-1);
     readStart = 0; // record read start for each section
     std::vector<int64_t> readSize, writeSize;
     if (i % 2 == 1) { // readSize in size0
@@ -294,14 +294,14 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
       readSize = size1;
     }
     for (int64_t j = 0; j < pow(2, i); ++j) { // j: #last level sections
-      printf("Section number: %d\n", j);
+      printf("Section number: %ld\n", j);
       realNum = eServer.moveDummy(&extD[readStart], readSize[j]);
       dummyNum = readSize[j] - realNum;
       pivot = samples[(2*j+1)*p/pow(2, i+1)];
-      printf("Real number: %d, dummy number: %d\n", realNum, dummyNum);
+      printf("Real number: %ld, dummy number: %ld\n", realNum, dummyNum);
       leftRealNum = assignM(extD, indicator, readStart, readStart+realNum, pivot);
       rightRealNum = realNum - leftRealNum;
-      printf("Before memset, %d, %d\n", readSize[j]/2-leftRealNum, dummyNum-(readSize[j]/2-leftRealNum));
+      printf("Before memset, %ld, %ld\n", readSize[j]/2-leftRealNum, dummyNum-(readSize[j]/2-leftRealNum));
       memset(&indicator[readStart+realNum], 1, sizeof(bool) * (readSize[j]/2-leftRealNum));
       // TODO: negative error
       memset(&indicator[readStart+realNum+(readSize[j]/2-leftRealNum)], 0, sizeof(bool) * (dummyNum-(readSize[j]/2-leftRealNum)));
@@ -335,15 +335,15 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   printf("At step5\n");
   int64_t writeStart = 0;
   for (int64_t i = 0; i < partitionIdx.size() - 1; ++i) {
-    printf("Begin at: %d, number: %d\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
+    printf("Begin at: %ld, number: %ld\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
     realNum = eServer.moveDummy(&extD[partitionIdx[i]], partitionIdx[i+1]-partitionIdx[i]);
     Bitonic bisort(eServer);
     bisort.smallBitonicSort(extD, partitionIdx[i], realNum, 0);
     memcpy(&D[writeStart], &extD[partitionIdx[i]], eServer.encOneBlockSize * realNum);
     writeStart += realNum;
   }
-  delete indicator;
-  delete extD;
+  delete [] indicator;
+  delete [] extD;
 }
 
 std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &pivots, int p, int outId) {
@@ -400,7 +400,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         index2 = partitionIdx[j+1];
         writeBackNum = index2 - index1 + 1;
         if (writeBackNum > smallSectionSize) {
-          printf("Overflow in small section M/p0: %d > %d\n", writeBackNum, smallSectionSize);
+          printf("Overflow in small section M/p0: %ld > %ld\n", writeBackNum, smallSectionSize);
         }
         eServer.nonEnc = 0;
         eServer.opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outId, 1, smallSectionSize - writeBackNum);
@@ -413,7 +413,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   delete [] indicator;
   // mbedtls_aes_free(&aes);
   if (bucketSize0 > M) {
-    printf("Each section size is greater than M, adjst parameters: %d, %d\n", bucketSize0, M);
+    printf("Each section size is greater than M, adjst parameters: %ld, %ld\n", bucketSize0, M);
   }
   return {bucketSize0, p0};
 }
@@ -434,35 +434,41 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultId = outputId1;
     resultN = inSize;
   }
+  clock_t startS, startQ, startP, startF, end;
   std::vector<EncOneBlock> trustedM2;
   int64_t sampleSize;
   // step1. get samples & pivots
   if ((int64_t)ceil(alpha * N) < M) {
     printf("In memory samples\n");
+    startS = time(NULL);
     sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
+    startQ = time(NULL);
     quantileCal(inSize, trustedM2, sampleSize, P);
-    printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   } else {
     int64_t n_prime = ceil(1.0 * alpha * N);
     printf("External memory samples\n");
-    sampleSize = OcallSample(inputId, sampleId, sortedSampleId, N, M, n_prime, 0);
+    startS = time(NULL);
+    sampleSize = eServer.Sample(inputId, sampleId, sortedSampleId, N, M, n_prime, 0);
+    startQ = time(NULL);
     ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
-    printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   }
   // step2. partition
+  startP = time(NULL);
+  printf("Time: %lf, IOcost: %ld\n", (double)(startP-startS), eServer.IOcost/N*B);
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
-  printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   // step3. Final sort
+  startF = time(NULL);
+  printf("Time: %lf, IOcost: %ld\n", (double)(startF-startP), eServer.IOcost/N*B);
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Final progress: %ld / %ld\n", i, sectionNum-1);
+      printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
@@ -485,7 +491,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     freeAllocate(outputId2, outputId2, totalLevelSize);
     trustedM = new EncOneBlock[M];
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Final progress: %ld / %ld\n", i, sectionNum-1);
+      printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
@@ -502,4 +508,6 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultId = outputId2;
     resultN = totalLevelSize;
   }
+  end = time(NULL);
+  printf("Time: %lf, IOcost: %ld\n", (double)(end-startF), eServer.IOcost/N*B);
 }

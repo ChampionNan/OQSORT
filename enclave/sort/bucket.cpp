@@ -13,8 +13,8 @@ Bucket::Bucket(EnclaveServer &eServer, int inStructureId) : eServer{eServer}, in
   Zd = 6 * (kappa + log(2.0 * N / Zd));
   Zd = ceil(Zd / B) * B;
   double thresh = 1.0 * M / Zd;
-  FAN_OUT = greatestPowerOfTwoLessThan(thresh)/2;
-  bucketNum = smallestPowerOfKLargerThan(ceil(2.0 * N / Zd), 2);
+  FAN_OUT = eServer.greatestPowerOfTwoLessThan(thresh)/2;
+  bucketNum = eServer.smallestPowerOfKLargerThan(ceil(2.0 * N / Zd), 2);
   HEAP_NODE_SIZE = fmax(floor(1.0 * M / (bucketNum + 1)), 1);
   MERGE_BATCH_SIZE = HEAP_NODE_SIZE;
   k1 = log2(FAN_OUT);
@@ -196,10 +196,10 @@ int Bucket::bucketOSort() {
     tempk = pow(2, expo);
     tempk_i = pow(tempk, i);
     tempk_i1 = tempk_i * tempk;
-    printf("level %d read&write %d buckets\n", i, tempk);
+    printf("level %d read&write %ld buckets\n", i, tempk);
     jboundary = (i != (ranBinAssignIters-1)) ? (bucketNum / tempk_i1) : 1;
     jjboundary = (i != (ranBinAssignIters-1)) ? tempk_i : (bucketNum/tempk);
-    printf("jboundary: %d, jjboundary: %d\n", jboundary, jjboundary);
+    printf("jboundary: %ld, jjboundary: %ld\n", jboundary, jjboundary);
     if (i % 2 == 0) {
       for (int64_t j = 0; j < jboundary; ++j) {
         for (int64_t jj = 0; jj < jjboundary; ++jj) {

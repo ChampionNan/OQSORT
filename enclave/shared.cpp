@@ -1,5 +1,5 @@
 #include "shared.h"
-#include "common.h"
+#include "../include/common.h"
 
 Heap::Heap(EnclaveServer &eServer, HeapNode *a, int64_t size, int64_t bsize) : eServer(eServer) {
   heapSize = size;
@@ -70,6 +70,7 @@ void Heap::replaceRoot(HeapNode x) {
 
 EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
   encOneBlockSize = sizeof(EncOneBlock);
+  IOcost = 0;
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -124,10 +125,9 @@ void EnclaveServer::gcm_encrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_ctr_drbg_random(&ctr_drbg, (uint8_t*)(&(buffer->randomKey)), 4);
   memset(iv, 0, sizeof(iv));
   // Initialise the GCM cipher...
-  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_ENCRYPT, iv, 16);
+  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_ENCRYPT, iv, 16, NULL, 0);
   // Send the intialised cipher some data and store it...
-  size_t realOutSize;
-  mbedtls_gcm_update(&gcm, (uint8_t*)buffer, encSize, (uint8_t*)buffer, encSize, &realOutSize);
+  mbedtls_gcm_update(&gcm, encSize, (uint8_t*)buffer, (uint8_t*)buffer);
   // Free up the context.
   mbedtls_gcm_free(&gcm);
   return;
@@ -138,9 +138,8 @@ void EnclaveServer::gcm_decrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_gcm_init(&gcm);
   mbedtls_gcm_setkey(&gcm, MBEDTLS_CIPHER_ID_AES, (const unsigned char*) key, 256);
   memset(iv, 0, sizeof(iv));
-  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_DECRYPT, iv, 16);
-  size_t realOutSize;
-  mbedtls_gcm_update(&gcm, (uint8_t*)buffer, encSize, (uint8_t*)buffer, encSize, &realOutSize);
+  mbedtls_gcm_starts(&gcm, MBEDTLS_GCM_DECRYPT, iv, 16, NULL, 0);
+  mbedtls_gcm_update(&gcm, encSize, (uint8_t*)buffer, (uint8_t*)buffer);
   mbedtls_gcm_free(&gcm);
   return;
 }
@@ -155,9 +154,11 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
   if (nonEnc) {
     // printf("Before Read nonEnc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    IOcost += 1;
   } else {
     // printf("Before Read Enc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    IOcost += 1;
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
         ofb_decrypt(buffer + i, encOneBlockSize);
@@ -178,6 +179,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
   }
   if (nonEnc) {
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    IOcost += 1;
   } else {
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -189,6 +191,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
       }
     }
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    IOcost += 1;
   }
 }
 // index: start index counted by elements (count from 0), elementNum: #elements
@@ -276,4 +279,26 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   memmove(a + i, a + j, encOneBlockSize);
   memmove(a + j, temp, encOneBlockSize);
   delete temp;
+}
+
+int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight) {
+  int64_t sampleSize;
+  OcallSample(inStructureId, sampleId, sortedSampleId, N, M, n_prime, is_tight, &sampleSize);
+  return sampleSize;
+}
+
+int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
+  int64_t k = 1;
+  while (k > 0 && k < n) {
+      k = k << 1;
+   }
+  return k >> 1;
+}
+
+int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
+  int64_t num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
+  }
+  return num;
 }

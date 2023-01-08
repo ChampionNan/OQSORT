@@ -10,22 +10,22 @@ enclave {
   };
 
   untrusted {
-    int64_t OcallSample(
+    void OcallSample(
       int inStructureId, 
       int sampleId, 
       int sortedSampleId, 
       int64_t N, 
       int64_t M, 
-      int64_t n_prime, 
-      int is_tight)
+      int64_t n_prime,
+      int is_tight,
+      [out, count=1]int64_t *ret);
     void OcallRB(
-      int index,
+      size_t index,
       [out, size=blockSize]int* buffer,
       size_t blockSize,
       int structureId);
     void OcallWB(
-      int index,
-      int offset,
+      size_t index,
       [in, size=blockSize]int* buffer,
       size_t blockSize,
       int structureId);
