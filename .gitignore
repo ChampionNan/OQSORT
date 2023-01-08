@@ -16,5 +16,7 @@ out.txt
 # .vscode
 .vscode/*.log
 
-# pic file
-pic/*
+# cmake
+CMakeFiles/*
+CMakeCache.txt
+cmake_install.cmake
