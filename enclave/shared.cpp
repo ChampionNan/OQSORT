@@ -279,6 +279,14 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   delete temp;
 }
 
+void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
+  EncOneBlock *temp = new EncOneBlock;
+  memcpy(temp, &arr[i], sizeof(arr[0]));
+  memcpy(&arr[i], &arr[j], sizeof(arr[0]));
+  memcpy(&arr[j], temp, sizeof(arr[0]));
+  delete temp;
+}
+
 int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
   int64_t k = 1;
   while (k > 0 && k < n) {
@@ -299,26 +307,4 @@ int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_
   int64_t sampleSize;
   OcallSample(inStructureId, sampleId, N, M, n_prime, is_tight, &sampleSize);
   return sampleSize;
-}
-
-// NOTE: USed for sorting functions
-bool EnclaveServer::cmpFunc(const EncOneBlock &a, const EncOneBlock &b) {
-  if (a.sortKey < b.sortKey) {
-    return true;
-  } else if (a.sortKey > b.sortKey) {
-    return false;
-  } else {
-    if (a.primaryKey < b.primaryKey) {
-      return true;
-    } else if (a.primaryKey > b.primaryKey) {
-      return false;
-    } else {
-      if (a.payLoad < b.payLoad) {
-        return true;
-      } else if (a.payLoad > b.payLoad) {
-        return false;
-      }
-    }
-  }
-  return true; // equal
 }

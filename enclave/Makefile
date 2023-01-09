@@ -21,12 +21,12 @@ build:
 		--search-path $(INCDIR) \
 		--search-path $(INCDIR)/openenclave/edl/sgx
 	@ echo "FLAGS: $(LDFLAGS) $(CRYPTO_LDFLAGS)"
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 bitonic.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 bucket.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 quick.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 oq.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 shared.cpp
-	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 -std=c++11 enc.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 bitonic.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 bucket.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 quick.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 oq.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 shared.cpp
+	$(CXX) -g -c $(CXXFLAGS) -DOE_API_VERSION=2 enc.cpp
 	$(CC) -g -c $(CFLAGS) -DOE_API_VERSION=2 oqsort_t.c
 	$(CXX) -o oqsortenc enc.o bitonic.o bucket.o quick.o oq.o shared.o oqsort_t.o $(LDFLAGS) $(CRYPTO_LDFLAGS)
 

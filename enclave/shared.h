@@ -116,10 +116,10 @@ class EnclaveServer {
     void OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId);
     void opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum);
     bool cmpHelper(EncOneBlock *a, EncOneBlock *b);
-    static bool cmpFunc(const EncOneBlock &a, const EncOneBlock &b);
     int64_t moveDummy(EncOneBlock *a, int64_t size);
     void setValue(EncOneBlock *a, int64_t size, int value);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
+    void swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j);
     int64_t Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight);
     int64_t greatestPowerOfTwoLessThan(double n);
     int64_t smallestPowerOfKLargerThan(int64_t n, int k);

@@ -128,15 +128,15 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
   } else if (inputtype == SETINMAIN) {
     datatype = 4;
     M = (64 << 20) / 16; // (MB << 20) / 1 element bytes
-    N = 200 * M;
+    N = 400 * M;
     B = (4 << 10) / 16; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     sortId = 1;
     alpha = 0.02;
     beta = 0.04;
-    gamma = 0.07;
-    P = 228;
+    gamma = 0.1;
+    P = 469;
   }
 }
 

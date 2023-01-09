@@ -45,7 +45,6 @@ void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
 }
 
 int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype) {
-  printf("In ODS::Sample, %ld\n", sampleSize);
   int64_t N_prime = sampleSize;
   // double alpha = (!is_rec) ? ALPHA : _ALPHA;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
@@ -76,31 +75,10 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
     }
   }
   delete [] trustedM1;
-  printf("My test\n");
-  std::vector<EncOneBlock> array;
-  EncOneBlock a, b, c, d;
-  a.sortKey = 10;
-  b.sortKey = 8;
-  c.sortKey = 9;
-  d.sortKey = 5;
-  array.push_back(a);
-  array.push_back(b);
-  array.push_back(c);
-  array.push_back(d);
-  printf("Before sort\n");
-  for (int i = 0; i < array.size(); ++i) {
-    printf("%d ", array[i].sortKey);
-  }
-  printf("\n");
-  sort(array.begin(), array.end());
-  printf("After sort \n");
-  for (int i = 0; i < array.size(); ++i) {
-    printf("%d ", array[i].sortKey);
-  }
-  printf("\n");
-  printf("Before sort, array size: %d \n", trustedM2.size());
-  sort(trustedM2.begin(), trustedM2.end());
-  printf("After sort\n");
+  // FIXME: Why cannot use internal sort
+  // sort(trustedM2.begin(), trustedM2.end());
+  QuickV qvsort(eServer);
+  qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
   return n_prime;
 }
 
@@ -494,7 +472,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Time: %lf, IOcost: %ld\n", (double)(startF-startP), eServer.IOcost/N*B);
+  printf("Partition Time: %lf, IOcost: %ld\n", (double)(startF-startP), eServer.IOcost/N*B);
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);
@@ -542,5 +520,5 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Time: %lf, IOcost: %ld\n", (double)(end-startF), eServer.IOcost/N*B);
+  printf("Final Time: %lf, IOcost: %ld\n", (double)(end-startF), eServer.IOcost/N*B);
 }
