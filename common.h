@@ -83,18 +83,6 @@ struct EncOneBlock {
         return true;
       } else if (a.primaryKey > b.primaryKey) {
         return false;
-      } else {
-        if (a.payLoad < b.payLoad) {
-          return true;
-        } else if (a.payLoad > b.payLoad) {
-          return false;
-        } else {
-          if (a.randomKey < b.randomKey) {
-            return true;
-          } else if (a.randomKey > b.randomKey) {
-            return false;
-          }
-        }
       }
     }
     return true; // equal
@@ -110,11 +98,5 @@ int64_t calBucketSize(int sigma, int64_t N, int64_t M, int B);
 int64_t ceil_divide(int64_t n, int64_t q);
 void shuffle(EncOneBlock *a, int64_t sampleSize);
 int64_t Hypergeometric(int64_t &N, int64_t M, int64_t &n);
-int64_t OcallSample(int inStructureId, int sampleId, int sortedSampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight);
-void ocall_print_string(const char *str);
-void OcallRB(int64_t index, int* buffer, size_t blockSize, int structureId);
-void OcallWB(int64_t index, int* buffer, size_t blockSize, int structureId);
-void freeAllocate(int structureIdM, int structureIdF, size_t size);
-void fyShuffle(int structureId, size_t size, int B);
 
 #endif // !COMMON_STRUCTURE_H

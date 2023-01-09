@@ -41,5 +41,22 @@ void callSort(int *resId, int *resN, double *params) {
     bisort.bitonicSort(0, size, 0);
     *resId = inputId;
     *resN = N;
+  } else {
+    std::vector<EncOneBlock> arr;
+    for (int i = 0; i < 10; ++i) {
+      EncOneBlock a;
+      a.sortKey = 10 - i;
+      arr.push_back(a);
+    }
+    for (int i = 0; i < 10; ++i) {
+      printf("%d ", arr[i].sortKey);
+    }
+    printf("\n");
+    QuickV qvsort(eServer);
+    qvsort.quickSort(arr, 0, arr.size()-1);
+    for (int i = 0; i < 10; ++i) {
+      printf("%d ", arr[i].sortKey);
+    }
+    printf("\n");
   }
 }

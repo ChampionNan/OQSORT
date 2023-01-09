@@ -277,3 +277,11 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   memmove(a + j, temp, encOneBlockSize);
   delete temp;
 }
+
+void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
+  EncOneBlock *temp = new EncOneBlock;
+  memcpy(temp, &arr[i], sizeof(arr[0]));
+  memcpy(&arr[i], &arr[j], sizeof(arr[0]));
+  memcpy(&arr[j], temp, sizeof(arr[0]));
+  delete temp;
+}

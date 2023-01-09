@@ -72,7 +72,11 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
       if (j >= n_prime) break;
     }
   }
-  sort(trustedM2.begin(), trustedM2.end());
+  printf("Before sort, array size: %d\n", trustedM2.size());
+  // sort(trustedM2.begin(), trustedM2.end());
+  QuickV qvsort(eServer);
+  qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
+  printf("After sort\n");
   delete [] trustedM1;
   return n_prime;
 }
