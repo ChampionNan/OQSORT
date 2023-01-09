@@ -10,10 +10,12 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
+#define PAYLOAD 1
 
+// FIXME: Why not able to contain common files
 template<typename T>
 constexpr T DUMMY() {
-    return std::numeric_limits<T>::max();
+  return std::numeric_limits<T>::max();
 }
 
 enum SortType {
@@ -24,7 +26,7 @@ enum SortType {
 };
 
 enum InputType {
-  BOOST, 
+  BOOST,
   SETINMAIN
 };
 
@@ -51,7 +53,7 @@ struct Bucket_x {
 struct EncOneBlock {
   int sortKey;    // used for sorting 
   int primaryKey; // tie-breaker when soryKey equals
-  int payLoad;
+  int payLoad[PAYLOAD];
   int randomKey;  // bucket sort random key
 
   EncOneBlock() {
@@ -61,7 +63,10 @@ struct EncOneBlock {
     EncOneBlock res;
     res.sortKey = flag * y.sortKey;
     res.primaryKey = flag * y.primaryKey;
-    res.payLoad = flag * y.payLoad;
+    // res.payLoad = flag * y.payLoad;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = flag * y.payLoad[i];
+    }
     res.randomKey = flag * y.randomKey;
     return res;
   }
@@ -69,7 +74,10 @@ struct EncOneBlock {
     EncOneBlock res;
     res.sortKey = x.sortKey + y.sortKey;
     res.primaryKey = x.primaryKey + y.primaryKey;
-    res.payLoad = x.payLoad + y.payLoad;
+    // res.payLoad = x.payLoad + y.payLoad;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = x.payLoad[i] + y.payLoad[i];
+    }
     res.randomKey = x.randomKey + y.randomKey;
     return res;
   }

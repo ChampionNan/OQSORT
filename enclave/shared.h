@@ -23,86 +23,9 @@
 #include <vector>
 #include <iostream>
 
+#include "../include/common.h"
+
 #include "oqsort_t.h"
-
-// FIXME: Why not able to contain common files
-template<typename T>
-constexpr T DUMMY() {
-    return std::numeric_limits<T>::max();
-}
-
-enum SortType {
-  ODSTIGHT,
-  ODSLOOSE,
-  BUCKET,
-  BITONIC
-};
-
-enum InputType {
-  BOOST,
-  SETINMAIN
-};
-
-enum OutputType {
-  TERMINAL, 
-  FILEOUT
-};
-
-enum EncMode {
-  OFB,
-  GCM
-};
-
-enum SecLevel {
-  FULLY,
-  PARTIAL
-};
-
-struct Bucket_x {
-  int x;
-  int key;
-};
-
-struct EncOneBlock {
-  int sortKey;    // used for sorting 
-  int primaryKey; // tie-breaker when soryKey equals
-  int payLoad;
-  int randomKey;  // bucket sort random key
-
-  EncOneBlock() {
-    sortKey = DUMMY<int>();
-  }
-  friend EncOneBlock operator*(const int &flag, const EncOneBlock &y) {
-    EncOneBlock res;
-    res.sortKey = flag * y.sortKey;
-    res.primaryKey = flag * y.primaryKey;
-    res.payLoad = flag * y.payLoad;
-    res.randomKey = flag * y.randomKey;
-    return res;
-  }
-  friend EncOneBlock operator+(const EncOneBlock &x, const EncOneBlock &y) {
-    EncOneBlock res;
-    res.sortKey = x.sortKey + y.sortKey;
-    res.primaryKey = x.primaryKey + y.primaryKey;
-    res.payLoad = x.payLoad + y.payLoad;
-    res.randomKey = x.randomKey + y.randomKey;
-    return res;
-  }
-  friend bool operator<(const EncOneBlock &a, const EncOneBlock &b) {
-    if (a.sortKey < b.sortKey) {
-      return true;
-    } else if (a.sortKey > b.sortKey) {
-      return false;
-    } else {
-      if (a.primaryKey < b.primaryKey) {
-        return true;
-      } else if (a.primaryKey > b.primaryKey) {
-        return false;
-      }
-    }
-    return true; // equal
-  }
-};
 
 class EnclaveServer {
   public:

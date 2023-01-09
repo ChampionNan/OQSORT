@@ -241,12 +241,6 @@ bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
       return true;
     } else if (a->primaryKey < b->primaryKey) {
       return false;
-    } else {
-      if (a->payLoad > b->payLoad) {
-        return true;
-      } else if (a->payLoad < b->payLoad) {
-        return false;
-      }
     }
   }
   return true; // equal

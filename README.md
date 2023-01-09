@@ -14,7 +14,7 @@ This repo is used for implementing oqsort, bucketOSort, bitonic sort etc in TEE 
 
 ```sh
 $sudo swapoff -a
-$sudo dd if=/dev/zero of=/swapfile bs=1G count=24
+$sudo dd if=/dev/zero of=/swapfile bs=1G count=21
 $sudo mkswap /swapfile
 $sudo swapon /swapfile
 $grep SwapTotal /proc/meminfo

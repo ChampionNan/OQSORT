@@ -17,7 +17,8 @@ void ODS::calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int6
   hatN = ceil(1.0 * (1 + beta + gamma) * inSize);
   M_prime = ceil(1.0 * M / (1 + beta + gamma));
   r = ceil(1.0 * log(hatN / M) / log(p));
-  p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
+  // p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
+  p0 = p;
 }
 
 void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
@@ -104,6 +105,7 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, s
   int64_t j = 0;
   int64_t k = 0, total = 0;
   for (int i = 0; i < sectionNum; ++i) {
+    printf("ODSquantileCal sort process %d / %d\n", i, sectionNum - 1);
     eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
     k = eServer.moveDummy(trustedM, sectionSize);
     // TODO: Change to fully oblivious version
@@ -370,6 +372,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t dataBoundary = boundary2 * B;
   int64_t smallSectionSize = M / p0;
   int64_t bucketSize0 = boundary1 * smallSectionSize;
+  printf("inSize: %ld, M': %ld, M: %ld, p0: %ld, boundary: %ld, smallSecSize: %ld\n", inSize, M_prime, M, p0, boundary1, smallSectionSize);
   int64_t totalEncB = boundary1 * smallSectionSize * p0;
   freeAllocate(outId, outId, totalEncB);
   int64_t Msize1, index1, index2, writeBackNum;
@@ -462,6 +465,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime, 0);
     startQ = time(NULL);
     ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
+    freeAllocate(sampleId, sampleId, 0);
+    freeAllocate(sortedSampleId, sortedSampleId, 0);
   }
   // step2. partition
   startP = time(NULL);
