@@ -83,6 +83,8 @@ EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N
   }
 }
 
+double EnclaveServer::getIOcost() { return IOcost; }
+
 // Invokes OCALL to display the enclave buffer to the terminal.
 int EnclaveServer::printf(const char *fmt, ...) {
   char buf[BUFSIZ] = {'\0'};

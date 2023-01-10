@@ -30,6 +30,7 @@
 class EnclaveServer {
   public:
     EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);
+    double getIOcost();
     int printf(const char *fmt, ...);
     void ofb_encrypt(EncOneBlock* buffer, int blockSize);
     void ofb_decrypt(EncOneBlock* buffer, int blockSize);
@@ -50,7 +51,7 @@ class EnclaveServer {
   public:
     int64_t N, M;
     int B, sigma;
-    int64_t IOcost;
+    double IOcost;
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
     EncMode encmode = OFB;

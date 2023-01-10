@@ -29,7 +29,7 @@ class ODS {
     int64_t resultN;
 
   private:
-    EnclaveServer eServer;
+    EnclaveServer &eServer;
     int64_t N, M, smallM;
     int B;
     int is_rec, is_tight;

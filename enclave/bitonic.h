@@ -20,7 +20,7 @@ class Bitonic {
     int64_t start, initSize;
     EncOneBlock *row1;
     EncOneBlock *row2;
-    EnclaveServer eServer;
+    EnclaveServer &eServer;
 };
 
 #endif // !BITONIC_H

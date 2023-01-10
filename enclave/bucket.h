@@ -15,7 +15,7 @@ class Bucket {
     int bucketOSort();
 
   private:
-    EnclaveServer eServer;
+    EnclaveServer &eServer;
     int64_t N, M;
     int B;
     int inStructureId, outId1, outId2;

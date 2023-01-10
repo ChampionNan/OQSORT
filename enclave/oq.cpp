@@ -5,6 +5,7 @@
 
 #include <algorithm>
 
+
 ODS::ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P, int is_tight, SecLevel seclevel, int sampleId) : eServer{eServer}, alpha{alpha}, beta{beta}, gamma{gamma}, P{P}, is_tight{is_tight}, seclevel{seclevel}, sampleId{sampleId} {
   N = eServer.N;
   M = eServer.M;
@@ -372,7 +373,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t dataBoundary = boundary2 * B;
   int64_t smallSectionSize = M / p0;
   int64_t bucketSize0 = boundary1 * smallSectionSize;
-  printf("inSize: %ld, M': %ld, M: %ld, p0: %ld, boundary: %ld, smallSecSize: %ld\n", inSize, M_prime, M, p0, boundary1, smallSectionSize);
+  // printf("inSize: %ld, M': %ld, M: %ld, p0: %ld, boundary: %ld, smallSecSize: %ld\n", inSize, M_prime, M, p0, boundary1, smallSectionSize);
   int64_t totalEncB = boundary1 * smallSectionSize * p0;
   freeAllocate(outId, outId, totalEncB);
   int64_t Msize1, index1, index2, writeBackNum;
@@ -462,7 +463,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     int64_t n_prime = ceil(1.0 * alpha * N);
     printf("External memory samples\n");
     startS = time(NULL);
-    sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime, 0);
+    int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
+    sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime, is_tight);
     startQ = time(NULL);
     ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
     freeAllocate(sampleId, sampleId, 0);
@@ -470,14 +472,14 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   }
   // step2. partition
   startP = time(NULL);
-  printf("Sampling Time: %lf, IOcost: %ld\n", (double)(startP-startS), eServer.IOcost/N*B);
+  printf("Sampling Time: %lf, IOcost: %f\n", (double)(startP-startS), this->eServer.getIOcost()*B/N);
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Partition Time: %lf, IOcost: %ld\n", (double)(startF-startP), eServer.IOcost/N*B);
+  printf("Partition Time: %lf, IOcost: %f\n", (double)(startF-startP), this->eServer.getIOcost()*B/N);
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);
@@ -525,5 +527,5 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Final Time: %lf, IOcost: %ld\n", (double)(end-startF), eServer.IOcost/N*B);
+  printf("Final Time: %lf, IOcost: %f\n", (double)(end-startF), this->eServer.getIOcost()*B/N);
 }

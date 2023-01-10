@@ -19,7 +19,6 @@ using namespace chrono;
 // namespace po = boost::program_options;
 
 EncOneBlock *arrayAddr[NUM_STRUCTURES];
-double IOcost = 0;
 
 /* OCall functions */
 void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight, int64_t *ret) {
@@ -56,14 +55,12 @@ void ocall_print_string(const char *str) {
 void OcallRB(size_t index, int* buffer, size_t blockSize, int structureId) {
   // std::cout<< "In OcallRB\n";
   memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
-  IOcost += 1;
 }
 
 // index: Block index, blockSize: bytes
 void OcallWB(size_t index, int* buffer, size_t blockSize, int structureId) {
   // std::cout<< "In OcallWB\n";
   memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
-  IOcost += 1;
 }
 
 // allocate encB for outside memory
@@ -132,7 +129,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 1;
+    sortId = 0;
     alpha = 0.02;
     beta = 0.04;
     gamma = 0.07;
@@ -195,7 +192,7 @@ int main(int argc, const char* argv[]) {
   // step4: std::cout execution time
   duration = duration_cast<seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
+  // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
   // testEnc(arrayAddr, *resId, *resN);
   data.print(*resId, *resN, FILEOUT, data.filepath);
   // step5: exix part
