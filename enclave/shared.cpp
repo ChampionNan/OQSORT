@@ -69,6 +69,8 @@ void Heap::replaceRoot(HeapNode x) {
 
 EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
   encOneBlockSize = sizeof(EncOneBlock);
+  IOcost = 0;
+  IOtime = 0;
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -84,6 +86,8 @@ EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N
 }
 
 double EnclaveServer::getIOcost() { return IOcost; }
+
+double EnclaveServer::getIOtime() { return IOtime; }
 
 // Invokes OCALL to display the enclave buffer to the terminal.
 int EnclaveServer::printf(const char *fmt, ...) {
@@ -197,6 +201,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
 // index: start index counted by elements (count from 0), elementNum: #elements
 void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum) {
   // printf("In oponelinear scan block\n");
+  IOstart = time(NULL);
   if (elementNum + dummyNum == 0) {
     return ;
   }
@@ -231,6 +236,8 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
       delete [] junk;
     }
   }
+  IOend = time(NULL);
+  IOtime += IOend - IOstart;
 }
 
 bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
@@ -299,8 +306,8 @@ int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
   return num;
 }
 
-int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight) {
+int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime) {
   int64_t sampleSize;
-  OcallSample(inStructureId, sampleId, N, M, n_prime, is_tight, &sampleSize);
+  OcallSample(inStructureId, sampleId, N, M, n_prime, &sampleSize);
   return sampleSize;
 }

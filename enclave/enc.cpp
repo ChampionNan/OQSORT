@@ -18,7 +18,7 @@ void callSort(int *resId, int *resN, double *params) {
   double beta = params[7];
   double gamma = params[8];
   int P = params[9];
-  EncMode encmode = OFB; // GCM
+  EncMode encmode = GCM; // GCM, OFB
   SecLevel seclevel = PARTIAL;
   EnclaveServer eServer(N, M, B, encmode);
 

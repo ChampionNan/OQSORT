@@ -21,7 +21,7 @@ using namespace chrono;
 EncOneBlock *arrayAddr[NUM_STRUCTURES];
 
 /* OCall functions */
-void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int is_tight, int64_t *ret) {
+void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int64_t *ret) {
   int64_t N_prime = N;
   int64_t boundary = ceil(1.0 * N_prime / M);
   int64_t realNum = 0;
@@ -33,7 +33,7 @@ void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t 
     Msize = std::min(M, N - i * M);
     m = Hypergeometric(N_prime, Msize, n_prime);
     printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
-    if (is_tight || (!is_tight && m > 0)) {
+    if (m > 0) {
       memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
       readStart += Msize;
       shuffle(trustedM1, Msize);
@@ -123,17 +123,17 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     gamma = vm["gamma"].as<double>();
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
-    datatype = 16;
+    datatype = 128;
     M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
     N = 200 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 0;
+    sortId = 1;
     alpha = 0.02;
-    beta = 0.04;
-    gamma = 0.07;
-    P = 228;
+    beta = 0.11;
+    gamma = 0.25;
+    P = 274;
   }
 }
 

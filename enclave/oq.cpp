@@ -54,7 +54,7 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   int64_t j = 0, Msize;
   int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
   EncOneBlock *trustedM1 = new EncOneBlock[B];
-  eServer.nonEnc = 1;
+  eServer.nonEnc = 0;
   std::vector<int64_t> sampleIdx;
   floydSampler(N_prime, n_prime, sampleIdx);
   for (int64_t i = 0; i < boundary; ++i) {
@@ -82,6 +82,46 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   QuickV qvsort(eServer);
   qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
   return n_prime;
+}
+
+int64_t ODS::Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
+  int64_t m = 0;
+  std::uniform_real_distribution<double> dist(0.0, 1.0);
+  double rate = double(n) / N;
+  for (int64_t j = 0; j < M; ++j) {
+    if (dist(rng) < rate) {
+      m += 1;
+      n -= 1;
+    }
+    N -= 1;
+    rate = double(n) / double(N);
+  }
+  return m;
+}
+
+int64_t ODS::SampleEx(int inStructureId, int sampleId) {
+  int64_t N_prime = N;
+  int64_t n_prime = ceil(1.0 * alpha * N_prime);
+  int64_t boundary = ceil(1.0 * N_prime / M);
+  int64_t realNum = 0;
+  int64_t readStart = 0;
+  EncOneBlock *trustedM1 = new EncOneBlock[M];
+  int64_t m = 0, Msize;
+  freeAllocate(sampleId, sampleId, n_prime);
+  for (int64_t i = 0; i < boundary; ++i) {
+    Msize = std::min(M, N - i * M);
+    m = Hypergeometric(N_prime, Msize, n_prime);
+    printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+    eServer.opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
+    readStart += Msize;
+    shuffle(trustedM1, Msize);
+    eServer.opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
+    realNum += m;
+    // n_prime -= m;
+    // N_prime -= Msize;
+  }
+  delete [] trustedM1;
+  return realNum;
 }
 
 // get pivots from external stored samples
@@ -385,7 +425,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   for (int64_t i = 0; i < boundary1; ++i) {
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
-    eServer.nonEnc = 1;
+    eServer.nonEnc = 0;
     eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
     // TODO: Simplify only for one level version, no dummy, input only
     // eServer.moveDummy(trustedM3, dataBoundary);
@@ -434,11 +474,10 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
 
 void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outputId1, int outputId2) {
   printf("In ODS\n");
-  eServer.IOcost = 0;
   EncOneBlock *trustedM;
   if (inSize <= M) {
     trustedM = new EncOneBlock[M];
-    eServer.nonEnc = 1;
+    eServer.nonEnc = 0;
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
     Quick qsort(eServer, trustedM);
     qsort.quickSort(0, inSize - 1);
@@ -449,7 +488,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultId = outputId1;
     resultN = inSize;
   }
-  clock_t startS, startQ, startP, startF, end;
+  clock_t startS, startP, startF, end;
   std::vector<EncOneBlock> trustedM2;
   int64_t sampleSize;
   // step1. get samples & pivots
@@ -457,29 +496,32 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     printf("In memory samples\n");
     startS = time(NULL);
     sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
-    startQ = time(NULL);
     quantileCal(inSize, trustedM2, sampleSize, P);
   } else {
     int64_t n_prime = ceil(1.0 * alpha * N);
     printf("External memory samples\n");
     startS = time(NULL);
-    int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
-    sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime, is_tight);
-    startQ = time(NULL);
+    if (sorttype == ODSLOOSE) {
+      sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime);
+    } else {
+      sampleSize = SampleEx(inputId, sampleId);
+    }
     ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
     freeAllocate(sampleId, sampleId, 0);
     freeAllocate(sortedSampleId, sortedSampleId, 0);
   }
   // step2. partition
   startP = time(NULL);
-  printf("Sampling Time: %lf, IOcost: %f\n", (double)(startP-startS), this->eServer.getIOcost()*B/N);
+  printf("Sampling Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startP-startS), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  eServer.IOtime = 0;
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Partition Time: %lf, IOcost: %f\n", (double)(startF-startP), this->eServer.getIOcost()*B/N);
+  printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  eServer.IOtime = 0;
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);
@@ -496,7 +538,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
       }
-      eServer.nonEnc = 1;
+      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(j, trustedM, k, outputId2, 1, 0);
       j += k;
     }
@@ -519,7 +561,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
       }
-      eServer.nonEnc = 1;
+      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId2, 1, 0);
     }
     delete [] trustedM;
@@ -527,5 +569,6 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Final Time: %lf, IOcost: %f\n", (double)(end-startF), this->eServer.getIOcost()*B/N);
+  printf("Final Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-startF), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  eServer.IOtime = 0;
 }
