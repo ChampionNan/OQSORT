@@ -7,6 +7,7 @@ class Bitonic {
   public:
     Bitonic(EnclaveServer &eServer);
     Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize);
+    Bitonic(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t size);
     ~Bitonic();
     void smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int flipped);
     void smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, int flipped);
@@ -21,6 +22,7 @@ class Bitonic {
     EncOneBlock *row1;
     EncOneBlock *row2;
     EnclaveServer eServer;
+    EncOneBlock *a;
 };
 
 #endif // !BITONIC_H

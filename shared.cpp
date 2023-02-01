@@ -235,18 +235,10 @@ bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
     return true;
   } else if (a->sortKey < b->sortKey) {
     return false;
-  } else {
-    if (a->primaryKey > b->primaryKey) {
-      return true;
-    } else if (a->primaryKey < b->primaryKey) {
-      return false;
-    } else {
-      if (a->payLoad > b->payLoad) {
-        return true;
-      } else if (a->payLoad < b->payLoad) {
-        return false;
-      }
-    }
+  } else if (a->primaryKey > b->primaryKey) {
+    return true;
+  } else if (a->primaryKey < b->primaryKey) {
+    return false;
   }
   return true; // equal
 }
@@ -263,10 +255,39 @@ int64_t EnclaveServer::moveDummy(EncOneBlock *a, int64_t size) {
   return i;
 }
 
+int64_t EnclaveServer::moveDummy(std::vector<EncOneBlock> &a) {
+  int64_t i = 0;
+  int64_t j = a.size() - 1;
+  while (1) {
+    while (i < j && a[i].sortKey != DUMMY<int>()) i++;
+    while (i < j && a[j].sortKey == DUMMY<int>()) j--;
+    if (i >= j) break;
+    swap(a, i, j);
+  }
+  return i;
+}
+
 void EnclaveServer::setValue(EncOneBlock *a, int64_t size, int value) {
+  if (size <= 0) {
+    return;
+  }
   for (int64_t i = 0; i < size; ++i) {
     a[i].sortKey = value;
     a[i].primaryKey = value;
+  }
+}
+
+// TODO: random number influence running time
+void EnclaveServer::setDummy(EncOneBlock *a, int64_t size) {
+  if (size <= 0) {
+    return ;
+  }
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()};
+  for (int64_t i = 0; i < size; ++i) {
+    a[i].sortKey = DUMMY<int>();
+    a[i].primaryKey = tie_breaker++; // used for dummy tie_breaker
   }
 }
 
@@ -284,4 +305,26 @@ void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
   memcpy(&arr[i], &arr[j], sizeof(arr[0]));
   memcpy(&arr[j], temp, sizeof(arr[0]));
   delete temp;
+}
+
+int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
+  int64_t k = 1;
+  while (k > 0 && k < n) {
+      k = k << 1;
+   }
+  return k >> 1;
+}
+
+int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
+  int64_t num = 1;
+  while (num > 0 && num < n) {
+    num = num * k;
+  }
+  return num;
+}
+
+int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime) {
+  int64_t sampleSize;
+  OcallSample(inStructureId, sampleId, N, M, n_prime, &sampleSize);
+  return sampleSize;
 }

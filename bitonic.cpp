@@ -10,6 +10,8 @@ Bitonic::Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t ini
   row2 = new EncOneBlock[B];
 }
 
+Bitonic::Bitonic(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t initSize) : eServer{eServer}, a{a}, start{start}, initSize{initSize} {}
+
 Bitonic::~Bitonic() {
   delete [] row1;
   delete [] row2;

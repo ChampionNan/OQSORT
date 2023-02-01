@@ -10,7 +10,9 @@ class ODS {
     void calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int64_t &r, int64_t &p0);
     void floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x);
     int64_t Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype);
-    void ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots);
+    int64_t Hypergeometric(int64_t &N, int64_t M, int64_t &n);
+    int64_t SampleEx(int inStructureId, int sampleId);
+    void ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots);
     void quantileCal(int inSize, std::vector<EncOneBlock> &samples, int64_t sampleSize, int p);
     void quantileCal2(std::vector<EncOneBlock> &samples, int64_t start, int64_t end, int p);
     int64_t partitionMulti(EncOneBlock *arr, int64_t low, int64_t high, EncOneBlock pivot);

@@ -10,6 +10,7 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
+#define PAYLOAD 29 // 1, 29
 
 template<typename T>
 constexpr T DUMMY() {
@@ -51,8 +52,9 @@ struct Bucket_x {
 struct EncOneBlock {
   int sortKey;    // used for sorting 
   int primaryKey; // tie-breaker when soryKey equals
-  int payLoad;
-  int randomKey;  // bucket sort random key
+  int payLoad[PAYLOAD];
+  // bucket sort random key, also used for dummy flag
+  int randomKey;  
 
   EncOneBlock() {
     sortKey = DUMMY<int>();
@@ -61,7 +63,10 @@ struct EncOneBlock {
     EncOneBlock res;
     res.sortKey = flag * y.sortKey;
     res.primaryKey = flag * y.primaryKey;
-    res.payLoad = flag * y.payLoad;
+    // res.payLoad = flag * y.payLoad;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = flag * y.payLoad[i];
+    }
     res.randomKey = flag * y.randomKey;
     return res;
   }
@@ -69,7 +74,10 @@ struct EncOneBlock {
     EncOneBlock res;
     res.sortKey = x.sortKey + y.sortKey;
     res.primaryKey = x.primaryKey + y.primaryKey;
-    res.payLoad = x.payLoad + y.payLoad;
+    // res.payLoad = x.payLoad + y.payLoad;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = x.payLoad[i] + y.payLoad[i];
+    }
     res.randomKey = x.randomKey + y.randomKey;
     return res;
   }
@@ -78,14 +86,22 @@ struct EncOneBlock {
       return true;
     } else if (a.sortKey > b.sortKey) {
       return false;
-    } else {
-      if (a.primaryKey < b.primaryKey) {
-        return true;
-      } else if (a.primaryKey > b.primaryKey) {
-        return false;
-      }
+    } else if (a.primaryKey < b.primaryKey) {
+      return true;
+    } else if (a.primaryKey > b.primaryKey) {
+      return false;
     }
     return true; // equal
+  }
+
+  bool operator=(const EncOneBlock &a) {
+    sortKey = a.sortKey;
+    primaryKey = a.primaryKey;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      payLoad[i] = a.payLoad[i];
+    }
+    randomKey = a.randomKey;
+    return true;
   }
 };
 

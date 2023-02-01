@@ -43,9 +43,14 @@ class EnclaveServer {
     void opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum);
     bool cmpHelper(EncOneBlock *a, EncOneBlock *b);
     int64_t moveDummy(EncOneBlock *a, int64_t size);
+    int64_t moveDummy(std::vector<EncOneBlock> &a);
     void setValue(EncOneBlock *a, int64_t size, int value);
+    void setDummy(EncOneBlock *a, int64_t size);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
     void swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j);
+    int64_t Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime);
+    int64_t greatestPowerOfTwoLessThan(double n);
+    int64_t smallestPowerOfKLargerThan(int64_t n, int k);
 
   public:
     int64_t N, M;
@@ -61,6 +66,7 @@ class EnclaveServer {
     mbedtls_entropy_context entropy;
     size_t iv_offset, iv_offset1;
     unsigned char iv[16];
+    int64_t tie_breaker = 0;
 };
 
 struct HeapNode {
