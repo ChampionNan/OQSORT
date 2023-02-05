@@ -66,7 +66,7 @@ class EnclaveServer {
     mbedtls_entropy_context entropy;
     size_t iv_offset, iv_offset1;
     unsigned char iv[16];
-    int64_t tie_breaker = 0;
+    int tie_breaker = 0;
 };
 
 struct HeapNode {

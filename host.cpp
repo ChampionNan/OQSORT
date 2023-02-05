@@ -165,7 +165,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 0;
+    sortId = 1;
     alpha = 0.02;
     beta = 0.11;
     gamma = 0.25;

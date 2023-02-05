@@ -588,7 +588,9 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
-        internalObliviousSort(trustedM, 0, k);
+        // internalObliviousSort(trustedM, 0, k);
+        Bitonic bisort(eServer, trustedM, 0, k);
+        bisort.smallBitonicSort(trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
