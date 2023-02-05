@@ -54,7 +54,6 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   int64_t j = 0, Msize;
   int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
   EncOneBlock *trustedM1 = new EncOneBlock[B];
-  eServer.nonEnc = 0;
   std::vector<int64_t> sampleIdx;
   floydSampler(N_prime, n_prime, sampleIdx);
   for (int64_t i = 0; i < boundary; ++i) {
@@ -100,39 +99,86 @@ int64_t ODS::Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
 }
 
 int64_t ODS::SampleEx(int inStructureId, int sampleId) {
+  if ((N % M) || (M % B)) {
+    // NOTE: N%M, M%B constant
+    printf("Error N, M, B setting! \n");
+    return -1;
+  }
   int64_t N_prime = N;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
-  int64_t boundary = ceil(1.0 * N_prime / M);
-  int64_t realNum = 0;
-  int64_t readStart = 0;
+  int64_t boundary = N_prime / M;
+  int64_t eachM = ceil(2 * alpha * M);
+  int64_t realNum = 0, eachMSize;
   EncOneBlock *trustedM1 = new EncOneBlock[M];
-  int64_t m = 0, Msize;
-  freeAllocate(sampleId, sampleId, n_prime);
+  bool *indicator = new bool[M];
+  int64_t m = 0;
+  EncOneBlock dummyB;
+  eServer.setDummy(&dummyB, 1);
+  freeAllocate(sampleId, sampleId, eachM * boundary);
+  std::binomial_distribution<int> binom(B, alpha);
   for (int64_t i = 0; i < boundary; ++i) {
-    Msize = std::min(M, N - i * M);
-    m = Hypergeometric(N_prime, Msize, n_prime);
-    printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
-    eServer.opOneLinearScanBlock(readStart, trustedM1, Msize, inStructureId, 0, 0);
-    readStart += Msize;
-    shuffle(trustedM1, Msize);
-    eServer.opOneLinearScanBlock(realNum, trustedM1, m, sampleId, 1, 0);
-    realNum += m;
-    // n_prime -= m;
-    // N_prime -= Msize;
+    printf("SampleEx progress: %ld / %ld\n", i, boundary-1);
+    // each memory load
+    // eServer.setDummy(trustedM1, M);
+    for (int64_t j = 0; j < M / B; ++j) {
+      // each Block Size
+      int num_to_sample = binom(rng);
+      eServer.opOneLinearScanBlock(i*M+j*B, &trustedM1[j*B], B, inStructureId, 0, 0);
+      if (seclevel == FULLY) {
+        for (int k = 0; k < B; ++k) {
+          int flag = (k < num_to_sample) ? 1 : 0;
+          int sampleStart = flag ? k : (num_to_sample - 1);
+          EncOneBlock tmp = trustedM1[j*B+sampleStart];
+          std::uniform_int_distribution<int> unif(sampleStart, num_to_sample-1);
+          int l = unif(rng);
+          dummyB.primaryKey = eServer.tie_breaker++;
+          trustedM1[j*B+k] = flag * trustedM1[j*B+l] + (!flag) * dummyB;
+          trustedM1[j*B+l] = flag * tmp + (!flag) * trustedM1[j*B+l];
+        }
+      } else {
+        for (int k = 0; k < num_to_sample; ++k) {
+          EncOneBlock tmp = trustedM1[j*B+k];
+          std::uniform_int_distribution<int> unif(k, num_to_sample-1);
+          int l = unif(rng);
+          trustedM1[j*B+k] = trustedM1[j*B+l];
+          trustedM1[j*B+l] = tmp;
+        }
+        eServer.setDummy(&trustedM1[j*B+num_to_sample], B-num_to_sample);
+      }
+    }
+    if (seclevel == FULLY) {
+      int flag;
+      eachMSize = 0;
+      for (int64_t k = 0; k < M; ++k) {
+        flag = (trustedM1[k].sortKey != DUMMY<int>()) ? 1 : 0;
+        indicator[k] = 1 * flag;
+        eachMSize += 1 * flag;
+      }
+      ORCompact(trustedM1, indicator, 0, M);
+    } else {
+      // seclevel=PARTIAL
+      eachMSize = eServer.moveDummy(trustedM1, M);
+    }
+    if (eachMSize > eachM) {
+      // sample number > 2 * alpha * M
+      printf("Data overflow when sampling %ld, %ld\n", eachMSize, eachM);
+      return -1;
+    }
+    eServer.opOneLinearScanBlock(i * eachM, trustedM1, eachM, sampleId, 1, 0);
+    realNum += eachMSize;
   }
   delete [] trustedM1;
+  delete [] indicator;
   return realNum;
 }
 
 // get pivots from external stored samples
-void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
+void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
   printf("In ODSquantileCal\n");
   std::vector<EncOneBlock> trustedM2;
-  printf("In ODS Sample\n");
   int64_t realNum = Sample(sampleId, sampleSize, trustedM2, ODSLOOSE);
   int sampleP = ceil((1 + beta + gamma) * sampleSize / M);
   quantileCal(sampleSize, trustedM2, realNum, sampleP);
-  printf("In ODS Partition\n");
   std::pair<int64_t, int> section = OneLevelPartition(sampleId, sampleSize, trustedM2, sampleP, sortedSampleId);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
@@ -140,13 +186,12 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int sortedSampleId, s
   // Cal pivot index
   std::vector<int64_t> quantileIdx;
   for (int64_t i = 1; i < P; ++i) {
-    quantileIdx.push_back(i * sampleSize / P);
+    quantileIdx.push_back(i * xDummySampleSize / P);
   }
-  int64_t size = ceil(1.0 * sampleSize / P);
+  printf("ODSquantileCal before sort\n");
   int64_t j = 0;
   int64_t k = 0, total = 0;
   for (int i = 0; i < sectionNum; ++i) {
-    printf("ODSquantileCal sort process %d / %d\n", i, sectionNum - 1);
     eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
     k = eServer.moveDummy(trustedM, sectionSize);
     // TODO: Change to fully oblivious version
@@ -425,7 +470,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   for (int64_t i = 0; i < boundary1; ++i) {
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
-    eServer.nonEnc = 0;
     eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
     // TODO: Simplify only for one level version, no dummy, input only
     // eServer.moveDummy(trustedM3, dataBoundary);
@@ -442,7 +486,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         if (writeBackNum > smallSectionSize) {
           printf("Overflow in small section %ld: %ld > %ld\n", j, writeBackNum, smallSectionSize);
         }
-        eServer.nonEnc = 0;
         eServer.opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outId, 1, smallSectionSize - writeBackNum);
       }
     } else {
@@ -456,7 +499,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         if (writeBackNum > smallSectionSize) {
           printf("Overflow in small section M/p0: %ld > %ld\n", writeBackNum, smallSectionSize);
         }
-        eServer.nonEnc = 0;
         eServer.opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outId, 1, smallSectionSize - writeBackNum);
       }
     }
@@ -475,14 +517,13 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
 void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outputId1, int outputId2) {
   printf("In ODS\n");
   EncOneBlock *trustedM;
+  eServer.nonEnc = 0;
   if (inSize <= M) {
     trustedM = new EncOneBlock[M];
-    eServer.nonEnc = 0;
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
     Quick qsort(eServer, trustedM);
     qsort.quickSort(0, inSize - 1);
     freeAllocate(outputId1, outputId1, inSize);
-    eServer.nonEnc = 0;
     eServer.opOneLinearScanBlock(0, trustedM, inSize, outputId1, 1, 0);
     delete [] trustedM;
     resultId = outputId1;
@@ -490,7 +531,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   }
   clock_t startS, startP, startF, end;
   std::vector<EncOneBlock> trustedM2;
-  int64_t sampleSize;
+  int64_t sampleSize, xDummySampleSize;
   // step1. get samples & pivots
   if ((int64_t)ceil(alpha * N) < M) {
     printf("In memory samples\n");
@@ -503,10 +544,12 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     startS = time(NULL);
     if (sorttype == ODSLOOSE) {
       sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime);
+      xDummySampleSize = sampleSize;
     } else {
-      sampleSize = SampleEx(inputId, sampleId);
+      xDummySampleSize = SampleEx(inputId, sampleId);
+      sampleSize = ceil(2 * alpha * M) * (N / M);
     }
-    ODSquantileCal(sampleId, sampleSize, sortedSampleId, trustedM2);
+    ODSquantileCal(sampleId, sampleSize, xDummySampleSize, sortedSampleId, trustedM2);
     freeAllocate(sampleId, sampleId, 0);
     freeAllocate(sortedSampleId, sortedSampleId, 0);
   }
@@ -529,16 +572,16 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     int64_t j = 0;
     for (int i = 0; i < sectionNum; ++i) {
       printf("Final progress: %d / %d\n", i, sectionNum-1);
-      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
-        internalObliviousSort(trustedM, 0, k);
+        // internalObliviousSort(trustedM, 0, k);
+        Bitonic bisort(eServer);
+        bisort.smallBitonicSort(trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
       }
-      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(j, trustedM, k, outputId2, 1, 0);
       j += k;
     }
@@ -552,16 +595,16 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     trustedM = new EncOneBlock[M];
     for (int i = 0; i < sectionNum; ++i) {
       printf("Final progress: %d / %d\n", i, sectionNum-1);
-      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
-        internalObliviousSort(trustedM, 0, k);
+        // internalObliviousSort(trustedM, 0, k);
+        Bitonic bisort(eServer);
+        bisort.smallBitonicSort(trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
       }
-      eServer.nonEnc = 0;
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId2, 1, 0);
     }
     delete [] trustedM;

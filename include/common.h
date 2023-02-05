@@ -95,6 +95,15 @@ struct EncOneBlock {
     }
     return true; // equal
   }
+  bool operator=(const EncOneBlock &a) {
+    sortKey = a.sortKey;
+    primaryKey = a.primaryKey;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      payLoad[i] = a.payLoad[i];
+    }
+    randomKey = a.randomKey;
+    return true;
+  }
 };
 
 int64_t greatestPowerOfTwoLessThan(double n);

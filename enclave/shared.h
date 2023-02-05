@@ -43,6 +43,7 @@ class EnclaveServer {
     bool cmpHelper(EncOneBlock *a, EncOneBlock *b);
     int64_t moveDummy(EncOneBlock *a, int64_t size);
     void setValue(EncOneBlock *a, int64_t size, int value);
+    void setDummy(EncOneBlock *a, int64_t size);
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
     void swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j);
     int64_t Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime);
@@ -58,6 +59,7 @@ class EnclaveServer {
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
     EncMode encmode = OFB;
+    int tie_breaker = 0;
   private:
     unsigned char key[32];
     mbedtls_aes_context aes;

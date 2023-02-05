@@ -43,27 +43,6 @@ void callSort(int *resId, int *resN, double *params) {
     *resId = inputId;
     *resN = N;
   } else {
-    // TODO: 
-    std::vector<EncOneBlock> array;
-    EncOneBlock a, b, c, d;
-    a.sortKey = 10;
-    b.sortKey = 8;
-    c.sortKey = 9;
-    d.sortKey = 5;
-    array.push_back(a);
-    array.push_back(b);
-    array.push_back(c);
-    array.push_back(d);
-    printf("Before sort\n");
-    for (int i = 0; i < array.size(); ++i) {
-      printf("%d ", array[i].sortKey);
-    }
-    printf("\n");
-    sort(array.begin(), array.end());
-    printf("After sort \n");
-    for (int i = 0; i < array.size(); ++i) {
-      printf("%d ", array[i].sortKey);
-    }
-    printf("\n");
+    // NOTE: Empty
   }
 }

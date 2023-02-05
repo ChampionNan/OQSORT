@@ -274,6 +274,20 @@ void EnclaveServer::setValue(EncOneBlock *a, int64_t size, int value) {
   }
 }
 
+// TODO: random number influence running time
+void EnclaveServer::setDummy(EncOneBlock *a, int64_t size) {
+  if (size <= 0) {
+    return ;
+  }
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()};
+  for (int64_t i = 0; i < size; ++i) {
+    a[i].sortKey = DUMMY<int>();
+    a[i].primaryKey = tie_breaker++; // dist(rng); // tie_breaker++;
+  }
+}
+
 void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
   EncOneBlock *temp = new EncOneBlock;
   memmove(temp, a + i, encOneBlockSize);

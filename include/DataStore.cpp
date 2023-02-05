@@ -21,12 +21,14 @@ void DataStore::init(int structureId, int64_t size) {
   delArray.push_back(structureId);
   // 2. value initialization
   // #pragma omp parallel for
-  int MAX = std::numeric_limits<int>::max();
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()-1};
   for (int64_t i = 0; i < size; ++i) {
-    addr[i].primaryKey = abs(i);
-    addr[i].sortKey = abs(size - i);
+    addr[i].sortKey = dist(rng);
+    addr[i].primaryKey = i;
     // addr[i].payLoad = DUMMY<int>();
-    // addr[i].randomKey = DUMMY<int>();
+    // addr[i].randomKey = 0; // also used for dummy flag
   }
 }
 
