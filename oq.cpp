@@ -44,6 +44,7 @@ void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
 }
 
 // TODO: Change tight sort & add fully oblivious version
+// TODO: Sample loose to put in external memory mode
 int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype) {
   int64_t N_prime = sampleSize;
   // double alpha = (!is_rec) ? ALPHA : _ALPHA;
@@ -110,9 +111,9 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
   EncOneBlock *trustedM1 = new EncOneBlock[M];
   bool *indicator = new bool[M];
   int64_t m = 0;
-  freeAllocate(sampleId, sampleId, eachM * boundary);
   EncOneBlock dummyB;
   eServer.setDummy(&dummyB, 1);
+  freeAllocate(sampleId, sampleId, eachM * boundary);
   std::binomial_distribution<int> binom(B, alpha);
   for (int64_t i = 0; i < boundary; ++i) {
     printf("SampleEx progress: %ld / %ld\n", i, boundary-1);
@@ -125,11 +126,12 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
       if (seclevel == FULLY) {
         for (int k = 0; k < B; ++k) {
           int flag = (k < num_to_sample) ? 1 : 0;
-          int sampleStart = flag * k;
-          EncOneBlock tmp = trustedM1[j*B+k];
+          int sampleStart = flag ? k : (num_to_sample - 1);
+          EncOneBlock tmp = trustedM1[j*B+sampleStart];
           std::uniform_int_distribution<int> unif(sampleStart, num_to_sample-1);
           int l = unif(rng);
-          trustedM1[j*B+k] = flag * trustedM1[j*B+l] + (!flag) * dummyB ;
+          dummyB.primaryKey = eServer.tie_breaker++;
+          trustedM1[j*B+k] = flag * trustedM1[j*B+l] + (!flag) * dummyB;
           trustedM1[j*B+l] = flag * tmp + (!flag) * trustedM1[j*B+l];
         }
       } else {
@@ -144,13 +146,12 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
       }
     }
     if (seclevel == FULLY) {
-      memset(indicator, 0, M * sizeof(bool));
+      int flag;
       eachMSize = 0;
       for (int64_t k = 0; k < M; ++k) {
-        if (trustedM1[k].randomKey != DUMMY<int>()) {
-          indicator[k] = 1;
-          eachMSize += 1;
-        }
+        flag = (trustedM1[k].sortKey != DUMMY<int>()) ? 1 : 0;
+        indicator[k] = 1 * flag;
+        eachMSize += 1 * flag;
       }
       ORCompact(trustedM1, indicator, 0, M);
     } else {
@@ -205,10 +206,8 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   EncOneBlock a, b;
   a.sortKey = std::numeric_limits<int>::min();
   a.primaryKey = std::numeric_limits<int>::min();
-  a.randomKey = std::numeric_limits<int>::min();
   b.sortKey = std::numeric_limits<int>::max();
   b.primaryKey = std::numeric_limits<int>::max();
-  b.randomKey = std::numeric_limits<int>::max();
   pivots.insert(pivots.begin(), a);
   pivots.push_back(b);
   delete [] trustedM;

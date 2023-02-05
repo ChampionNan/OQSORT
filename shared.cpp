@@ -287,7 +287,7 @@ void EnclaveServer::setDummy(EncOneBlock *a, int64_t size) {
   std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()};
   for (int64_t i = 0; i < size; ++i) {
     a[i].sortKey = DUMMY<int>();
-    a[i].primaryKey = tie_breaker++; // used for dummy tie_breaker
+    a[i].primaryKey = tie_breaker++; // dist(rng); // tie_breaker++;
   }
 }
 

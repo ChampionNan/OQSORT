@@ -58,6 +58,7 @@ class EnclaveServer {
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
     EncMode encmode = OFB;
+    int tie_breaker = 0;
   private:
     unsigned char key[32];
     mbedtls_aes_context aes;
@@ -66,7 +67,6 @@ class EnclaveServer {
     mbedtls_entropy_context entropy;
     size_t iv_offset, iv_offset1;
     unsigned char iv[16];
-    int tie_breaker = 0;
 };
 
 struct HeapNode {
