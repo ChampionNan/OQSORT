@@ -1,7 +1,7 @@
 #include "bitonic.h"
 
 // support for use small bitonic sort only
-Bitonic::Bitonic(EnclaveServer &eServer) : eServer{eServer} {}
+Bitonic::Bitonic(EnclaveServer &eServer, EncOneBlock *a) : eServer{eServer}, a{a} {}
 
 Bitonic::Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize) : eServer{eServer}, inputId{inputId}, start{start}, initSize{initSize} {
   M = eServer.M;
@@ -22,8 +22,8 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int
     int swap = 0, nswap;
     int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
     for (int64_t i = 0; i < size - mid; ++i) {
-      EncOneBlock num1 = a[start + i];
-      EncOneBlock num2 = a[start + mid + i];
+      num1 = a[start + i];
+      num2 = a[start + mid + i];
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
       nswap = !swap;
@@ -32,6 +32,30 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int
     }
     smallBitonicMerge(a, start, mid, flipped);
     smallBitonicMerge(a, start + mid, size - mid, flipped);
+  }
+  return;
+}
+
+void Bitonic::smallBitonicMerge(int64_t start, int64_t size, int flipped) {
+  if (size == 1) {
+    return;
+  } else {
+    // printf("In smallMerge\n");
+    int swap = 0, nswap;
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    // printf("In smallMerge\n");
+    for (int64_t i = 0; i < size - mid; ++i) {
+      num1 = a[start + i];
+      num2 = a[start + mid + i];
+      swap = eServer.cmpHelper(&num1, &num2);
+      swap = swap ^ flipped;
+      nswap = !swap;
+      a[start + i] = (nswap * num1) + (swap * num2);
+      a[start + i + mid] = (swap * num1) + (nswap * num2);
+    }
+    // printf("Before each section\n");
+    smallBitonicMerge(start, mid, flipped);
+    smallBitonicMerge(start + mid, size - mid, flipped);
   }
   return;
 }
@@ -45,6 +69,18 @@ void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, int 
     smallBitonicSort(a, start, mid, 1);
     smallBitonicSort(a, start + mid, size - mid, 0);
     smallBitonicMerge(a, start, size, flipped);
+  }
+  return;
+}
+
+void Bitonic::smallBitonicSort(int64_t start, int64_t size, int flipped) {
+  if (size <= 1) {
+    return ;
+  } else {
+    int64_t mid = eServer.greatestPowerOfTwoLessThan((double)size);
+    smallBitonicSort(start, mid, 1);
+    smallBitonicSort(start + mid, size - mid, 0);
+    smallBitonicMerge(start, size, flipped);
   }
   return;
 }

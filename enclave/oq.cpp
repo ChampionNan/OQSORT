@@ -435,7 +435,7 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   for (int64_t i = 0; i < partitionIdx.size() - 1; ++i) {
     printf("Begin at: %ld, number: %ld\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
     realNum = eServer.moveDummy(&extD[partitionIdx[i]], partitionIdx[i+1]-partitionIdx[i]);
-    Bitonic bisort(eServer);
+    Bitonic bisort(eServer, extD);
     bisort.smallBitonicSort(extD, partitionIdx[i], realNum, 0);
     memcpy(&D[writeStart], &extD[partitionIdx[i]], eServer.encOneBlockSize * realNum);
     writeStart += realNum;
@@ -564,6 +564,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   // step3. Final sort
   startF = time(NULL);
   printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  printf("SecSize: %ld\n", sectionSize);
   eServer.IOtime = 0;
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
@@ -574,10 +575,11 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
+      printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer);
-        bisort.smallBitonicSort(trustedM, 0, k, 0);
+        Bitonic bisort(eServer, trustedM);
+        bisort.smallBitonicSort(0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
@@ -597,10 +599,11 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
+      printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer);
-        bisort.smallBitonicSort(trustedM, 0, k, 0);
+        Bitonic bisort(eServer, trustedM);
+        bisort.smallBitonicSort(0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
