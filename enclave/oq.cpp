@@ -435,7 +435,7 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   for (int64_t i = 0; i < partitionIdx.size() - 1; ++i) {
     printf("Begin at: %ld, number: %ld\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
     realNum = eServer.moveDummy(&extD[partitionIdx[i]], partitionIdx[i+1]-partitionIdx[i]);
-    Bitonic bisort(eServer, extD);
+    Bitonic bisort(eServer);
     bisort.smallBitonicSort(extD, partitionIdx[i], realNum, 0);
     memcpy(&D[writeStart], &extD[partitionIdx[i]], eServer.encOneBlockSize * realNum);
     writeStart += realNum;
@@ -458,7 +458,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t dataBoundary = boundary2 * B;
   int64_t smallSectionSize = M / p0;
   int64_t bucketSize0 = boundary1 * smallSectionSize;
-  // printf("inSize: %ld, M': %ld, M: %ld, p0: %ld, boundary: %ld, smallSecSize: %ld\n", inSize, M_prime, M, p0, boundary1, smallSectionSize);
   int64_t totalEncB = boundary1 * smallSectionSize * p0;
   freeAllocate(outId, outId, totalEncB);
   int64_t Msize1, index1, index2, writeBackNum;
@@ -578,8 +577,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer, trustedM);
-        bisort.smallBitonicSort(0, k, 0);
+        Bitonic bisort(eServer);
+        bisort.smallBitonicSort(trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
@@ -602,8 +601,10 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer, trustedM);
-        bisort.smallBitonicSort(0, k, 0);
+        // Bitonic bisort(eServer);
+        // bisort.smallBitonicSort(trustedM, 0, k, 0);
+        Quick qsort(eServer, trustedM);
+        qsort.quickSort(0, k - 1);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);

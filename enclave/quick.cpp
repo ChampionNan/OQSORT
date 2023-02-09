@@ -30,7 +30,7 @@ void Quick::quickSort(int64_t low, int64_t high) {
   }
 }
 
-QuickV::QuickV(EnclaveServer &eSErver) : eServer{eServer} {}
+QuickV::QuickV(EnclaveServer &eServer) : eServer{eServer} {}
 
 int64_t QuickV::partition(std::vector<EncOneBlock> &arr, int64_t low, int64_t high) {
   std::uniform_int_distribution<int64_t> dist{low, high};
