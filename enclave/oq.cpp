@@ -279,7 +279,7 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
   int64_t m = sumArray(M, left, left + n2);
   if (n == 2) {
     bool flag = ((1 - M[left]) * M[left + 1]) ^ (z % 2);
-    if (flag) eServer.swapRow(D, left, left + 1);
+    eServer.oswap(&D[left], &D[left + 1], flag);
   } else if (n > 2) {
     OROffCompact(D, M, left, left + n2, z % n2);
     OROffCompact(D, M, left + n2, left + n, (z + m % n2) % n2);
@@ -289,7 +289,7 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
     for (int64_t i = 0; i < n2; ++i) {
       bool s3 = (i >= ((z + m) % n2)) ? 1 : 0;
       bool b = s ^ s3;
-      if (b) eServer.swapRow(D, left + i, left + i + n2);
+      eServer.oswap(&D[left + i], &D[left + i + n2], b);
     }
   }
 }
@@ -305,7 +305,7 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   // print(D, n);
   for (int64_t i = 0; i < n2; ++i) { // not 2^k mix
     bool b = (i >= m) ? 1 : 0;
-    if (b) eServer.swapRow(D, left + i, left + i + n1);
+    eServer.oswap(&D[left + i], &D[left + i + n1], b);
   }
 }
 

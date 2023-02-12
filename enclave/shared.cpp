@@ -302,6 +302,13 @@ void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
   delete temp;
 }
 
+void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
+  int mask = ~((int)cond - 1);
+  *a = *a ^ *b;
+  *b = *b ^ (*a & mask);
+  *a = *a ^ *b;
+}
+
 int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
   int64_t k = 1;
   while (k > 0 && k < n) {

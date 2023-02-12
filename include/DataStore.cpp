@@ -36,16 +36,16 @@ void DataStore::print(int structureId, int64_t size, OutputType outputtype, cons
   EncOneBlock *addr = arrayAddr[structureId];
   if (outputtype == TERMINAL) {
     for (int i = 0; i < size; ++i) {
-      cout << "addr[" << i << "]: (" << addr[i].primaryKey;
-      cout << ", " << addr[i].sortKey << ")" << endl;
+      cout << "addr[" << i << "]: (" << addr[i].sortKey;
+      cout << ", " << addr[i].primaryKey << ")" << endl;
     }
     cout << endl;
   } else if (outputtype == FILEOUT) {
     ofstream fout(filepath);
     int64_t outsize = size / 1000;
     for (int64_t i = 0; i < outsize; ++i) {
-      fout << "addr[" << i << "]: (" << addr[i].primaryKey;
-      fout << ", " << addr[i].sortKey << ")" << endl;
+      fout << "addr[" << i << "]: (" << addr[i].sortKey;
+      fout << ", " << addr[i].primaryKey << ")" << endl;
     }
     fout << endl;
     fout.close();

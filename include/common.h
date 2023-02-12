@@ -81,6 +81,26 @@ struct EncOneBlock {
     res.randomKey = x.randomKey + y.randomKey;
     return res;
   }
+  friend EncOneBlock operator^(const EncOneBlock &x, const EncOneBlock &y) {
+    EncOneBlock res;
+    res.sortKey = x.sortKey ^ y.sortKey;
+    res.primaryKey = x.primaryKey ^ y.primaryKey;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = x.payLoad[i] ^ y.payLoad[i];
+    }
+    res.randomKey = x.randomKey ^ y.randomKey;
+    return res;
+  }
+  friend EncOneBlock operator&(const EncOneBlock &x, const int &mask) {
+    EncOneBlock res;
+    res.sortKey = x.sortKey & mask;
+    res.primaryKey = x.primaryKey & mask;
+    for (int i = 0; i < PAYLOAD; ++i) {
+      res.payLoad[i] = x.payLoad[i] & mask;
+    }
+    res.randomKey = x.randomKey & mask;
+    return res;
+  }
   friend bool operator<(const EncOneBlock &a, const EncOneBlock &b) {
     if (a.sortKey < b.sortKey) {
       return true;
