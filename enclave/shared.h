@@ -49,6 +49,7 @@ class EnclaveServer {
     void oswap(EncOneBlock *a, EncOneBlock *b, bool cond);
     int64_t Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime);
     int64_t greatestPowerOfTwoLessThan(double n);
+    int64_t greatestPowerOfTwoLessThan(int64_t n);
     int64_t smallestPowerOfKLargerThan(int64_t n, int k);
 
   public:

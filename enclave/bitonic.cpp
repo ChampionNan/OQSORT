@@ -17,39 +17,26 @@ Bitonic::~Bitonic() {
   delete [] row2;
 }
 
-void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, int flipped) {
-  if (size == 1) {
-    return;
-  } else {
-    printf("In bitonic merge %ld, %ld\n", start, size);
-    int swap = 0, nswap;
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
-    for (int64_t i = 0; i < size - mid; ++i) {
-      num1 = a[start + i];
-      num2 = a[start + mid + i];
-      swap = eServer.cmpHelper(&num1, &num2);
-      swap = swap ^ flipped;
-      nswap = !swap;
-      a[start + i] = (nswap * num1) + (swap * num2);
-      a[start + i + mid] = (swap * num1) + (nswap * num2);
+void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, bool flipped) {
+  if (size > 1) {
+    printf("bimerg: %ld, %ld\n", start, size);
+    mid = eServer.greatestPowerOfTwoLessThan(size);
+    for (int64_t i = start; i < start + size - mid; i++) {
+      eServer.oswap(&a[i], &a[i + mid], eServer.cmpHelper(&a[i], &a[i + mid]) ^ flipped);
     }
-    printf("Next stage1, %ld %ld\n", start, mid);
     smallBitonicMerge(a, start, mid, flipped);
-    printf("Next stage2, %ld, %ld\n", start + mid, size-mid);
     smallBitonicMerge(a, start + mid, size - mid, flipped);
   }
   return;
 }
 
 //Correct, after testing
-void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, int flipped) {
-  if (size <= 1) {
-    return ;
-  } else {
-    printf("In bitonic sort: %ld %ld\n", start, size);
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
-    smallBitonicSort(a, start, mid, 1);
-    smallBitonicSort(a, start + mid, size - mid, 0);
+void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, bool flipped) {
+  if (size > 1) {
+    printf("bisort: %ld, %ld\n", start, size);
+    mid = size/2;
+    smallBitonicSort(a, start, mid, !flipped);
+    smallBitonicSort(a, start + mid, size - mid, flipped);
     smallBitonicMerge(a, start, size, flipped);
   }
   return;
@@ -70,7 +57,7 @@ void Bitonic::bitonicMerge(int64_t start, int64_t size, int flipped) {
     delete [] trustedMemory;
   } else {
     int swap = 0, nswap;
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan(size);
     for (int64_t i = 0; i < size - mid; ++i) {
       eServer.opOneLinearScanBlock((start + i) * B, row1, B, inputId, 0, 0);
       eServer.opOneLinearScanBlock((start + mid + i) * B, row2, B, inputId, 0, 0);
@@ -108,7 +95,7 @@ void Bitonic::bitonicSort(int64_t start, int64_t size, int flipped) {
     }
     delete [] trustedMemory;
   } else {
-    int64_t mid = greatestPowerOfTwoLessThan((double)size);
+    int64_t mid = eServer.greatestPowerOfTwoLessThan(size);
     bitonicSort(start, mid, 1);
     bitonicSort(start + mid, size - mid, 0);
     bitonicMerge(start, size, flipped);

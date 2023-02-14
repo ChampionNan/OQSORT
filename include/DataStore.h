@@ -27,7 +27,7 @@ class DataStore {
     int64_t RandRange(int64_t start, int64_t end);
   public:
   // TODO: Change this 
-    const char *filepath = "/home/chenbingnan/mysamples/OQSORT/out.txt";
+    const char *filepath = "/OQSORT/out.txt";
     OutputType type = FILEOUT;
   private:
     EncOneBlock **arrayAddr;

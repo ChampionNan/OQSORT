@@ -317,6 +317,14 @@ int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
   return k >> 1;
 }
 
+int64_t EnclaveServer::greatestPowerOfTwoLessThan(int64_t n) {
+  int64_t k = 1;
+  while (k > 0 && k < n) {
+      k = k << 1;
+   }
+  return k >> 1;
+}
+
 int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
   int64_t num = 1;
   while (num > 0 && num < n) {

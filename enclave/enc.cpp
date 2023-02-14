@@ -43,6 +43,17 @@ void callSort(int *resId, int *resN, double *params) {
     *resId = inputId;
     *resN = N;
   } else {
-    // NOTE: Empty
+    // NOTE: Used for test
+    int64_t size = 400000;
+    EncOneBlock *trustedM = new EncOneBlock[size];
+    for (int64_t i = 0; i < size; ++i) {
+      trustedM[i].sortKey = size - i;
+      trustedM[i].primaryKey = i;
+    }
+    printf("Start small bitonic\n");
+    Bitonic bisort(eServer, trustedM, 0, size);
+    bisort.smallBitonicSort(trustedM, 0, size, 0);
+    printf("Finished bitonic sort\n");
+    delete [] trustedM;
   }
 }
