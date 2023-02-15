@@ -22,6 +22,7 @@
 #include <time.h>
 #include <vector>
 #include <iostream>
+#include <exception>
 
 #include "../include/common.h"
 

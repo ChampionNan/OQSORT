@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <random>
+#include <exception>
 // #include <boost/program_options.hpp>
 #include <openenclave/host.h>
 
@@ -183,7 +184,12 @@ int main(int argc, const char* argv[]) {
     data.init(inputId, N);
   }
   start = high_resolution_clock::now();
-  callSort(enclave, resId, resN, params);
+  try {
+    callSort(enclave, resId, resN, params);
+  } catch (exception &e) {
+    printf("Excep\n");
+  }
+  printf("Back to host\n");
   end = high_resolution_clock::now();
   if (result != OE_OK) {
     fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));

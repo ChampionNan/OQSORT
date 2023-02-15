@@ -28,7 +28,8 @@ void DataStore::init(int structureId, int64_t size) {
     addr[i].sortKey = dist(rng);
     addr[i].primaryKey = i;
     // addr[i].payLoad = DUMMY<int>();
-    // addr[i].randomKey = 0; // also used for dummy flag
+    memset(addr[i].payLoad, 0, PAYLOAD * sizeof(int));
+    addr[i].randomKey = 0; // also used for dummy flag
   }
 }
 

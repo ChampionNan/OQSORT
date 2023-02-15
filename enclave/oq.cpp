@@ -579,6 +579,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
         // internalObliviousSort(trustedM, 0, k);
         Bitonic bisort(eServer, trustedM, 0, k);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
+        // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
@@ -603,8 +604,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
         // internalObliviousSort(trustedM, 0, k);
         Bitonic bisort(eServer, trustedM, 0, k);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
-        // Quick qsort(eServer, trustedM);
-        // qsort.quickSort(0, k - 1);
+        // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
