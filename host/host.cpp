@@ -124,17 +124,17 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     gamma = vm["gamma"].as<double>();
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
-    datatype = 128; // 16, 128
+    datatype = 16; // 16, 128
     M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
     N = 200 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = -1;
+    sortId = 1;
     alpha = 0.02;
-    beta = 0.11;
-    gamma = 0.25;
-    P = 274;
+    beta = 0.04;
+    gamma = 0.07;
+    P = 228;
   }
 }
 
@@ -184,12 +184,7 @@ int main(int argc, const char* argv[]) {
     data.init(inputId, N);
   }
   start = high_resolution_clock::now();
-  try {
-    callSort(enclave, resId, resN, params);
-  } catch (exception &e) {
-    printf("Excep\n");
-  }
-  printf("Back to host\n");
+  callSort(enclave, resId, resN, params);
   end = high_resolution_clock::now();
   if (result != OE_OK) {
     fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));

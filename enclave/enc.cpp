@@ -19,7 +19,7 @@ void callSort(int *resId, int *resN, double *params) {
   double gamma = params[8];
   int P = params[9];
   EncMode encmode = GCM; // GCM, OFB
-  SecLevel seclevel = FULLY;
+  SecLevel seclevel = PARTIAL; // FULLY, PARTIAL
   EnclaveServer eServer(N, M, B, encmode);
 
   if (sortId == 0) { // ODS-Tight
@@ -44,25 +44,5 @@ void callSort(int *resId, int *resN, double *params) {
     *resN = N;
   } else {
     // NOTE: Used for test
-    int64_t size = 400000;
-    EncOneBlock *trustedM = new EncOneBlock[size];
-    memset(trustedM, 0, size * sizeof(EncOneBlock));
-    for (int64_t i = 0; i < size; ++i) {
-      trustedM[i].sortKey = size - i;
-      trustedM[i].primaryKey = i;
-      memset(trustedM[i].payLoad, 0, PAYLOAD * sizeof(int));
-      trustedM[i].randomKey = 0; // also used for dummy flag
-    }
-    printf("Start small bitonic\n");
-    Bitonic bisort(eServer, trustedM, 0, size);
-    bisort.smallBitonicSort(trustedM, 0, size, 0);
-    for (int64_t i = 0; i < size; ++i) {
-      printf("(%d, %d) ", trustedM[i].sortKey, trustedM[i].primaryKey);
-    }
-    printf("\n");
-    // smallBitonicSort(eServer, trustedM, 0, size, 0);
-    printf("Finished bitonic sort\n");
-    delete [] trustedM;
-    printf("In enclave\n");
   }
 }

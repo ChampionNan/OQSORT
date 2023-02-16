@@ -10,7 +10,7 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define PAYLOAD 29 // 1, 29
+#define PAYLOAD 1 // 1, 29
 
 // FIXME: Why not able to contain common files
 template<typename T>

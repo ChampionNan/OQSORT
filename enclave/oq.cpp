@@ -574,10 +574,9 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
-      printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer, trustedM, 0, k);
+        Bitonic bisort(eServer);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
         // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
@@ -599,10 +598,9 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
-      printf("NonDummy Size: %ld\n", k);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
-        Bitonic bisort(eServer, trustedM, 0, k);
+        Bitonic bisort(eServer);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
         // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
