@@ -28,6 +28,9 @@
 
 #include "oqsort_t.h"
 
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+
 class EnclaveServer {
   public:
     EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);
@@ -48,6 +51,8 @@ class EnclaveServer {
     void swapRow(EncOneBlock *a, int64_t i, int64_t j);
     void swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j);
     void oswap(EncOneBlock *a, EncOneBlock *b, bool cond);
+    void oswap128(uint128_t *a, uint128_t *b, bool cond);
+    void regswap(EncOneBlock *a, EncOneBlock *b);
     int64_t Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime);
     int64_t greatestPowerOfTwoLessThan(double n);
     int64_t greatestPowerOfTwoLessThan(int64_t n);

@@ -4,18 +4,14 @@
 #include "shared.h"
 #include <fstream>
 
-void smallBitonicMerge(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t size, bool flipped);
-void smallBitonicSort(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t size, bool flipped);
-
 class Bitonic {
   public:
     Bitonic(EnclaveServer &eServer);
     Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize);
     Bitonic(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t size);
+    ~Bitonic();
     void smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, bool flipped);
     void smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, bool flipped);
-    void smallBitonicMerge(int64_t start, int64_t size, bool flipped);
-    void smallBitonicSort(int64_t start, int64_t size, bool flipped);
     void bitonicMerge(int64_t start, int64_t size, int flipped);
     void bitonicSort(int64_t start, int64_t size, int flipped);
 

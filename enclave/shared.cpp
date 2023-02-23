@@ -296,32 +296,71 @@ void EnclaveServer::swapRow(EncOneBlock *a, int64_t i, int64_t j) {
 
 void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
   EncOneBlock *temp = new EncOneBlock;
-  memcpy(temp, &arr[i], sizeof(arr[0]));
-  memcpy(&arr[i], &arr[j], sizeof(arr[0]));
-  memcpy(&arr[j], temp, sizeof(arr[0]));
+  memcpy(temp, &arr[i], encOneBlockSize);
+  memcpy(&arr[i], &arr[j], encOneBlockSize);
+  memcpy(&arr[j], temp, encOneBlockSize);
   delete temp;
 }
 
-void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
+inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
   int mask = ~((int)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);
   *a = *a ^ *b;
 }
 
+void EnclaveServer::oswap128(uint128_t *a, uint128_t *b, bool cond) {
+  uint128_t mask = ~((uint128_t)cond - 1);
+  *a = *a ^ *b;
+  *b = *b ^ (*a & mask);
+  *a = *a ^ *b;
+  *(a+1) = *(a+1) ^ *(b+1);
+  *(b+1) = *(b+1) ^ (*(a+1) & mask);
+  *(a+1) = *(a+1) ^ *(b+1);
+  *(a+2) = *(a+2) ^ *(b+2);
+  *(b+2) = *(b+2) ^ (*(a+2) & mask);
+  *(a+2) = *(a+2) ^ *(b+2);
+  *(a+3) = *(a+3) ^ *(b+3);
+  *(b+3) = *(b+3) ^ (*(a+3) & mask);
+  *(a+3) = *(a+3) ^ *(b+3);
+  *(a+4) = *(a+4) ^ *(b+4);
+  *(b+4) = *(b+4) ^ (*(a+4) & mask);
+  *(a+4) = *(a+4) ^ *(b+4);
+  *(a+5) = *(a+5) ^ *(b+5);
+  *(b+5) = *(b+5) ^ (*(a+5) & mask);
+  *(a+5) = *(a+5) ^ *(b+5);
+  *(a+6) = *(a+6) ^ *(b+6);
+  *(b+6) = *(b+6) ^ (*(a+6) & mask);
+  *(a+6) = *(a+6) ^ *(b+6);
+  *(a+7) = *(a+7) ^ *(b+7);
+  *(b+7) = *(b+7) ^ (*(a+7) & mask);
+  *(a+7) = *(a+7) ^ *(b+7);
+}
+
+void EnclaveServer::regswap(EncOneBlock *a, EncOneBlock *b) {
+  int numB = encOneBlockSize / 4;
+  int Bsize;
+  int tmp;
+  for (int i = 0; i < numB; ++i) {
+    tmp = ((int*)a)[i];
+    ((int*)a)[i] = ((int*)b)[i];
+    ((int*)b)[i] = tmp;
+  }
+}
+
 int64_t EnclaveServer::greatestPowerOfTwoLessThan(double n) {
   int64_t k = 1;
   while (k > 0 && k < n) {
-      k = k << 1;
-   }
+    k = k << 1;
+  }
   return k >> 1;
 }
 
 int64_t EnclaveServer::greatestPowerOfTwoLessThan(int64_t n) {
   int64_t k = 1;
   while (k > 0 && k < n) {
-      k = k << 1;
-   }
+    k = k << 1;
+  }
   return k >> 1;
 }
 

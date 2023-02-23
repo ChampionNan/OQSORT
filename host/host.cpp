@@ -64,6 +64,15 @@ void OcallWB(size_t index, int* buffer, size_t blockSize, int structureId) {
   memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
 }
 
+// size: read bytes
+void OcallRF(char* buffer, size_t size) {
+  const char *filepath = "/OQSORT/files/64G1.file";
+  ifstream fin(filepath, ios::in | ios::binary);
+  fin.seekg(0);
+  fin.read(buffer, size);
+  fin.close();
+}
+
 // allocate encB for outside memory
 void freeAllocate(int structureIdM, int structureIdF, size_t size) {
   // 1. Free arrayAddr[structureId]
@@ -124,7 +133,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     gamma = vm["gamma"].as<double>();
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
-    datatype = 16; // 16, 128
+    datatype = 128; // 16, 128
     M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
     N = 200 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
@@ -132,9 +141,9 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     sortId = 1;
     alpha = 0.02;
-    beta = 0.04;
-    gamma = 0.07;
-    P = 228;
+    beta = 0.11;
+    gamma = 0.25;
+    P = 274;
   }
 }
 

@@ -12,11 +12,13 @@ oqsortenc
 *_u.*
 out.txt
 *.txt
+/files/
+/fio/
 
 # .vscode
 .vscode/*.log
 
 # cmake
-CMakeFiles/*
+/CMakeFiles/
 CMakeCache.txt
 cmake_install.cmake

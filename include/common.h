@@ -7,10 +7,11 @@
 #include <limits>
 #include <random>
 #include <cmath>
+#include <bitset>
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define PAYLOAD 1 // 1, 29
+#define PAYLOAD 29 // 1, 29
 
 // FIXME: Why not able to contain common files
 template<typename T>
@@ -115,14 +116,7 @@ struct EncOneBlock {
     }
     return true; // equal
   }
-    bool operator=(const EncOneBlock &a) {
-    /*
-    sortKey = a.sortKey;
-    primaryKey = a.primaryKey;
-    for (int i = 0; i < PAYLOAD; ++i) {
-      payLoad[i] = a.payLoad[i];
-    }
-    randomKey = a.randomKey;*/
+  bool operator=(const EncOneBlock &a) {
     memcpy(this, &a, sizeof(EncOneBlock));
     return true;
   }

@@ -1,7 +1,7 @@
 #include "bitonic.h"
 
 // support for use small bitonic sort only
-Bitonic::Bitonic(EnclaveServer &eServer) : eServer{eServer} {}
+Bitonic::Bitonic(EnclaveServer &eServer) : eServer{eServer} , row1{nullptr}, row2{nullptr} {}
 
 Bitonic::Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t initSize) : eServer{eServer}, inputId{inputId}, start{start}, initSize{initSize} {
   M = eServer.M;
@@ -10,7 +10,12 @@ Bitonic::Bitonic(EnclaveServer &eServer, int inputId, int64_t start, int64_t ini
   row2 = new EncOneBlock[B];
 }
 
-Bitonic::Bitonic(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t initSize) : eServer{eServer}, a{a}, start{start}, initSize{initSize} {}
+Bitonic::Bitonic(EnclaveServer &eServer, EncOneBlock *a, int64_t start, int64_t initSize) : eServer{eServer}, a{a}, start{start}, initSize{initSize}, row1{nullptr}, row2{nullptr}{}
+
+Bitonic::~Bitonic() {
+  if (row1) delete [] row1;
+  if (row1) delete [] row2;
+}
 
 void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, bool flipped) {
   if (size > 1) {
@@ -20,9 +25,9 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, boo
       num2 = a[start + mid + i];
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
-      nswap = !swap;
-      a[start + i] = (nswap * num1) + (swap * num2);
-      a[start + i + mid] = (swap * num1) + (nswap * num2);
+      // if (swap) eServer.regswap(&a[start + i], &a[start + i + mid]);
+      // if (swap) eServer.swapRow(a, start + i, start + i + mid);
+      eServer.oswap128((uint128_t*)&a[start + i], (uint128_t*)&a[start + i + mid], swap);
     }
     smallBitonicMerge(a, start, mid, flipped);
     smallBitonicMerge(a, start + mid, size - mid, flipped);

@@ -279,7 +279,8 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
   int64_t m = sumArray(M, left, left + n2);
   if (n == 2) {
     bool flag = ((1 - M[left]) * M[left + 1]) ^ (z % 2);
-    eServer.oswap(&D[left], &D[left + 1], flag);
+    // if (flag) eServer.regswap(&D[left], &D[left + 1]);
+    eServer.oswap128((uint128_t*)&D[left], (uint128_t*)&D[left + 1], flag);
   } else if (n > 2) {
     OROffCompact(D, M, left, left + n2, z % n2);
     OROffCompact(D, M, left + n2, left + n, (z + m % n2) % n2);
@@ -289,7 +290,8 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
     for (int64_t i = 0; i < n2; ++i) {
       bool s3 = (i >= ((z + m) % n2)) ? 1 : 0;
       bool b = s ^ s3;
-      eServer.oswap(&D[left + i], &D[left + i + n2], b);
+      // if (b) eServer.regswap(&D[left + i], &D[left + i + n2]);
+      eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n2], b);
     }
   }
 }
@@ -305,7 +307,8 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   // print(D, n);
   for (int64_t i = 0; i < n2; ++i) { // not 2^k mix
     bool b = (i >= m) ? 1 : 0;
-    eServer.oswap(&D[left + i], &D[left + i + n1], b);
+    // if (b) eServer.regswap(&D[left + i], &D[left + i + n1]);
+    eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n1], b);
   }
 }
 
@@ -554,17 +557,19 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   }
   // step2. partition
   startP = time(NULL);
-  printf("Sampling Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startP-startS), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  printf("Sampling Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startP-startS-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
   eServer.IOtime = 0;
+  eServer.IOcost = 0;
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP), eServer.getIOtime(), eServer.getIOcost()*B/N);
-  printf("SecSize: %ld\n", sectionSize);
+  printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  // printf("SecSize: %ld\n", sectionSize);
   eServer.IOtime = 0;
+  eServer.IOcost = 0;
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize);
@@ -614,6 +619,6 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Final Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-startF), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  printf("Final Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-startF-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
   eServer.IOtime = 0;
 }

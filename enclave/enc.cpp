@@ -19,7 +19,7 @@ void callSort(int *resId, int *resN, double *params) {
   double gamma = params[8];
   int P = params[9];
   EncMode encmode = GCM; // GCM, OFB
-  SecLevel seclevel = PARTIAL; // FULLY, PARTIAL
+  SecLevel seclevel = FULLY; // FULLY, PARTIAL
   EnclaveServer eServer(N, M, B, encmode);
 
   if (sortId == 0) { // ODS-Tight
@@ -33,9 +33,13 @@ void callSort(int *resId, int *resN, double *params) {
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
   } else if (sortId == 2) { // bucket oblivious sort
+    clock_t start, end;
     Bucket bksort(eServer, inputId - 1);
+    start = time(NULL);
     *resId = bksort.bucketOSort();
+    end = time(NULL);
     *resN = N;
+    printf("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
   } else if (sortId == 3) {
     int64_t size = N / B;
     Bitonic bisort(eServer, inputId, 0, size);
@@ -44,5 +48,26 @@ void callSort(int *resId, int *resN, double *params) {
     *resN = N;
   } else {
     // NOTE: Used for test
+    eServer.nonEnc = 0;
+    int64_t size = 500000; 
+    clock_t start, end;
+    EncOneBlock *trustedM = new EncOneBlock[size];
+    for (int i = 0; i < size; ++i) {
+      trustedM[i].sortKey = size - i;
+      trustedM[i].primaryKey = i;
+    }
+    start = time(NULL);
+    // eServer.oswap128(ta, tb, 1);
+    Bitonic bisort(eServer);
+    bisort.smallBitonicSort(trustedM, 0, size, 0);
+    // Quick qsort(eServer, trustedM);
+    // qsort.quickSort(0, size);
+    end = time(NULL);
+    for (int i = 0; i < 50; ++i) {
+      printf("%d ", trustedM[i].sortKey);
+    }
+    printf("\n");
+    delete [] trustedM;
+    printf("Sort time: %lf\n", (double)(end-start));
   }
 }

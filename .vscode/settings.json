@@ -53,6 +53,7 @@
     "ctime": "cpp",
     "unordered_set": "cpp",
     "ratio": "cpp",
-    "cinttypes": "cpp"
+    "cinttypes": "cpp",
+    "cassert": "cpp"
   }
 }
