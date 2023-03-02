@@ -24,6 +24,10 @@
 #include <iostream>
 #include <exception>
 
+#include <mbedtls/aes.h>
+#include <mbedtls/entropy.h>
+#include <mbedtls/ctr_drbg.h>
+
 #include "../include/common.h"
 
 #include "oqsort_t.h"
@@ -33,7 +37,7 @@ typedef unsigned __int128 uint128_t;
 
 class EnclaveServer {
   public:
-    EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode);
+    EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD);
     double getIOcost();
     double getIOtime();
     int printf(const char *fmt, ...);
@@ -41,6 +45,8 @@ class EnclaveServer {
     void ofb_decrypt(EncOneBlock* buffer, int blockSize);
     void gcm_encrypt(EncOneBlock* buffer, int blockSize);
     void gcm_decrypt(EncOneBlock* buffer, int blockSize);
+    __uint128_t prf(__uint128_t a);
+    int64_t encrypt(int64_t index);
     void OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId);
     void OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId);
     void opOneLinearScanBlock(int64_t index, EncOneBlock* block, int64_t elementNum, int structureId, int write, int64_t dummyNum);
@@ -67,7 +73,11 @@ class EnclaveServer {
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
     EncMode encmode = OFB;
+    int SSD; // data storing flag
     int tie_breaker = 0;
+    int ROUND = 3;
+    int64_t base;
+    int64_t max_num;
   private:
     unsigned char key[32];
     mbedtls_aes_context aes;

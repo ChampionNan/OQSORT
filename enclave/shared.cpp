@@ -67,7 +67,7 @@ void Heap::replaceRoot(HeapNode x) {
   Heapify(0);
 }
 
-EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode) : N{N}, M{M}, B{B}, encmode{encmode} {
+EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD) : N{N}, M{M}, B{B}, encmode{encmode}, SSD{SSD} {
   encOneBlockSize = sizeof(EncOneBlock);
   IOcost = 0;
   IOtime = 0;
@@ -148,6 +148,38 @@ void EnclaveServer::gcm_decrypt(EncOneBlock* buffer, int encSize) {
   return;
 }
 
+__uint128_t EnclaveServer::prf(__uint128_t a) {
+  unsigned char input[16] = {0};
+  unsigned char encrypt_output[16] = {0};
+  for (int i = 0; i < 16; ++i) {
+    input[i] = (a >> (120 - i * 8)) & 0xFF;
+  }
+  mbedtls_aes_init(&aes);
+  mbedtls_aes_setkey_enc(&aes, key, 256);
+  mbedtls_aes_crypt_ecb(&aes, MBEDTLS_AES_ENCRYPT, input, encrypt_output);
+  mbedtls_aes_free(&aes);
+  __uint128_t res = 0;
+  for (int i = 0; i < 16; ++i) {
+    res |= encrypt_output[i] << (120 - i * 8);
+  }
+  return res;
+}
+
+int64_t EnclaveServer::encrypt(int64_t index) {
+  int64_t l = index / (1 << base);
+  int64_t r = index % (1 << base);
+  __uint128_t e;
+  int64_t temp, i = 1;
+  while (i <= ROUND) {
+    e = prf((r << (16 * 8 - base)) + i);
+    temp = r;
+    r = l ^ (e >> (16 * 8 - base));
+    l = temp;
+    i += 1;
+  }
+  return (l << base) + r;
+}
+
 // startIdx: index of blocks, 
 // pageSize: number of real data
 void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pageSize, int structureId) {
@@ -157,11 +189,11 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
   }
   if (nonEnc) {
     // printf("Before Read nonEnc: \n");
-    OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
     IOcost += 1;
   } else {
     // printf("Before Read Enc: \n");
-    OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
     IOcost += 1;
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -182,7 +214,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
     return;
   }
   if (nonEnc) {
-    OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
     IOcost += 1;
   } else {
     if (encmode == OFB) {
@@ -194,7 +226,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
         gcm_encrypt(buffer + i, encOneBlockSize);
       }
     }
-    OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId);
+    OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
     IOcost += 1;
   }
 }
@@ -374,6 +406,6 @@ int64_t EnclaveServer::smallestPowerOfKLargerThan(int64_t n, int k) {
 
 int64_t EnclaveServer::Sample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime) {
   int64_t sampleSize;
-  OcallSample(inStructureId, sampleId, N, M, n_prime, &sampleSize);
+  OcallSample(inStructureId, sampleId, N, M, n_prime, SSD, &sampleSize);
   return sampleSize;
 }

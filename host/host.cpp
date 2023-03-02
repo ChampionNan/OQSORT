@@ -22,25 +22,49 @@ using namespace chrono;
 EncOneBlock *arrayAddr[NUM_STRUCTURES];
 
 /* OCall functions */
-void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int64_t *ret) {
+// TODO: Add this with SSD version
+void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int SSD, int64_t *ret) {
   int64_t N_prime = N;
   int64_t boundary = ceil(1.0 * N_prime / M);
   int64_t realNum = 0;
   int64_t readStart = 0;
   EncOneBlock *trustedM1 = new EncOneBlock[M];
   int64_t m = 0, Msize;
-  freeAllocate(sampleId, sampleId, n_prime);
-  for (int64_t i = 0; i < boundary; ++i) {
-    Msize = std::min(M, N - i * M);
-    m = Hypergeometric(N_prime, Msize, n_prime);
-    printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
-    if (m > 0) {
-      memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
-      readStart += Msize;
-      shuffle(trustedM1, Msize);
-      memcpy(arrayAddr[sampleId] + realNum, trustedM1, m * sizeof(EncOneBlock));
-      realNum += m;
+  freeAllocate(sampleId, sampleId, n_prime, SSD);
+  if (!SSD) {
+    for (int64_t i = 0; i < boundary; ++i) {
+      Msize = std::min(M, N - i * M);
+      m = Hypergeometric(N_prime, Msize, n_prime);
+      printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      if (m > 0) {
+        memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
+        readStart += Msize;
+        shuffle(trustedM1, Msize);
+        memcpy(arrayAddr[sampleId] + realNum, trustedM1, m * sizeof(EncOneBlock));
+        realNum += m;
+      }
     }
+  } else {
+    string path = pathBase + to_string(inStructureId);
+    ifstream inFile(path.c_str(), ios::in);
+    path = pathBase + to_string(sampleId);
+    fstream outFile(path.c_str(), ios::out | ios::in); // write
+    for (int64_t i = 0; i < boundary; ++i) {
+      Msize = std::min(M, N - i * M);
+      m = Hypergeometric(N_prime, Msize, n_prime);
+      printf("Sampling SSD progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      if (m > 0) {
+        inFile.seekg(readStart * sizeof(EncOneBlock), ios::beg);
+        inFile.read((char*)trustedM1, Msize * sizeof(EncOneBlock));
+        readStart += Msize;
+        shuffle(trustedM1, Msize);
+        outFile.seekp(realNum * sizeof(EncOneBlock), ios::beg);
+        outFile.write((char*)trustedM1, m * sizeof(EncOneBlock));
+        realNum += m;
+      }
+    }
+    inFile.close();
+    outFile.close();
   }
   delete [] trustedM1;
   *ret = realNum;
@@ -53,40 +77,57 @@ void ocall_print_string(const char *str) {
 }
 
 // index: Block Index, blockSize: bytes
-void OcallRB(size_t index, int* buffer, size_t blockSize, int structureId) {
+void OcallRB(size_t index, int* buffer, size_t blockSize, int structureId, int SSD) {
   // std::cout<< "In OcallRB\n";
-  memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
+  if (!SSD) {
+    memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
+  } else {
+    string path = pathBase + to_string(structureId);
+    ifstream inFile(path.c_str(), ios::in);
+    inFile.seekg(index * sizeof(EncOneBlock), ios::beg);
+    inFile.read((char*)buffer, blockSize);
+    inFile.close();
+  }
 }
 
 // index: Block index, blockSize: bytes
-void OcallWB(size_t index, int* buffer, size_t blockSize, int structureId) {
+void OcallWB(size_t index, int* buffer, size_t blockSize, int structureId, int SSD) {
   // std::cout<< "In OcallWB\n";
-  memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
-}
-
-// size: read bytes
-void OcallRF(char* buffer, size_t size) {
-  const char *filepath = "/OQSORT/files/64G1.file";
-  ifstream fin(filepath, ios::in | ios::binary);
-  fin.seekg(0);
-  fin.read(buffer, size);
-  fin.close();
+  if (!SSD) {
+    memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
+  } else {
+    string path = pathBase + to_string(structureId);
+    fstream outFile(path.c_str(), ios::out | ios::in);
+    outFile.seekp(index * sizeof(EncOneBlock), ios::beg);
+    outFile.write((char*)buffer, blockSize);
+    outFile.close();
+  }
 }
 
 // allocate encB for outside memory
-void freeAllocate(int structureIdM, int structureIdF, size_t size) {
-  // 1. Free arrayAddr[structureId]
-  if (arrayAddr[structureIdF]) {
-    delete [] arrayAddr[structureIdF];
+void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD) {
+  if (!SSD) {
+    // 1. Free arrayAddr[structureId]
+    if (arrayAddr[structureIdF]) {
+      delete [] arrayAddr[structureIdF];
+    }
+    // 2. malloc new asked size (allocated in outside)
+    if (size <= 0) {
+      return;
+    }
+    EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
+    memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
+    // 3. assign malloc address to arrayAddr
+    arrayAddr[structureIdM] = addr;    
+  } else {
+    EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
+    memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
+    string path = pathBase + to_string(structureIdM);
+    ofstream outFile(path.c_str(), ios::out);
+    outFile.write((char*)addr, size * sizeof(EncOneBlock));
+    outFile.close();
+    delete [] addr;
   }
-  // 2. malloc new asked size (allocated in outside)
-  if (size <= 0) {
-    return;
-  }
-  EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
-  memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
-  // 3. assign malloc address to arrayAddr
-  arrayAddr[structureIdM] = addr;
   return ;
 }
 
@@ -116,7 +157,7 @@ void fyShuffle(int structureId, size_t size, int B) {
   std::cout << "Finished floyd shuffle\n";
 }
 
-void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int &B, int &sigma, int &sortId, double &alpha, double &beta, double &gamma, int &P, int &argc, const char* argv[]) {
+void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int &B, int &sigma, int &sortId, double &alpha, double &beta, double &gamma, int &P, int &SSD, int &argc, const char* argv[]) {
   if (inputtype == BOOST) {
     cout << "Need to be done." << endl;
     return;
@@ -144,6 +185,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     beta = 0.11;
     gamma = 0.25;
     P = 274;
+    SSD = 1;
   }
 }
 
@@ -159,11 +201,11 @@ int main(int argc, const char* argv[]) {
   seconds duration;
   // step1: init test numbers
   InputType inputtype = SETINMAIN;
-  int datatype, B, sigma, sortId, P;
+  int datatype, B, sigma, sortId, P, SSD;
   int64_t N, M;
   double alpha, beta, gamma;
-  readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, argc, argv);
-  double params[10] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P};
+  readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
+  double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
   // step2: Create the enclave
   // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
   // transition_using_threads
@@ -183,14 +225,15 @@ int main(int argc, const char* argv[]) {
     int64_t addi = addi = ((N / B) + 1) * B - N;
     N += addi;
   }
-  DataStore data(arrayAddr, N, M, B);
+  DataStore data(arrayAddr, N, M, B, SSD);
   if (sortId == 2) {
     int64_t totalSize = calBucketSize(sigma, N, M, B);
     data.init(inputId, N);
     data.init(inputId + 1, totalSize);
     data.init(inputId + 2, totalSize);
   } else {
-    data.init(inputId, N);
+    // data.init(inputId, N);
+    data.init(2, 10);
   }
   start = high_resolution_clock::now();
   callSort(enclave, resId, resN, params);

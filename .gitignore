@@ -12,6 +12,7 @@ oqsortenc
 *_u.*
 out.txt
 *.txt
+config*
 /files/
 /fio/
 

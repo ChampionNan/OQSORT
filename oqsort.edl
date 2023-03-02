@@ -7,7 +7,7 @@ enclave {
     public void callSort(
       [in, out, count=1]int *resId,
       [in, out, count=1]int *resN,
-      [in, count=10]double *params);
+      [in, count=11]double *params);
   };
 
   untrusted {
@@ -17,22 +17,22 @@ enclave {
       int64_t N, 
       int64_t M, 
       int64_t n_prime,
+      int SSD,
       [in, out, count=1]int64_t *ret);
     void OcallRB(
       size_t index,
       [out, size=blockSize]int* buffer,
       size_t blockSize,
-      int structureId);
+      int structureId,
+      int SSD);
     void OcallWB(
       size_t index,
       [in, size=blockSize]int* buffer,
       size_t blockSize,
-      int structureId);
-    void OcallRF(
-      [out, size=size]char* buffer,
-      size_t size);
+      int structureId,
+      int SSD);
     void ocall_print_string([in, string] const char *str);
-    void freeAllocate(int structureIdM, int structureIdF, size_t size);
+    void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD);
     void fyShuffle(int structureId, size_t size, int B);
   };
 };

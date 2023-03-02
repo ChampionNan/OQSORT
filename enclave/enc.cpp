@@ -18,9 +18,10 @@ void callSort(int *resId, int *resN, double *params) {
   double beta = params[7];
   double gamma = params[8];
   int P = params[9];
+  int SSD = params[10];
   EncMode encmode = GCM; // GCM, OFB
   SecLevel seclevel = FULLY; // FULLY, PARTIAL
-  EnclaveServer eServer(N, M, B, encmode);
+  EnclaveServer eServer(N, M, B, encmode, SSD);
 
   if (sortId == 0) { // ODS-Tight
     ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel, inputId + 2);
@@ -48,26 +49,5 @@ void callSort(int *resId, int *resN, double *params) {
     *resN = N;
   } else {
     // NOTE: Used for test
-    eServer.nonEnc = 0;
-    int64_t size = 500000; 
-    clock_t start, end;
-    EncOneBlock *trustedM = new EncOneBlock[size];
-    for (int i = 0; i < size; ++i) {
-      trustedM[i].sortKey = size - i;
-      trustedM[i].primaryKey = i;
-    }
-    start = time(NULL);
-    // eServer.oswap128(ta, tb, 1);
-    Bitonic bisort(eServer);
-    bisort.smallBitonicSort(trustedM, 0, size, 0);
-    // Quick qsort(eServer, trustedM);
-    // qsort.quickSort(0, size);
-    end = time(NULL);
-    for (int i = 0; i < 50; ++i) {
-      printf("%d ", trustedM[i].sortKey);
-    }
-    printf("\n");
-    delete [] trustedM;
-    printf("Sort time: %lf\n", (double)(end-start));
   }
 }

@@ -19,6 +19,8 @@ constexpr T DUMMY() {
   return std::numeric_limits<T>::max();
 }
 
+const std::string pathBase("/ssdFiles/");
+
 enum SortType {
   ODSTIGHT,
   ODSLOOSE,

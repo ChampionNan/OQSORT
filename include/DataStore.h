@@ -19,7 +19,7 @@
 
 class DataStore {
   public:
-    DataStore(EncOneBlock **arrayAddr, int64_t N, int64_t M, int B);
+    DataStore(EncOneBlock **arrayAddr, int64_t N, int64_t M, int B, int SSD);
     ~DataStore();
     void init(int structureId, int64_t size);
     void print(int structureId, int64_t size, OutputType outputtype, const char* filepath);
@@ -28,6 +28,7 @@ class DataStore {
   public:
   // TODO: Change this 
     const char *filepath = "/OQSORT/out.txt";
+    int SSD;
     OutputType type = FILEOUT;
   private:
     EncOneBlock **arrayAddr;

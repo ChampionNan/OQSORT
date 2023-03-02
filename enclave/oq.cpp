@@ -114,7 +114,7 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
   int64_t m = 0;
   EncOneBlock dummyB;
   eServer.setDummy(&dummyB, 1);
-  freeAllocate(sampleId, sampleId, eachM * boundary);
+  freeAllocate(sampleId, sampleId, eachM * boundary, eServer.SSD);
   std::binomial_distribution<int> binom(B, alpha);
   for (int64_t i = 0; i < boundary; ++i) {
     printf("SampleEx progress: %ld / %ld\n", i, boundary-1);
@@ -205,6 +205,7 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
     }
   }
   EncOneBlock a, b;
+  // NOTE: If it is proper
   a.sortKey = std::numeric_limits<int>::min();
   a.primaryKey = std::numeric_limits<int>::min();
   b.sortKey = std::numeric_limits<int>::max();
@@ -447,6 +448,8 @@ void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   delete [] extD;
 }
 
+
+
 std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &pivots, int p, int outId) {
   if (inSize <= M) {
     resultId = inStructureId;
@@ -462,17 +465,45 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t smallSectionSize = M / p0;
   int64_t bucketSize0 = boundary1 * smallSectionSize;
   int64_t totalEncB = boundary1 * smallSectionSize * p0;
-  freeAllocate(outId, outId, totalEncB);
+  freeAllocate(outId, outId, totalEncB, eServer.SSD);
   int64_t Msize1, index1, index2, writeBackNum;
   EncOneBlock *trustedM3 = new EncOneBlock[boundary2 * B];
   bool *indicator = new bool[boundary2 * B];
   // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
   std::vector<int64_t> partitionIdx;
-  fyShuffle(inStructureId, inSize, 1);
+  if (!eServer.SSD) {
+    fyShuffle(inStructureId, inSize, 1);
+  }
+  // used for psedo-random permutation
+  int total_blocks = ceil(1.0 * inSize / B);
+  eServer.base = ceil(1.0 * log2(total_blocks) / 2);
+  eServer.max_num = 1 << 2 * eServer.base;
+  int64_t index_range = eServer.max_num;
+  int64_t k = 0, read_index; 
   for (int64_t i = 0; i < boundary1; ++i) {
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
-    eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
+    if (!eServer.SSD) {
+      eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
+    } else {
+      // FIXME: ADD SSD version & change this to pseudo-random permutation, read Msize1 elements in each Memory load
+      int64_t b2 = ceil(1.0 * Msize1 / B);
+      for (int64_t j = 0; j < b2; ++j) {
+        read_index = eServer.encrypt(k);
+        while (read_index >= total_blocks) {
+          k += 1;
+          if (k == index_range) {
+            k = -1;
+            break;
+          }
+          read_index = eServer.encrypt(k);
+        }
+        if (k == -1) break;
+        eServer.opOneLinearScanBlock(read_index * B, &trustedM3[j*B], std::min((int64_t)B, inSize - read_index * B), inStructureId, 0, 0);
+        k += 1;
+        if (k == index_range) break;
+      }
+    }
     // TODO: Simplify only for one level version, no dummy, input only
     // eServer.moveDummy(trustedM3, dataBoundary);
     int64_t blockNum = Msize1;
@@ -525,7 +556,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
     Quick qsort(eServer, trustedM);
     qsort.quickSort(0, inSize - 1);
-    freeAllocate(outputId1, outputId1, inSize);
+    freeAllocate(outputId1, outputId1, inSize, eServer.SSD);
     eServer.opOneLinearScanBlock(0, trustedM, inSize, outputId1, 1, 0);
     delete [] trustedM;
     resultId = outputId1;
@@ -552,8 +583,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       sampleSize = ceil(2 * alpha * M) * (N / M);
     }
     ODSquantileCal(sampleId, sampleSize, xDummySampleSize, sortedSampleId, trustedM2);
-    freeAllocate(sampleId, sampleId, 0);
-    freeAllocate(sortedSampleId, sortedSampleId, 0);
+    freeAllocate(sampleId, sampleId, 0, eServer.SSD);
+    freeAllocate(sortedSampleId, sortedSampleId, 0, eServer.SSD);
   }
   // step2. partition
   startP = time(NULL);
@@ -572,7 +603,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   eServer.IOcost = 0;
   if (sorttype == ODSTIGHT) {
     printf("In Tight Final\n");
-    freeAllocate(outputId2, outputId2, inSize);
+    freeAllocate(outputId2, outputId2, inSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
     for (int i = 0; i < sectionNum; ++i) {
@@ -597,7 +628,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   } else if (sorttype == ODSLOOSE) {
     printf("In Loose Final\n");
     int64_t totalLevelSize = sectionNum * sectionSize;
-    freeAllocate(outputId2, outputId2, totalLevelSize);
+    freeAllocate(outputId2, outputId2, totalLevelSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     for (int i = 0; i < sectionNum; ++i) {
       printf("Final progress: %d / %d\n", i, sectionNum-1);
