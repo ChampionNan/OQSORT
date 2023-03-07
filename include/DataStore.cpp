@@ -7,6 +7,7 @@ using namespace std;
 DataStore::DataStore(EncOneBlock **arrayAddr, int64_t N, int64_t M, int B, int SSD) : arrayAddr{arrayAddr}, N{N}, M{M}, B{B}, SSD{SSD} {}
 
 DataStore::~DataStore() {
+  if (SSD) return;
   for (int id : delArray) {
     delete [](arrayAddr[id]);
   }
@@ -14,30 +15,29 @@ DataStore::~DataStore() {
 }
 
 void DataStore::init(int structureId, int64_t size) {
-  if (!SSD) {
-    // 1. allocate memory
-    arrayAddr[structureId] = new EncOneBlock[size];
-    EncOneBlock *addr = arrayAddr[structureId];
-    delArray.push_back(structureId);
-    // 2. value initialization
-    // #pragma omp parallel for
-    std::random_device rd;
-    std::mt19937 rng{rd()};
-    std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()-1};
-    for (int64_t i = 0; i < size; ++i) {
-      addr[i].sortKey = dist(rng);
-      addr[i].primaryKey = i;
-      // addr[i].payLoad = DUMMY<int>();
-      memset(addr[i].payLoad, 0, PAYLOAD * sizeof(int));
-      addr[i].randomKey = 0; // also used for dummy flag
-    }
-  } else {
-    // TODO: Add initialization data
+  // 1. allocate memory
+  arrayAddr[structureId] = new EncOneBlock[size];
+  EncOneBlock *addr = arrayAddr[structureId];
+  delArray.push_back(structureId);
+  // 2. value initialization
+  // #pragma omp parallel for
+  std::random_device rd;
+  std::mt19937 rng{rd()};
+  std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()-1};
+  for (int64_t i = 0; i < size; ++i) {
+    addr[i].sortKey = dist(rng);
+    addr[i].primaryKey = i;
+    // addr[i].payLoad = DUMMY<int>();
+    memset(addr[i].payLoad, 0, PAYLOAD * sizeof(int));
+    addr[i].randomKey = 0; // also used for dummy flag
+  }
+  if (SSD) {
+    // output initializzation data to SSD file
     string path = pathBase + to_string(structureId);
     ofstream outFile(path.c_str(), ios::out | ios::trunc);
-    outFile.seekp(size * sizeof(EncOneBlock)-1, ios::beg);
-    outFile.write("", 1);
+    outFile.write((char*)addr, size * sizeof(EncOneBlock));
     outFile.close();
+    delete [] addr;
   }
 }
 

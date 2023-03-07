@@ -479,14 +479,13 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   eServer.base = ceil(1.0 * log2(total_blocks) / 2);
   eServer.max_num = 1 << 2 * eServer.base;
   int64_t index_range = eServer.max_num;
-  int64_t k = 0, read_index; 
+  int64_t k = 0, read_index;
   for (int64_t i = 0; i < boundary1; ++i) {
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     if (!eServer.SSD) {
       eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
     } else {
-      // FIXME: ADD SSD version & change this to pseudo-random permutation, read Msize1 elements in each Memory load
       int64_t b2 = ceil(1.0 * Msize1 / B);
       for (int64_t j = 0; j < b2; ++j) {
         read_index = eServer.encrypt(k);
@@ -606,6 +605,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     freeAllocate(outputId2, outputId2, inSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
+    startF = time(NULL);
     for (int i = 0; i < sectionNum; ++i) {
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
@@ -630,6 +630,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     int64_t totalLevelSize = sectionNum * sectionSize;
     freeAllocate(outputId2, outputId2, totalLevelSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
+    startF = time(NULL);
     for (int i = 0; i < sectionNum; ++i) {
       printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);

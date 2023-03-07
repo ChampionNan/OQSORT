@@ -123,7 +123,7 @@ void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD) {
     EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
     memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
     string path = pathBase + to_string(structureIdM);
-    ofstream outFile(path.c_str(), ios::out);
+    ofstream outFile(path.c_str(), ios::out | ios::trunc);
     outFile.write((char*)addr, size * sizeof(EncOneBlock));
     outFile.close();
     delete [] addr;
@@ -180,7 +180,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 1;
+    sortId = 0;
     alpha = 0.02;
     beta = 0.11;
     gamma = 0.25;
@@ -232,8 +232,7 @@ int main(int argc, const char* argv[]) {
     data.init(inputId + 1, totalSize);
     data.init(inputId + 2, totalSize);
   } else {
-    // data.init(inputId, N);
-    data.init(2, 10);
+    data.init(inputId, N);
   }
   start = high_resolution_clock::now();
   callSort(enclave, resId, resN, params);
