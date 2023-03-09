@@ -162,7 +162,6 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
   return realNum;
 }
 
-// get pivots from external stored samples
 void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
   printf("In ODSquantileCal\n");
   std::vector<EncOneBlock> trustedM2;
@@ -281,7 +280,6 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
     for (int64_t i = 0; i < n2; ++i) {
       bool s3 = (i >= ((z + m) % n2)) ? 1 : 0;
       bool b = s ^ s3;
-      // if (b) eServer.regswap(&D[left + i], &D[left + i + n2]);
       eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n2], b);
     }
   }
@@ -295,8 +293,7 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   int64_t m = sumArray(M, left, left + n2);
   ORCompact(D, M, left, left + n2);
   OROffCompact(D, M, left + n2, left + n, (n1 - n2 + m) % n1);
-  // print(D, n);
-  for (int64_t i = 0; i < n2; ++i) { // not 2^k mix
+  for (int64_t i = 0; i < n2; ++i) { 
     bool b = (i >= m) ? 1 : 0;
     eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n1], b);
   }
