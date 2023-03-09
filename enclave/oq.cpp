@@ -302,7 +302,6 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   }
 }
 
-// #elem < pivot
 int64_t ODS::assignM(EncOneBlock *arr, bool *M, int64_t left, int64_t right, EncOneBlock pivot) {
   int64_t total = 0;
   for (int64_t i = left; i < right; ++i) {
@@ -311,8 +310,7 @@ int64_t ODS::assignM(EncOneBlock *arr, bool *M, int64_t left, int64_t right, Enc
   }
   return total;
 }
-// [low, high), mid - low = #ele in each section
-// all p pivots, without dummy version
+
 void ODS::obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx) {
   int pivotIdx;
   int64_t mid;
