@@ -76,10 +76,9 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
     }
   }
   delete [] trustedM1;
-  // FIXME: Why cannot use internal sort
-  // sort(trustedM2.begin(), trustedM2.end());
-  QuickV qvsort(eServer);
-  qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
+  // NOTE: QuickV qvsort(eServer); qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
+  Bitonic bisort(eServer);
+  bisort.smallBitonicSort(trustedM2, 0, trustedM2.size());
   return n_prime;
 }
 
@@ -338,117 +337,6 @@ void ODS::obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t h
     obliviousPWayPartition(D, M, low + mid, high, pivots, pivotIdx+1, right, partitionIdx);
   }
 }
-
-// TODO: Need correct parameters
-void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
-  printf("In internalObliviousSort\n");
-  int64_t M = right - left;
-  int64_t hatM = M + ceil((beta + gamma) * M);
-  int64_t n = ceil(1.0 * alpha * M);
-  int64_t r = ceil(log2(1.0 * M / smallM));
-  int64_t p = pow(2, r) - 1; // we need 2^r-1 pivots
-  printf("level number: %ld,pivots number: %ld\n", r, p);
-  // 1. get D's samples
-  std::vector<int64_t> sampleIdx;
-  std::vector<EncOneBlock> samples;
-  floydSampler(M, n, sampleIdx);
-  for (int64_t i = 0; i < sampleIdx.size(); ++i) {
-    samples.push_back(D[sampleIdx[i]]); // replace index to real value
-  }
-  // TODO: In TEE, sort not work
-  sort(samples.begin(), samples.end());
-  // 2. get pivots
-  printf("At step2\n");
-  quantileCal2(samples, 0, samples.size(), p);
-  std::vector<int64_t> partitionIdx;
-  bool *indicator = new bool[hatM];
-  // copy D to extended memory
-  EncOneBlock *extD = new EncOneBlock[hatM];
-  memcpy(extD, D, eServer.encOneBlockSize * M);
-  eServer.setValue(extD + M, (hatM - M), DUMMY<int>());
-  std::vector<int64_t> size0; // record for level even level
-  std::vector<int64_t> size1; // record for level odd level
-  // 3. get partitioned index
-  // 3.1 level 0
-  printf("At step3.1\n");
-  EncOneBlock pivot0 = samples[p/2]; // pivot for level 0
-  int64_t leftRealNum = assignM(extD, indicator, left, right, pivot0);
-  printf("Before memset\n");
-  memset(&indicator[right], 1, sizeof(bool) * (hatM/2-leftRealNum));
-  memset(&indicator[right+hatM/2-leftRealNum], 0, sizeof(bool) * (hatM-hatM/2-(M-leftRealNum)));
-  printf("Before ORCompact\n");
-  ORCompact(extD, indicator, 0, hatM);
-  size0.push_back(hatM/2);
-  size0.push_back(hatM-hatM/2);
-  // 3.2 > level 1
-  printf("At step3.2\n");
-  int64_t readStart, secSize, realNum, dummyNum, rightRealNum;
-  EncOneBlock pivot;
-  for (int64_t i = 1; i < r; ++i) { // index of level
-    printf("At level %ld / %ld\n", i, r-1);
-    readStart = 0; // record read start for each section
-    std::vector<int64_t> readSize, writeSize;
-    if (i % 2 == 1) { // readSize in size0
-      size1.clear();
-      readSize = size0;
-    } else { // readSize in size1
-      size0.clear();
-      readSize = size1;
-    }
-    for (int64_t j = 0; j < pow(2, i); ++j) { // j: #last level sections
-      printf("Section number: %ld\n", j);
-      realNum = eServer.moveDummy(&extD[readStart], readSize[j]);
-      dummyNum = readSize[j] - realNum;
-      pivot = samples[(2*j+1)*p/pow(2, i+1)];
-      printf("Real number: %ld, dummy number: %ld\n", realNum, dummyNum);
-      leftRealNum = assignM(extD, indicator, readStart, readStart+realNum, pivot);
-      rightRealNum = realNum - leftRealNum;
-      printf("Before memset, %ld, %ld\n", readSize[j]/2-leftRealNum, dummyNum-(readSize[j]/2-leftRealNum));
-      memset(&indicator[readStart+realNum], 1, sizeof(bool) * (readSize[j]/2-leftRealNum));
-      // TODO: negative error
-      memset(&indicator[readStart+realNum+(readSize[j]/2-leftRealNum)], 0, sizeof(bool) * (dummyNum-(readSize[j]/2-leftRealNum)));
-      printf("Before ORCompact\n");
-      ORCompact(extD, indicator, readStart, readStart+readSize[j]);
-      writeSize.push_back(readSize[j]/2);
-      writeSize.push_back(readSize[j]-readSize[j]/2);
-      // each section ending part
-      readStart += readSize[j];
-    }
-    if (i % 2 == 1) { // writeSize in size1
-      size1 = writeSize;
-    } else { // writeSize in size0
-      size0 = writeSize;
-    }
-  }
-  printf("At final step\n");
-  if ((r - 1) % 2 == 1) { // writeSize in size1
-    partitionIdx = size1;
-  } else { // writeSize in size0
-    partitionIdx = size0;
-  }
-  for (int64_t i = 1; i < partitionIdx.size(); ++i) {
-    partitionIdx[i] += partitionIdx[i-1];
-  }
-  // 4. get the right order of index
-  printf("At step4\n");
-  partitionIdx.insert(partitionIdx.begin(), 0);
-  // partitionIdx.push_back(hatM);
-  // 5. for each section, call bitonic sort, [)
-  printf("At step5\n");
-  int64_t writeStart = 0;
-  for (int64_t i = 0; i < partitionIdx.size() - 1; ++i) {
-    printf("Begin at: %ld, number: %ld\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
-    realNum = eServer.moveDummy(&extD[partitionIdx[i]], partitionIdx[i+1]-partitionIdx[i]);
-    Bitonic bisort(eServer);
-    bisort.smallBitonicSort(extD, partitionIdx[i], realNum, 0);
-    memcpy(&D[writeStart], &extD[partitionIdx[i]], eServer.encOneBlockSize * realNum);
-    writeStart += realNum;
-  }
-  delete [] indicator;
-  delete [] extD;
-}
-
-
 
 std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &pivots, int p, int outId) {
   if (inSize <= M) {

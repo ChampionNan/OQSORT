@@ -1,4 +1,4 @@
-# ODSORT
+# OQSORT
 
 ## 1. Overview
 
@@ -56,7 +56,6 @@ $grep SwapTotal /proc/meminfo
 
 ### 3.1 
 ```
-$ cd OQSORT
 $ make clean
 $ make
 $ make run
@@ -76,7 +75,7 @@ $ source openenclaverc
 
 ## 4. Structure Details
 
-- `enclave/*`: codes running in enclave
+- `enclave/*`: codes running in encclave
   - `sort*`: different sorting algorithms
   - `enc.*`: enclave main file
   - `shared.*`: contain common functions used in sortings
