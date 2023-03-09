@@ -470,6 +470,10 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   EncOneBlock *trustedM3 = new EncOneBlock[boundary2 * B];
   bool *indicator = new bool[boundary2 * B];
   // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
+  // Failure probability
+  if (bucketSize0 > M) {
+    printf("Each section size is greater than M, adjst parameters: %ld, %ld\n", bucketSize0, M);
+  }
   std::vector<int64_t> partitionIdx;
   if (!eServer.SSD) {
     fyShuffle(inStructureId, inSize, 1);
@@ -540,9 +544,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   delete [] trustedM3;
   delete [] indicator;
   // mbedtls_aes_free(&aes);
-  if (bucketSize0 > M) {
-    printf("Each section size is greater than M, adjst parameters: %ld, %ld\n", bucketSize0, M);
-  }
   return {bucketSize0, p0};
 }
 
@@ -550,7 +551,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   printf("In ODS\n");
   EncOneBlock *trustedM;
   eServer.nonEnc = 0;
-  if (inSize <= M) {
+  if (inSize < M) {
     trustedM = new EncOneBlock[M];
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
     Quick qsort(eServer, trustedM);

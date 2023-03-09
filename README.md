@@ -1,4 +1,4 @@
-# OQSORT
+# ODSORT
 
 ## 1. Overview
 
@@ -76,7 +76,7 @@ $ source openenclaverc
 
 ## 4. Structure Details
 
-- `enclave/*`: codes running in encclave
+- `enclave/*`: codes running in enclave
   - `sort*`: different sorting algorithms
   - `enc.*`: enclave main file
   - `shared.*`: contain common functions used in sortings
