@@ -7,7 +7,6 @@
 #include <cstdint>
 #include <random>
 #include <exception>
-// #include <boost/program_options.hpp>
 #include <openenclave/host.h>
 
 #include "../include/DataStore.h"
@@ -17,12 +16,10 @@
 
 using namespace std;
 using namespace chrono;
-// namespace po = boost::program_options;
 
 EncOneBlock *arrayAddr[NUM_STRUCTURES];
 
 /* OCall functions */
-// TODO: Add this with SSD version
 void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t n_prime, int SSD, int64_t *ret) {
   int64_t N_prime = N;
   int64_t boundary = ceil(1.0 * N_prime / M);
@@ -78,7 +75,6 @@ void ocall_print_string(const char *str) {
 
 // index: Block Index, blockSize: bytes
 void OcallRB(size_t index, int* buffer, size_t blockSize, int structureId, int SSD) {
-  // std::cout<< "In OcallRB\n";
   if (!SSD) {
     memcpy(buffer, (int*)(&((arrayAddr[structureId])[index])), blockSize);
   } else {
@@ -92,7 +88,6 @@ void OcallRB(size_t index, int* buffer, size_t blockSize, int structureId, int S
 
 // index: Block index, blockSize: bytes
 void OcallWB(size_t index, int* buffer, size_t blockSize, int structureId, int SSD) {
-  // std::cout<< "In OcallWB\n";
   if (!SSD) {
     memcpy((int*)(&((arrayAddr[structureId])[index])), buffer, blockSize);
   } else {
@@ -134,7 +129,7 @@ void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD) {
 // shuffle data in B block size
 void fyShuffle(int structureId, size_t size, int B) {
   if (size % B != 0) {
-    printf("Error! Not B's time.\n"); // Still do the shuffling
+    printf("Error! Not B's time.\n"); 
   }
   int64_t total_blocks = size / B;
   EncOneBlock *trustedM3 = new EncOneBlock[B];
@@ -143,7 +138,6 @@ void fyShuffle(int structureId, size_t size, int B) {
   int swapSize = sizeof(EncOneBlock) * B;
   std::random_device rd;
   std::mt19937 rng{rd()};
-  // switch block i & block k
   for (int64_t i = total_blocks-1; i >= 0; i--) {
     if (i % eachSec == 0) {
       printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
@@ -161,18 +155,6 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
   if (inputtype == BOOST) {
     cout << "Need to be done." << endl;
     return;
-    /* TODO: Finish in the future
-    auto vm = read_options(argc, argv);
-    datatype = vm["datatype"].as<int>();
-    M = ((vm["memory"].as<int64_t>()) << 20) / datatype;
-    N = vm["c"].as<int>() * M;
-    B = vm["block_size"].as<int>();
-    sigma = vm["sigma"].as<int>();
-    sortId = vm["sort_type"].as<int>();
-    alpha = vm["alpha"].as<double>();
-    beta = vm["beta"].as<double>();
-    gamma = vm["gamma"].as<double>();
-    P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
     datatype = 128; // 16, 128
     M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
@@ -207,18 +189,6 @@ int main(int argc, const char* argv[]) {
   readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
   double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
   // step2: Create the enclave
-  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
-  // transition_using_threads
-  /*
-  oe_enclave_setting_context_switchless_t switchless_setting = {
-        1,  // number of host worker threads
-        1}; // number of enclave worker threads.
-  oe_enclave_setting_t settings[] = {{
-        .setting_type = OE_ENCLAVE_SETTING_CONTEXT_SWITCHLESS,
-        .u.context_switchless_setting = &switchless_setting,
-    }};
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
-  */
   result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
   // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
   if (sortId == 3 && (N % B) != 0) {
@@ -244,8 +214,6 @@ int main(int argc, const char* argv[]) {
   // step4: std::cout execution time
   duration = duration_cast<seconds>(end - start);
   std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
-  // testEnc(arrayAddr, *resId, *resN);
   data.print(*resId, *resN, FILEOUT, data.filepath);
   // step5: exix part
   exit:
@@ -256,39 +224,3 @@ int main(int argc, const char* argv[]) {
     delete resN;
     return ret;
 }
-
-/*
-po::variables_map read_options(int argc, const char *argv[]) {
-  int m, c;
-  po::variables_map vm;
-  try {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-    ("help,H", "Show help message")
-    ("memory,M", po::value<int64_t>()->default_value(8), "Internal memory size (MB)")
-    ("c,c", po::value<int>()->default_value(16), "The value of N/M")
-    ("block_size,B", po::value<int>()->default_value(4), "Block size (in terms of elements)")
-    ("num_threads,T", po::value<int>()->default_value(4), "#threads, not suppoted in enclave yet")
-    ("sigma,s", po::value<int>()->default_value(40), "Failure probability upper bound: 2^(-sigma)")
-    ("alpha,a", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("beta,b", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("gamma,g", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("P,P", po::value<int>()->default_value(1), "Parameter for ODS")
-    ("sort_type,ST", po::value<int>()->default_value(1), "Selections for sorting type: 0: ODSTight, 1: ODSLoose, 2: bucketOSort, 3: bitonicSort, 4: mergeSort")
-    ("datatype,DT", po::value<int>()->default_value(4), "#bytes for this kind of datatype, normally int32_t or int64_t");
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-    if (vm.count("help") || vm.count("H")) {
-      cout << desc << endl;
-      exit(0);
-    }
-  } catch (exception &e) {
-    cerr << "Error: " << e.what() << endl;
-    exit(1);
-  } catch (...) {
-    cerr << "Exception of unknown type! \n";
-    exit(-1);
-  }
-  return vm;
-}
-*/
