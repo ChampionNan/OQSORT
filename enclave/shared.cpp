@@ -250,6 +250,11 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
       // printf("in Op Read, B: %d\n", Msize);
       OcallReadPage(index + i * B, &block[i * B], Msize, structureId);
     }
+    if (dummyNum > 0) {
+      for (int64_t j = 0; j < dummyNum; ++j) {
+        block[index+elementNum+j].sortKey = DUMMY<int>();
+      }
+    }
   } else { // write
     for (int64_t i = 0; i < boundary; ++i) {
        Msize = std::min((int64_t)B, elementNum - i * B);

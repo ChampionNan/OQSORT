@@ -76,10 +76,7 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
     }
   }
   delete [] trustedM1;
-  // FIXME: Why cannot use internal sort
-  // sort(trustedM2.begin(), trustedM2.end());
-  QuickV qvsort(eServer);
-  qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
+  sort(trustedM2.begin(), trustedM2.end());
   return n_prime;
 }
 
@@ -194,18 +191,20 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   for (int i = 0; i < sectionNum; ++i) {
     eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
     k = eServer.moveDummy(trustedM, sectionSize);
-    // TODO: Change to fully oblivious version
-    Quick qsort(eServer, trustedM);
-    qsort.quickSort(0, k-1);
+    if (seclevel == FULLY) {
+      Bitonic bisort(eServer);
+      bisort.smallBitonicSort(trustedM, 0, k, 0);
+    } else {
+      Quick qsort(eServer, trustedM);
+      qsort.quickSort(0, k-1);
+    }
     total += k;
-    // Cal Level1 pivots
     while ((j < P-1) && (quantileIdx[j] < total)) {
       pivots.push_back(trustedM[quantileIdx[j]-(total-k)]);
       j += 1;
     }
   }
   EncOneBlock a, b;
-  // NOTE: If it is proper
   a.sortKey = std::numeric_limits<int>::min();
   a.primaryKey = std::numeric_limits<int>::min();
   b.sortKey = std::numeric_limits<int>::max();
@@ -280,7 +279,6 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
   int64_t m = sumArray(M, left, left + n2);
   if (n == 2) {
     bool flag = ((1 - M[left]) * M[left + 1]) ^ (z % 2);
-    // if (flag) eServer.regswap(&D[left], &D[left + 1]);
     eServer.oswap128((uint128_t*)&D[left], (uint128_t*)&D[left + 1], flag);
   } else if (n > 2) {
     OROffCompact(D, M, left, left + n2, z % n2);
@@ -291,7 +289,6 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
     for (int64_t i = 0; i < n2; ++i) {
       bool s3 = (i >= ((z + m) % n2)) ? 1 : 0;
       bool b = s ^ s3;
-      // if (b) eServer.regswap(&D[left + i], &D[left + i + n2]);
       eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n2], b);
     }
   }
@@ -308,7 +305,6 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   // print(D, n);
   for (int64_t i = 0; i < n2; ++i) { // not 2^k mix
     bool b = (i >= m) ? 1 : 0;
-    // if (b) eServer.regswap(&D[left + i], &D[left + i + n1]);
     eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n1], b);
   }
 }
@@ -322,133 +318,34 @@ int64_t ODS::assignM(EncOneBlock *arr, bool *M, int64_t left, int64_t right, Enc
   }
   return total;
 }
-// [low, high), mid - low = #ele in each section
-// all p pivots, without dummy version
-void ODS::obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx) {
+
+void ODS::obliviousPWayPartitionMulti(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx) {
   int pivotIdx;
-  int64_t mid;
+  bool dummyFlag, lessFlag;
+  int64_t mid = 0, leftNum;
   EncOneBlock pivot;
   if (right >= left) {
     pivotIdx = (left + right) >> 1;
     pivot = pivots[pivotIdx];
-    mid = assignM(D, M, low, high, pivot);
+    leftNum = (high - low) * pivotIdx / pivots.size();
+    for (int64_t i = low; i < high; ++i) {
+      dummyFlag = (D[i].sortKey == DUMMY<int>()) ? 1 : 0;
+      lessFlag = !eServer.cmpHelper(&D[i], &pivot);
+      M[i] = (!dummyFlag & lessFlag) * 1;
+      mid += (!dummyFlag & lessFlag) * 1;
+    }
+    for (int64_t i = low; i < high; ++i) {
+      dummyFlag = (D[i].sortKey == DUMMY<int>()) ? 1 : 0;
+      lessFlag = mid < leftNum;
+      M[i] = (dummyFlag & lessFlag) * 1;
+      mid += (dummyFlag & lessFlag) * 1;
+    }
     ORCompact(D, M, low, high);
     partitionIdx.push_back(mid+low);
     obliviousPWayPartition(D, M, low, low + mid, pivots, left, pivotIdx-1, partitionIdx);
     obliviousPWayPartition(D, M, low + mid, high, pivots, pivotIdx+1, right, partitionIdx);
   }
 }
-
-// TODO: Need correct parameters
-void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
-  printf("In internalObliviousSort\n");
-  int64_t M = right - left;
-  int64_t hatM = M + ceil((beta + gamma) * M);
-  int64_t n = ceil(1.0 * alpha * M);
-  int64_t r = ceil(log2(1.0 * M / smallM));
-  int64_t p = pow(2, r) - 1; // we need 2^r-1 pivots
-  printf("level number: %ld,pivots number: %ld\n", r, p);
-  // 1. get D's samples
-  std::vector<int64_t> sampleIdx;
-  std::vector<EncOneBlock> samples;
-  floydSampler(M, n, sampleIdx);
-  for (int64_t i = 0; i < sampleIdx.size(); ++i) {
-    samples.push_back(D[sampleIdx[i]]); // replace index to real value
-  }
-  // TODO: In TEE, sort not work
-  sort(samples.begin(), samples.end());
-  // 2. get pivots
-  printf("At step2\n");
-  quantileCal2(samples, 0, samples.size(), p);
-  std::vector<int64_t> partitionIdx;
-  bool *indicator = new bool[hatM];
-  // copy D to extended memory
-  EncOneBlock *extD = new EncOneBlock[hatM];
-  memcpy(extD, D, eServer.encOneBlockSize * M);
-  eServer.setValue(extD + M, (hatM - M), DUMMY<int>());
-  std::vector<int64_t> size0; // record for level even level
-  std::vector<int64_t> size1; // record for level odd level
-  // 3. get partitioned index
-  // 3.1 level 0
-  printf("At step3.1\n");
-  EncOneBlock pivot0 = samples[p/2]; // pivot for level 0
-  int64_t leftRealNum = assignM(extD, indicator, left, right, pivot0);
-  printf("Before memset\n");
-  memset(&indicator[right], 1, sizeof(bool) * (hatM/2-leftRealNum));
-  memset(&indicator[right+hatM/2-leftRealNum], 0, sizeof(bool) * (hatM-hatM/2-(M-leftRealNum)));
-  printf("Before ORCompact\n");
-  ORCompact(extD, indicator, 0, hatM);
-  size0.push_back(hatM/2);
-  size0.push_back(hatM-hatM/2);
-  // 3.2 > level 1
-  printf("At step3.2\n");
-  int64_t readStart, secSize, realNum, dummyNum, rightRealNum;
-  EncOneBlock pivot;
-  for (int64_t i = 1; i < r; ++i) { // index of level
-    printf("At level %ld / %ld\n", i, r-1);
-    readStart = 0; // record read start for each section
-    std::vector<int64_t> readSize, writeSize;
-    if (i % 2 == 1) { // readSize in size0
-      size1.clear();
-      readSize = size0;
-    } else { // readSize in size1
-      size0.clear();
-      readSize = size1;
-    }
-    for (int64_t j = 0; j < pow(2, i); ++j) { // j: #last level sections
-      printf("Section number: %ld\n", j);
-      realNum = eServer.moveDummy(&extD[readStart], readSize[j]);
-      dummyNum = readSize[j] - realNum;
-      pivot = samples[(2*j+1)*p/pow(2, i+1)];
-      printf("Real number: %ld, dummy number: %ld\n", realNum, dummyNum);
-      leftRealNum = assignM(extD, indicator, readStart, readStart+realNum, pivot);
-      rightRealNum = realNum - leftRealNum;
-      printf("Before memset, %ld, %ld\n", readSize[j]/2-leftRealNum, dummyNum-(readSize[j]/2-leftRealNum));
-      memset(&indicator[readStart+realNum], 1, sizeof(bool) * (readSize[j]/2-leftRealNum));
-      // TODO: negative error
-      memset(&indicator[readStart+realNum+(readSize[j]/2-leftRealNum)], 0, sizeof(bool) * (dummyNum-(readSize[j]/2-leftRealNum)));
-      printf("Before ORCompact\n");
-      ORCompact(extD, indicator, readStart, readStart+readSize[j]);
-      writeSize.push_back(readSize[j]/2);
-      writeSize.push_back(readSize[j]-readSize[j]/2);
-      // each section ending part
-      readStart += readSize[j];
-    }
-    if (i % 2 == 1) { // writeSize in size1
-      size1 = writeSize;
-    } else { // writeSize in size0
-      size0 = writeSize;
-    }
-  }
-  printf("At final step\n");
-  if ((r - 1) % 2 == 1) { // writeSize in size1
-    partitionIdx = size1;
-  } else { // writeSize in size0
-    partitionIdx = size0;
-  }
-  for (int64_t i = 1; i < partitionIdx.size(); ++i) {
-    partitionIdx[i] += partitionIdx[i-1];
-  }
-  // 4. get the right order of index
-  printf("At step4\n");
-  partitionIdx.insert(partitionIdx.begin(), 0);
-  // partitionIdx.push_back(hatM);
-  // 5. for each section, call bitonic sort, [)
-  printf("At step5\n");
-  int64_t writeStart = 0;
-  for (int64_t i = 0; i < partitionIdx.size() - 1; ++i) {
-    printf("Begin at: %ld, number: %ld\n", partitionIdx[i], partitionIdx[i+1]-partitionIdx[i]);
-    realNum = eServer.moveDummy(&extD[partitionIdx[i]], partitionIdx[i+1]-partitionIdx[i]);
-    Bitonic bisort(eServer);
-    bisort.smallBitonicSort(extD, partitionIdx[i], realNum, 0);
-    memcpy(&D[writeStart], &extD[partitionIdx[i]], eServer.encOneBlockSize * realNum);
-    writeStart += realNum;
-  }
-  delete [] indicator;
-  delete [] extD;
-}
-
-
 
 std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize, std::vector<EncOneBlock> &pivots, int p, int outId) {
   if (inSize <= M) {
@@ -458,7 +355,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   printf("In OneLevelPartition\n");
   int64_t hatN, M_prime, r, p0;
   calParams(inSize, p, hatN, M_prime, r, p0);
-  // quantileCal(samples, 0, sampleSize, p0);
   int64_t boundary1 = ceil(1.0 * inSize / M_prime);
   int64_t boundary2 = ceil(1.0 * M_prime / B);
   int64_t dataBoundary = boundary2 * B;
@@ -469,8 +365,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t Msize1, index1, index2, writeBackNum;
   EncOneBlock *trustedM3 = new EncOneBlock[boundary2 * B];
   bool *indicator = new bool[boundary2 * B];
-  // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
-  // Failure probability
   if (bucketSize0 > M) {
     printf("Each section size is greater than M, adjst parameters: %ld, %ld\n", bucketSize0, M);
   }
@@ -488,7 +382,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     if (!eServer.SSD) {
-      eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
+      eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, boundary2 * B - Msize1);
     } else {
       int64_t b2 = ceil(1.0 * Msize1 / B);
       for (int64_t j = 0; j < b2; ++j) {
@@ -507,9 +401,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         if (k == index_range) break;
       }
     }
-    // TODO: Simplify only for one level version, no dummy, input only
-    // eServer.moveDummy(trustedM3, dataBoundary);
-    int64_t blockNum = Msize1;
+    int64_t blockNum = boundary2 * B;
     if (seclevel == FULLY) {
       obliviousPWayPartition(trustedM3, indicator, 0, blockNum, pivots, 1, pivots.size()-2, partitionIdx);
       sort(partitionIdx.begin(), partitionIdx.end());
@@ -538,12 +430,10 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         eServer.opOneLinearScanBlock(j * bucketSize0 + i * smallSectionSize, &trustedM3[index1], writeBackNum, outId, 1, smallSectionSize - writeBackNum);
       }
     }
-    // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
     partitionIdx.clear();
   }
   delete [] trustedM3;
   delete [] indicator;
-  // mbedtls_aes_free(&aes);
   return {bucketSize0, p0};
 }
 
@@ -598,7 +488,6 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   // step3. Final sort
   startF = time(NULL);
   printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
-  // printf("SecSize: %ld\n", sectionSize);
   eServer.IOtime = 0;
   eServer.IOcost = 0;
   if (sorttype == ODSTIGHT) {
@@ -612,10 +501,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
-        // internalObliviousSort(trustedM, 0, k);
         Bitonic bisort(eServer);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
-        // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
@@ -637,10 +524,8 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
-        // internalObliviousSort(trustedM, 0, k);
         Bitonic bisort(eServer);
         bisort.smallBitonicSort(trustedM, 0, k, 0);
-        // smallBitonicSort(eServer, trustedM, 0, k, 0);
       } else {
         Quick qsort(eServer, trustedM);
         qsort.quickSort(0, k - 1);
