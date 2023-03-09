@@ -74,8 +74,7 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
     }
   }
   delete [] trustedM1;
-  Bitonic bisort(eServer);
-  bisort.smallBitonicSort(trustedM2, 0, trustedM2.size());
+  sort(trustedM2.begin(), trustedM2.end());
   return n_prime;
 }
 
@@ -182,12 +181,12 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   for (int i = 0; i < sectionNum; ++i) {
     eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, sortedSampleId, 0, 0);
     k = eServer.moveDummy(trustedM, sectionSize);
-    if (seclevel == PARTIAL) {
-      Quick qsort(eServer, trustedM); 
-      qsort.quickSort(0, k-1);
-    } else {
+    if (seclevel == FULLY) {
       Bitonic bisort(eServer);
-      bisort.smallBitonicMerge(trustedM, 0, k);
+      bisort.smallBitonicSort(trustedM, 0, k, 0);
+    } else {
+      Quick qsort(eServer, trustedM);
+      qsort.quickSort(0, k-1);
     }
     total += k;
     while ((j < P-1) && (quantileIdx[j] < total)) {
@@ -308,14 +307,27 @@ int64_t ODS::assignM(EncOneBlock *arr, bool *M, int64_t left, int64_t right, Enc
   return total;
 }
 
-void ODS::obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx) {
+void ODS::obliviousPWayPartitionMulti(EncOneBlock *D, bool *M, int64_t low, int64_t high, std::vector<EncOneBlock> pivots, int left, int right, std::vector<int64_t> &partitionIdx) {
   int pivotIdx;
-  int64_t mid;
+  bool dummyFlag, lessFlag;
+  int64_t mid = 0, leftNum;
   EncOneBlock pivot;
   if (right >= left) {
     pivotIdx = (left + right) >> 1;
     pivot = pivots[pivotIdx];
-    mid = assignM(D, M, low, high, pivot);
+    leftNum = (high - low) * pivotIdx / pivots.size();
+    for (int64_t i = low; i < high; ++i) {
+      dummyFlag = (D[i].sortKey == DUMMY<int>()) ? 1 : 0;
+      lessFlag = !eServer.cmpHelper(&D[i], &pivot);
+      M[i] = (!dummyFlag & lessFlag) * 1;
+      mid += (!dummyFlag & lessFlag) * 1;
+    }
+    for (int64_t i = low; i < high; ++i) {
+      dummyFlag = (D[i].sortKey == DUMMY<int>()) ? 1 : 0;
+      lessFlag = mid < leftNum;
+      M[i] = (dummyFlag & lessFlag) * 1;
+      mid += (dummyFlag & lessFlag) * 1;
+    }
     ORCompact(D, M, low, high);
     partitionIdx.push_back(mid+low);
     obliviousPWayPartition(D, M, low, low + mid, pivots, left, pivotIdx-1, partitionIdx);
@@ -358,7 +370,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     if (!eServer.SSD) {
-      eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
+      eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, boundary2 * B - Msize1);
     } else {
       int64_t b2 = ceil(1.0 * Msize1 / B);
       for (int64_t j = 0; j < b2; ++j) {
@@ -377,7 +389,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
         if (k == index_range) break;
       }
     }
-    int64_t blockNum = Msize1;
+    int64_t blockNum = boundary2 * B;
     if (seclevel == FULLY) {
       obliviousPWayPartition(trustedM3, indicator, 0, blockNum, pivots, 1, pivots.size()-2, partitionIdx);
       sort(partitionIdx.begin(), partitionIdx.end());
