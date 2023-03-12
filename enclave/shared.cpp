@@ -71,6 +71,7 @@ EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int S
   encOneBlockSize = sizeof(EncOneBlock);
   IOcost = 0;
   IOtime = 0;
+  countSwap = 0;
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -88,6 +89,8 @@ EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int S
 double EnclaveServer::getIOcost() { return IOcost; }
 
 double EnclaveServer::getIOtime() { return IOtime; }
+
+double EnclaveServer::getSwapNum() { return countSwap; }
 
 // Invokes OCALL to display the enclave buffer to the terminal.
 int EnclaveServer::printf(const char *fmt, ...) {
@@ -190,16 +193,16 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
   if (nonEnc) {
     // printf("Before Read nonEnc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   } else {
     // printf("Before Read Enc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
         ofb_decrypt(buffer + i, encOneBlockSize);
       }
-    } else if (encmode ==GCM) {
+    } else if (encmode == GCM) {
       for (int i = 0; i < pageSize; ++i) {
         gcm_decrypt(buffer + i, encOneBlockSize);
       }
@@ -215,7 +218,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
   }
   if (nonEnc) {
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   } else {
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -227,7 +230,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
       }
     }
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   }
 }
 // index: start index counted by elements (count from 0), elementNum: #elements
@@ -245,12 +248,14 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
   // printf("boundary: %d, remain: %d, B: %d\n", boundary, remain, B);
   int Msize;
   if (!write) { // read
+    IOcost += boundary;
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min((int64_t)B, elementNum - i * B);
       // printf("in Op Read, B: %d\n", Msize);
       OcallReadPage(index + i * B, &block[i * B], Msize, structureId);
     }
   } else { // write
+    IOcost += boundary;
     for (int64_t i = 0; i < boundary; ++i) {
        Msize = std::min((int64_t)B, elementNum - i * B);
       OcallWritePage(index + i * B, &block[i * B], Msize, structureId);
@@ -261,6 +266,7 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
         junk[j].sortKey = DUMMY<int>();
       }
       int64_t dummyBoundary = ceil(1.0 * dummyNum / B);
+      IOcost += dummyBoundary;
       for (int64_t j = 0; j < dummyBoundary; ++j) {
         Msize = std::min((int64_t)B, dummyNum - j * B);
         OcallWritePage(index + elementNum + j * B, &junk[j * B], Msize, structureId);
@@ -342,6 +348,7 @@ inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
 }
 
 void EnclaveServer::oswap128(uint128_t *a, uint128_t *b, bool cond) {
+  countSwap += 1;
   uint128_t mask = ~((uint128_t)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);

@@ -26,7 +26,7 @@ void DataStore::init(int structureId, int64_t size) {
   std::uniform_int_distribution<int> dist{std::numeric_limits<int>::min(), std::numeric_limits<int>::max()-1};
   for (int64_t i = 0; i < size; ++i) {
     addr[i].sortKey = dist(rng);
-    addr[i].primaryKey = i;
+    addr[i].primaryKey = dist(rng);
     // addr[i].payLoad = DUMMY<int>();
     memset(addr[i].payLoad, 0, PAYLOAD * sizeof(int));
     addr[i].randomKey = 0; // also used for dummy flag

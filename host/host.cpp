@@ -35,7 +35,7 @@ void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t 
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min(M, N - i * M);
       m = Hypergeometric(N_prime, Msize, n_prime);
-      printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      // printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
       if (m > 0) {
         memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
         readStart += Msize;
@@ -52,7 +52,7 @@ void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t 
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min(M, N - i * M);
       m = Hypergeometric(N_prime, Msize, n_prime);
-      printf("Sampling SSD progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      // printf("Sampling SSD progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
       if (m > 0) {
         inFile.seekg(readStart * sizeof(EncOneBlock), ios::beg);
         inFile.read((char*)trustedM1, Msize * sizeof(EncOneBlock));
@@ -118,7 +118,7 @@ void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD) {
     EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
     memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
     // 3. assign malloc address to arrayAddr
-    arrayAddr[structureIdM] = addr;    
+    arrayAddr[structureIdM] = addr;
   } else {
     EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
     memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
@@ -146,7 +146,7 @@ void fyShuffle(int structureId, size_t size, int B) {
   // switch block i & block k
   for (int64_t i = total_blocks-1; i >= 0; i--) {
     if (i % eachSec == 0) {
-      printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
+      // printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
     }
     std::uniform_int_distribution<int64_t> dist(0, i);
     k = dist(rng);
@@ -154,7 +154,7 @@ void fyShuffle(int structureId, size_t size, int B) {
     memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, swapSize);
     memcpy(arrayAddr[structureId] + i * B, trustedM3, swapSize);
   }
-  std::cout << "Finished floyd shuffle\n";
+  // std::cout << "Finished floyd shuffle\n";
 }
 
 void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int &B, int &sigma, int &sortId, double &alpha, double &beta, double &gamma, int &P, int &SSD, int &argc, const char* argv[]) {
@@ -180,12 +180,12 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 0;
+    sortId = -2;
     alpha = 0.02;
     beta = 0.11;
     gamma = 0.25;
     P = 274;
-    SSD = 1;
+    SSD = 0;
   }
 }
 

@@ -117,7 +117,7 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
   freeAllocate(sampleId, sampleId, eachM * boundary, eServer.SSD);
   std::binomial_distribution<int> binom(B, alpha);
   for (int64_t i = 0; i < boundary; ++i) {
-    printf("SampleEx progress: %ld / %ld\n", i, boundary-1);
+    // printf("SampleEx progress: %ld / %ld\n", i, boundary-1);
     // each memory load
     // eServer.setDummy(trustedM1, M);
     for (int64_t j = 0; j < M / B; ++j) {
@@ -174,7 +174,7 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
 
 // get pivots from external stored samples
 void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleSize, int sortedSampleId, std::vector<EncOneBlock>& pivots) {
-  printf("In ODSquantileCal\n");
+  // printf("In ODSquantileCal\n");
   std::vector<EncOneBlock> trustedM2;
   int64_t realNum = Sample(sampleId, sampleSize, trustedM2, ODSLOOSE);
   int sampleP = ceil((1 + beta + gamma) * sampleSize / M);
@@ -188,7 +188,7 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   for (int64_t i = 1; i < P; ++i) {
     quantileIdx.push_back(i * xDummySampleSize / P);
   }
-  printf("ODSquantileCal before sort\n");
+  // printf("ODSquantileCal before sort\n");
   int64_t j = 0;
   int64_t k = 0, total = 0;
   for (int i = 0; i < sectionNum; ++i) {
@@ -455,7 +455,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     resultId = inStructureId;
     resultN = inSize;
   }
-  printf("In OneLevelPartition\n");
+  // printf("In OneLevelPartition\n");
   int64_t hatN, M_prime, r, p0;
   calParams(inSize, p, hatN, M_prime, r, p0);
   // quantileCal(samples, 0, sampleSize, p0);
@@ -485,7 +485,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t index_range = eServer.max_num;
   int64_t k = 0, read_index;
   for (int64_t i = 0; i < boundary1; ++i) {
-    printf("Partition progress: %ld / %ld\n", i, boundary1-1);
+    // printf("Partition progress: %ld / %ld\n", i, boundary1-1);
     Msize1 = std::min(boundary2 * B, inSize - i * boundary2 * B);
     if (!eServer.SSD) {
       eServer.opOneLinearScanBlock(i * boundary2 * B, trustedM3, Msize1, inStructureId, 0, 0);
@@ -548,7 +548,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
 }
 
 void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outputId1, int outputId2) {
-  printf("In ODS\n");
+  // printf("In ODS\n");
   EncOneBlock *trustedM;
   eServer.nonEnc = 0;
   if (inSize < M) {
@@ -567,13 +567,13 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   int64_t sampleSize, xDummySampleSize;
   // step1. get samples & pivots
   if ((int64_t)ceil(alpha * N) < M) {
-    printf("In memory samples\n");
+    // printf("In memory samples\n");
     startS = time(NULL);
     sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
     quantileCal(inSize, trustedM2, sampleSize, P);
   } else {
     int64_t n_prime = ceil(1.0 * alpha * N);
-    printf("External memory samples\n");
+    // printf("External memory samples\n");
     startS = time(NULL);
     if (sorttype == ODSLOOSE) {
       sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime);
@@ -588,27 +588,29 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   }
   // step2. partition
   startP = time(NULL);
-  printf("Sampling Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startP-startS-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  printf("Sampling Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(startP-startS-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
   eServer.IOtime = 0;
   eServer.IOcost = 0;
+  eServer.countSwap = 0;
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Partition Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  printf("Partition Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
   // printf("SecSize: %ld\n", sectionSize);
   eServer.IOtime = 0;
   eServer.IOcost = 0;
+  eServer.countSwap = 0;
   if (sorttype == ODSTIGHT) {
-    printf("In Tight Final\n");
+    // printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
     startF = time(NULL);
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Final progress: %d / %d\n", i, sectionNum-1);
+      // printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
@@ -627,14 +629,15 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultId = outputId2;
     resultN = N;
   } else if (sorttype == ODSLOOSE) {
-    printf("In Loose Final\n");
+    // printf("In Loose Final\n");
     int64_t totalLevelSize = sectionNum * sectionSize;
     freeAllocate(outputId2, outputId2, totalLevelSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     startF = time(NULL);
     for (int i = 0; i < sectionNum; ++i) {
-      printf("Final progress: %d / %d\n", i, sectionNum-1);
+      // printf("Final progress: %d / %d\n", i, sectionNum-1);
       eServer.opOneLinearScanBlock(i * sectionSize, trustedM, sectionSize, outputId1, 0, 0);
+      // TODO: change to compaction
       k = eServer.moveDummy(trustedM, sectionSize);
       if (seclevel == FULLY) {
         // internalObliviousSort(trustedM, 0, k);
@@ -652,6 +655,5 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Final Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-startF-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
-  eServer.IOtime = 0;
+  printf("Final Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(end-startF-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
 }

@@ -40,6 +40,7 @@ class EnclaveServer {
     EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD);
     double getIOcost();
     double getIOtime();
+    double getSwapNum();
     int printf(const char *fmt, ...);
     void ofb_encrypt(EncOneBlock* buffer, int blockSize);
     void ofb_decrypt(EncOneBlock* buffer, int blockSize);
@@ -69,6 +70,7 @@ class EnclaveServer {
     int B, sigma;
     double IOcost;
     double IOtime;
+    double countSwap;
     clock_t IOstart, IOend;
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption
