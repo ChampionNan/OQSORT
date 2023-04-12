@@ -8,10 +8,14 @@
 #include <random>
 #include <cmath>
 #include <bitset>
+#include <cassert>
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
 #define PAYLOAD 29 // 1, 29
+#define MIN_SIZE 1048576
+#define MAX_SIZE 419430400L
+#define RATIO 1.2
 
 // FIXME: Why not able to contain common files
 template<typename T>
@@ -51,6 +55,15 @@ enum SecLevel {
 struct Bucket_x {
   int x;
   int key;
+};
+
+struct OQSortParams {
+  double alpha;
+  double beta;
+  double gamma;
+  size_t P;
+  size_t M;
+  size_t layer;
 };
 
 struct EncOneBlock {

@@ -15,8 +15,8 @@ ODS::ODS(EnclaveServer &eServer, double alpha, double beta, double gamma, int P,
 }
 
 void ODS::calParams(int64_t inSize, int p, int64_t &hatN, int64_t &M_prime, int64_t &r, int64_t &p0) {
-  hatN = ceil(1.0 * (1 + beta + gamma) * inSize);
-  M_prime = ceil(1.0 * M / (1 + beta + gamma));
+  hatN = ceil(1.0 * (1 + gamma) * inSize);
+  M_prime = ceil(1.0 * M / (1 + gamma));
   r = ceil(1.0 * log(hatN / M) / log(p));
   // p0 = ceil(1.0 * hatN / (M * pow(p, r - 1)));
   p0 = p;
@@ -107,7 +107,7 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
   int64_t N_prime = N;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
   int64_t boundary = N_prime / M;
-  int64_t eachM = ceil(2 * alpha * M);
+  int64_t eachM = ceil(beta * alpha * M);
   int64_t realNum = 0, eachMSize;
   EncOneBlock *trustedM1 = new EncOneBlock[M];
   bool *indicator = new bool[M];
@@ -160,7 +160,7 @@ int64_t ODS::SampleEx(int inStructureId, int sampleId) {
       eachMSize = eServer.moveDummy(trustedM1, M);
     }
     if (eachMSize > eachM) {
-      // sample number > 2 * alpha * M
+      // sample number > beta * alpha * M
       printf("Data overflow when sampling %ld, %ld\n", eachMSize, eachM);
       return -1;
     }
@@ -177,7 +177,7 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   // printf("In ODSquantileCal\n");
   std::vector<EncOneBlock> trustedM2;
   int64_t realNum = Sample(sampleId, sampleSize, trustedM2, ODSLOOSE);
-  int sampleP = ceil((1 + beta + gamma) * sampleSize / M);
+  int sampleP = ceil((1 + gamma) * sampleSize / M);
   quantileCal(sampleSize, trustedM2, realNum, sampleP);
   std::pair<int64_t, int> section = OneLevelPartition(sampleId, sampleSize, trustedM2, sampleP, sortedSampleId);
   int64_t sectionSize = section.first;
@@ -343,7 +343,7 @@ void ODS::obliviousPWayPartition(EncOneBlock *D, bool *M, int64_t low, int64_t h
 void ODS::internalObliviousSort(EncOneBlock *D, int64_t left, int64_t right) {
   printf("In internalObliviousSort\n");
   int64_t M = right - left;
-  int64_t hatM = M + ceil((beta + gamma) * M);
+  int64_t hatM = M + ceil(gamma * M);
   int64_t n = ceil(1.0 * alpha * M);
   int64_t r = ceil(log2(1.0 * M / smallM));
   int64_t p = pow(2, r) - 1; // we need 2^r-1 pivots

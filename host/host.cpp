@@ -12,6 +12,7 @@
 
 #include "../include/DataStore.h"
 #include "../include/common.h"
+#include "../include/param_setting.hpp"
 
 #include "oqsort_u.h"
 
@@ -175,17 +176,21 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
     datatype = 128; // 16, 128
-    M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
-    N = 200 * M;
+    M = (128 << 20) / datatype; // (MB << 20) / 1 element bytes
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
-    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = -2;
-    alpha = 0.02;
-    beta = 0.11;
-    gamma = 0.25;
-    P = 274;
     SSD = 0;
+    OQSortParams bestParams;
+    static int iter = 1;
+    printf("#Num:%d\n  N: %ld, M: %ld\n", iter++, N, M);
+    if (sortId == 0 || sortId == 1) {
+      bestParams = bestOQSortParams(N, M);
+      alpha = bestParams.alpha;
+      beta = bestParams.beta;
+      gamma = bestParams.gamma;
+      P = bestParams.P;
+      assert(bestParams.layer == 1 && "layer should be 1");
+    }
   }
 }
 
@@ -204,49 +209,41 @@ int main(int argc, const char* argv[]) {
   int datatype, B, sigma, sortId, P, SSD;
   int64_t N, M;
   double alpha, beta, gamma;
-  readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
-  double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
-  // step2: Create the enclave
-  // result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, OE_ENCLAVE_FLAG_DEBUG, NULL, 0, &enclave);
-  // transition_using_threads
-  /*
-  oe_enclave_setting_context_switchless_t switchless_setting = {
-        1,  // number of host worker threads
-        1}; // number of enclave worker threads.
-  oe_enclave_setting_t settings[] = {{
-        .setting_type = OE_ENCLAVE_SETTING_CONTEXT_SWITCHLESS,
-        .u.context_switchless_setting = &switchless_setting,
-    }};
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, settings, OE_COUNTOF(settings), &enclave);
-  */
-  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
-  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  if (sortId == 3 && (N % B) != 0) {
-    int64_t addi = addi = ((N / B) + 1) * B - N;
-    N += addi;
+  for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
+    N = factor * MIN_SIZE;
+    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
+    sortId = -1;
+    readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
+    double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
+    result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
+    if (sortId == 3 && (N % B) != 0) {
+      int64_t addi = addi = ((N / B) + 1) * B - N;
+      N += addi;
+    }
+    DataStore data(arrayAddr, N, M, B, SSD);
+    if (sortId == 2) {
+      int64_t totalSize = calBucketSize(sigma, N, M, B);
+      data.init(inputId, N);
+      data.init(inputId + 1, totalSize);
+      data.init(inputId + 2, totalSize);
+    } else {
+      data.init(inputId, N);
+    }
+    start = high_resolution_clock::now();
+    callSort(enclave, resId, resN, (int*)(&arrayAddr[inputId]), params);
+    end = high_resolution_clock::now();
+    if (result != OE_OK) {
+      fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
+      ret = -1;
+    }
+    // step4: std::cout execution time
+    duration = duration_cast<seconds>(end - start);
+    std::cout << "  Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
+    // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
+    // data.test(*resId, *resN, FILEOUT, data.filepath);
+    data.print(*resId, *resN, FILEOUT, data.filepath);
   }
-  DataStore data(arrayAddr, N, M, B, SSD);
-  if (sortId == 2) {
-    int64_t totalSize = calBucketSize(sigma, N, M, B);
-    data.init(inputId, N);
-    data.init(inputId + 1, totalSize);
-    data.init(inputId + 2, totalSize);
-  } else {
-    data.init(inputId, N);
-  }
-  start = high_resolution_clock::now();
-  callSort(enclave, resId, resN, params);
-  end = high_resolution_clock::now();
-  if (result != OE_OK) {
-    fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
-    ret = -1;
-  }
-  // step4: std::cout execution time
-  duration = duration_cast<seconds>(end - start);
-  std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
-  // testEnc(arrayAddr, *resId, *resN);
-  data.print(*resId, *resN, FILEOUT, data.filepath);
   // step5: exix part
   exit:
     if (enclave) {

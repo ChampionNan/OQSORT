@@ -7,7 +7,7 @@
 
 #include <ctime>
 
-void callSort(int *resId, int *resN, double *params) {
+void callSort(int *resId, int *resN, int *address, double *params) {
   int sortId = params[0];
   int inputId = params[1];
   int64_t N = params[2];
@@ -47,28 +47,15 @@ void callSort(int *resId, int *resN, double *params) {
     bisort.bitonicSort(0, size, 0);
     *resId = inputId;
     *resN = N;
-  } else if (sortId == -1) {
-    clock_t start, end;
-    start = time(NULL);
-    fyShuffle(inputId, N, 1);
-    end = time(NULL);
-    printf("Time: %lf\n", (double)(end-start));
   } else {
     // NOTE: Used for test
-    // FIXME: not correct, should do OCall
     clock_t start, end;
-    eServer.nonEnc = 0; // do the encryption
-    int n = (4 << 10) / sizeof(EncOneBlock);
-    int times = (1 << 21); // one for ncryption & one for decryption
-    EncOneBlock *a = new EncOneBlock[n];
-    freeAllocate(0, 0, n, 0);
+    eServer.nonEnc = 1;
     start = time(NULL);
-    for (int i = 0; i < times; ++i) {
-      eServer.opOneLinearScanBlock(0, a, n, 0, 0, 0);
-      eServer.opOneLinearScanBlock(0, a, n, 0, 1, 0);
-    }
+    EncOneBlock *a = (EncOneBlock *)address;
+    Bitonic bisort(eServer);
+    bisort.smallBitonicSort(a, 0, N, 0);
     end = time(NULL);
-    delete [] a;
     printf("Time: %lf\n", (double)(end-start));
   }
 }

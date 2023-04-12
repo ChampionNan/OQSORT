@@ -7,6 +7,7 @@ enclave {
     public void callSort(
       [in, out, count=1]int *resId,
       [in, out, count=1]int *resN,
+      [in, count=1]int *address,
       [in, count=11]double *params);
   };
 

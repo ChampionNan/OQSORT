@@ -11,7 +11,7 @@ DataStore::~DataStore() {
   for (int id : delArray) {
     delete [](arrayAddr[id]);
   }
-  cout << "Delete DataStore objects\n";
+  // cout << "Delete DataStore objects\n";
 }
 
 void DataStore::init(int structureId, int64_t size) {
