@@ -50,7 +50,7 @@ void callSort(int *resId, int *resN, int *address, double *params) {
   } else {
     // NOTE: Used for test
     clock_t start, end;
-    eServer.nonEnc = 1;
+    eServer.nonEnc = 0;
     start = time(NULL);
     EncOneBlock *a = (EncOneBlock *)address;
     Bitonic bisort(eServer);

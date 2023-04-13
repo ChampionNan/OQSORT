@@ -29,7 +29,7 @@ void DataStore::init(int structureId, int64_t size) {
     addr[i].primaryKey = dist(rng);
     // addr[i].payLoad = DUMMY<int>();
     memset(addr[i].payLoad, 0, PAYLOAD * sizeof(int));
-    addr[i].randomKey = 0; // also used for dummy flag
+    addr[i].randomKey = dist(rng); // also used for dummy flag
   }
   if (SSD) {
     // output initializzation data to SSD file

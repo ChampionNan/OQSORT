@@ -283,12 +283,11 @@ bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
     return true;
   } else if (a->sortKey < b->sortKey) {
     return false;
-  } else if (a->primaryKey > b->primaryKey) {
+  } else if (a->primaryKey >= b->primaryKey) {
     return true;
   } else if (a->primaryKey < b->primaryKey) {
     return false;
   }
-  return true; // equal
 }
 
 int64_t EnclaveServer::moveDummy(EncOneBlock *a, int64_t size) {

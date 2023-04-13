@@ -26,6 +26,14 @@ class Bitonic {
     EncOneBlock *a;
     EncOneBlock num1, num2;
     bool swap, nswap;
+
+    unsigned char key[32];
+    mbedtls_aes_context aes;
+    mbedtls_gcm_context gcm;
+    mbedtls_ctr_drbg_context ctr_drbg;
+    mbedtls_entropy_context entropy;
+    size_t iv_offset, iv_offset1;
+    unsigned char iv[16];
 };
 
 #endif // !BITONIC_H

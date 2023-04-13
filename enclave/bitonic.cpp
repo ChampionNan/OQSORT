@@ -23,6 +23,8 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, boo
     for (int64_t i = 0; i < size - mid; ++i) {
       num1 = a[start + i];
       num2 = a[start + mid + i];
+      eServer.gcm_decrypt(&num1, eServer.encOneBlockSize);
+      eServer.gcm_decrypt(&num2, eServer.encOneBlockSize);
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
       // if (swap) eServer.regswap(&a[start + i], &a[start + i + mid]);

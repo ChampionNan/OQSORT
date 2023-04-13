@@ -210,12 +210,11 @@ int main(int argc, const char* argv[]) {
   int64_t N, M;
   double alpha, beta, gamma;
   for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
-    N = factor * MIN_SIZE;
+    N = 2174327 // factor * MIN_SIZE;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     sortId = -1;
     readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
     double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
-    result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     if (sortId == 3 && (N % B) != 0) {
       int64_t addi = addi = ((N / B) + 1) * B - N;
@@ -230,6 +229,7 @@ int main(int argc, const char* argv[]) {
     } else {
       data.init(inputId, N);
     }
+    result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
     start = high_resolution_clock::now();
     callSort(enclave, resId, resN, (int*)(&arrayAddr[inputId]), params);
     end = high_resolution_clock::now();
@@ -243,12 +243,12 @@ int main(int argc, const char* argv[]) {
     // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
     // data.test(*resId, *resN, FILEOUT, data.filepath);
     data.print(*resId, *resN, FILEOUT, data.filepath);
-  }
-  // step5: exix part
-  exit:
     if (enclave) {
       oe_terminate_enclave(enclave);
     }
+  }
+  // step5: exix part
+  exit:
     delete resId;
     delete resN;
     return ret;
