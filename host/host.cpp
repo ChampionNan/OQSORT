@@ -210,7 +210,7 @@ int main(int argc, const char* argv[]) {
   int64_t N, M;
   double alpha, beta, gamma;
   for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
-    N = 2174327 // factor * MIN_SIZE;
+    N = 2174327; // factor * MIN_SIZE;
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     sortId = -1;
     readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);

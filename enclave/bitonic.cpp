@@ -23,13 +23,19 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, boo
     for (int64_t i = 0; i < size - mid; ++i) {
       num1 = a[start + i];
       num2 = a[start + mid + i];
-      eServer.gcm_decrypt(&num1, eServer.encOneBlockSize);
-      eServer.gcm_decrypt(&num2, eServer.encOneBlockSize);
+      if (!eServer.nonEnc) {
+        eServer.gcm_decrypt(&num1, eServer.encOneBlockSize);
+        eServer.gcm_decrypt(&num2, eServer.encOneBlockSize);
+      }
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
-      // if (swap) eServer.regswap(&a[start + i], &a[start + i + mid]);
-      // if (swap) eServer.swapRow(a, start + i, start + i + mid);
-      eServer.oswap128((uint128_t*)&a[start + i], (uint128_t*)&a[start + i + mid], swap);
+      if (!eServer.nonEnc) {
+        eServer.gcm_encrypt(&num1, eServer.encOneBlockSize);
+        eServer.gcm_encrypt(&num2, eServer.encOneBlockSize);
+      }
+      eServer.oswap128((uint128_t*)&num1, (uint128_t*)&num2, swap);
+      a[start + i] = num1;
+      a[start + mid + i] = num2;
     }
     smallBitonicMerge(a, start, mid, flipped);
     smallBitonicMerge(a, start + mid, size - mid, flipped);
