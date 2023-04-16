@@ -92,17 +92,6 @@ double EnclaveServer::getIOtime() { return IOtime; }
 
 double EnclaveServer::getSwapNum() { return countSwap; }
 
-// Invokes OCALL to display the enclave buffer to the terminal.
-int EnclaveServer::printf(const char *fmt, ...) {
-  char buf[BUFSIZ] = {'\0'};
-  va_list ap;
-  va_start(ap, fmt);
-  int ret = vsnprintf(buf, BUFSIZ, fmt, ap);
-  va_end(ap);
-  ocall_print_string(buf);
-  return ret;
-}
-
 // Assume encSize = 16 * k
 void EnclaveServer::ofb_encrypt(EncOneBlock* buffer, int encSize) {
   mbedtls_aes_init(&aes);

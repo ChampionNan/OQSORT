@@ -209,8 +209,13 @@ int main(int argc, const char* argv[]) {
   int datatype, B, sigma, sortId, P, SSD;
   int64_t N, M;
   double alpha, beta, gamma;
+  int array2[10000];
+  int64_t sum1 = 0, sum2 = 0;
   for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
     N = 2174327; // factor * MIN_SIZE;
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist6(0,N-1);
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
     sortId = -1;
     readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
@@ -229,9 +234,16 @@ int main(int argc, const char* argv[]) {
     } else {
       data.init(inputId, N);
     }
+    EncOneBlock *array = (EncOneBlock*)(arrayAddr[inputId]);
+    for (int i = 0; i < 10000; i++) {
+      array2[i] = dist6(rng);
+      sum1 += array[array2[i]].sortKey;
+      sum2 += array[array2[i]].primaryKey;
+    }
+    printf("Host sum1: %d, sum2: %d\n", sum1, sum2, array2, 10000);
     result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
-    start = high_resolution_clock::now();
-    callSort(enclave, resId, resN, (int*)(&arrayAddr[inputId]), params);
+    start = high_resolution_clock::now();    
+    callSort(enclave, resId, resN, (int*)(arrayAddr[inputId]), params, array2, 10000);
     end = high_resolution_clock::now();
     if (result != OE_OK) {
       fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
@@ -242,10 +254,11 @@ int main(int argc, const char* argv[]) {
     std::cout << "  Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
     // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
     // data.test(*resId, *resN, FILEOUT, data.filepath);
-    data.print(*resId, *resN, FILEOUT, data.filepath);
+    // data.print(*resId, *resN, TERMINAL, data.filepath);
     if (enclave) {
       oe_terminate_enclave(enclave);
     }
+    break;
   }
   // step5: exix part
   exit:

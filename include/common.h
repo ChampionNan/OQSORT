@@ -70,7 +70,7 @@ struct EncOneBlock {
   int sortKey;    // used for sorting 
   int primaryKey; // tie-breaker when soryKey equals
   int payLoad[PAYLOAD];
-  int randomKey;  // bucket sort random key
+  int randomKey;  // salt for encryption, representative for iv
 
   EncOneBlock() {
     sortKey = DUMMY<int>();

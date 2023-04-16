@@ -17,19 +17,19 @@ Bitonic::~Bitonic() {
   if (row1) delete [] row2;
 }
 
-void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, bool flipped) {
+void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, bool flipped, bool isDirect) {
   if (size > 1) {
     int64_t mid = eServer.greatestPowerOfTwoLessThan(size);
     for (int64_t i = 0; i < size - mid; ++i) {
       num1 = a[start + i];
       num2 = a[start + mid + i];
-      if (!eServer.nonEnc) {
+      if (isDirect) {
         eServer.gcm_decrypt(&num1, eServer.encOneBlockSize);
         eServer.gcm_decrypt(&num2, eServer.encOneBlockSize);
       }
       swap = eServer.cmpHelper(&num1, &num2);
       swap = swap ^ flipped;
-      if (!eServer.nonEnc) {
+      if (isDirect) {
         eServer.gcm_encrypt(&num1, eServer.encOneBlockSize);
         eServer.gcm_encrypt(&num2, eServer.encOneBlockSize);
       }
@@ -37,19 +37,19 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, boo
       a[start + i] = num1;
       a[start + mid + i] = num2;
     }
-    smallBitonicMerge(a, start, mid, flipped);
-    smallBitonicMerge(a, start + mid, size - mid, flipped);
+    smallBitonicMerge(a, start, mid, flipped, isDirect);
+    smallBitonicMerge(a, start + mid, size - mid, flipped, isDirect);
   }
   return;
 }
 
 //Correct, after testing
-void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, bool flipped) {
+void Bitonic::smallBitonicSort(EncOneBlock *a, int64_t start, int64_t size, bool flipped, bool isDirect) {
   if (size > 1) {
     int64_t mid = eServer.greatestPowerOfTwoLessThan(size);
-    smallBitonicSort(a, start, mid, 1);
-    smallBitonicSort(a, start + mid, size - mid, 0);
-    smallBitonicMerge(a, start, size, flipped);
+    smallBitonicSort(a, start, mid, 1, isDirect);
+    smallBitonicSort(a, start + mid, size - mid, 0, isDirect);
+    smallBitonicMerge(a, start, size, flipped, isDirect);
   }
   return;
 }
