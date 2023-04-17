@@ -212,7 +212,7 @@ int main(int argc, const char* argv[]) {
   int array2[10000];
   int64_t sum1 = 0, sum2 = 0;
   for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
-    N = 2174327; // factor * MIN_SIZE;
+    N = 40199887; // factor * MIN_SIZE;
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> dist6(0,N-1);

@@ -155,6 +155,7 @@ static double failureProbOQPartition(size_t N, size_t M, size_t layer, double al
       double qj = logP_Overflow_when_t1_data_between_pivots(N, p, eps, t1 + step, B);
       qLayer = addLogs(qLayer, qi + qj + log2(std::min(step, t1_end - t1)));
     }
+    // TODO: remove this
     qLayer += log2(log2(std::min(way, p)));
     q = addLogs(q, qLayer);
     p /= way;
