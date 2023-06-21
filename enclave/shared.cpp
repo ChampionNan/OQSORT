@@ -67,7 +67,7 @@ void Heap::replaceRoot(HeapNode x) {
   Heapify(0);
 }
 
-EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD) : N{N}, M{M}, B{B}, encmode{encmode}, SSD{SSD} {
+EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, int sigma, EncMode encmode, int SSD) : N{N}, M{M}, B{B}, sigma{sigma}, encmode{encmode}, SSD{SSD} {
   encOneBlockSize = sizeof(EncOneBlock);
   IOcost = 0;
   IOtime = 0;
@@ -328,7 +328,7 @@ void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
   delete temp;
 }
 
-inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
+void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
   int mask = ~((int)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);
@@ -336,7 +336,7 @@ inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
 }
 
 void EnclaveServer::oswap128(uint128_t *a, uint128_t *b, bool cond) {
-  countSwap += 1;
+  // countSwap += 1;
   uint128_t mask = ~((uint128_t)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);

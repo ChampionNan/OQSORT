@@ -29,10 +29,10 @@ class DataStore {
   // TODO: Change this 
     const char *filepath = "/OQSORT/out.txt";
     int SSD;
+    std::vector<int> delArray;
     OutputType type = FILEOUT;
   private:
     EncOneBlock **arrayAddr;
-    std::vector<int> delArray;
     int64_t N, M;
     int B;
     std::random_device rd;

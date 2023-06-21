@@ -123,29 +123,40 @@ static double logP_t1_data_between_pivots(size_t total, double sampleratio, doub
   return std::min(0.0, prob);
 }
 
-static double failureProbOQPartition(size_t N, size_t M, size_t layer, double alpha, double eps, double target = -60) {
+static bool withinFailureProbOQPartition(size_t N, size_t M, size_t layer, double alpha, double eps, size_t maxFinalPartSize, double target = -60) {
   size_t logTotal = ceil(log2(N));
-  size_t numTotalBatch = ceil_divide(N * (1 + eps), M);
-  M = ceil_divide(N * (1 + eps), numTotalBatch);
-  double logM = log2(M);
-  size_t way = ceil(pow(numTotalBatch, 1.0 / layer));
-  double logWay = log2(way);
-  size_t p = numTotalBatch;
-  double q = -INFINITY;
-  while (p > 1) {
-    size_t B = ceil_divide(N, numTotalBatch * std::min(way, p));
+  size_t numTotalPart = ceil_divide(N * (1+eps), maxFinalPartSize);
+  // M = ceil_divide(N * (1+eps), numTotalPart);
+  size_t way = ceil(pow(numTotalPart, 1.0 / layer));
+  numTotalPart = ceil_divide(numTotalPart, pow(way, layer-1)) * pow(way, layer-1);
 
-    auto satisfy_start = [&](int64_t negt1) {
-      return logP_Overflow_when_t1_data_between_pivots(N, p, eps, -negt1, B) < target - 4;
+  // printf("numTotalPart=%ld, layer=%ld, way %ld\n", numTotalPart, layer, way);
+  double logWay = log2(way);
+  size_t p = numTotalPart;
+  double q = -INFINITY;
+  for (size_t lyr = 0; lyr < layer; ++lyr) {
+    assert(p > 1);
+    // num real element per bucket on the first layer
+    // N / (number of batches * bucket per batch)
+    size_t B = ceil_divide(N, ceil_divide(N * (1+eps), M) * std::min(way, p));
+    // printf("B = %ld\n", B);
+
+    auto satisfy_start = [&](int64_t negt1) { 
+      return logP_Overflow_when_t1_data_between_pivots(N, p, eps, -negt1, B) < target - layer - 3; 
     };
     size_t t1_start = -lowerBound(-(int64_t)(N*(1+eps)/p), -(int64_t)(N/p), satisfy_start);
-    auto satisfy_end = [&](int64_t t1) {
-      return logP_more_than_t1_data_between_pivots(N, alpha, p, t1) < target - 4;
+    // printf("t1_start = %ld\n", t1_start);
+
+    auto satisfy_end = [&](int64_t t1) { 
+      return logP_more_than_t1_data_between_pivots(N, alpha, p, t1) < target - layer - 3;
     };
     size_t t1_end = lowerBound((int64_t)(N/p), (int64_t)(N*(1+eps)/p), satisfy_end);
+    // printf("t1_end = %ld\n", t1_end);
     if (t1_start >= t1_end) {
       t1_start = t1_end = (t1_start + t1_end) / 2;
     }
+
+    // add failure prob on two ends
     double qLayer = logP_Overflow_when_t1_data_between_pivots(N, p, eps, t1_start-1, B);
     qLayer = addLogs(qLayer, logP_more_than_t1_data_between_pivots(N, alpha, p, t1_end));
 
@@ -155,12 +166,19 @@ static double failureProbOQPartition(size_t N, size_t M, size_t layer, double al
       double qj = logP_Overflow_when_t1_data_between_pivots(N, p, eps, t1 + step, B);
       qLayer = addLogs(qLayer, qi + qj + log2(std::min(step, t1_end - t1)));
     }
-    // TODO: remove this
-    qLayer += log2(log2(std::min(way, p)));
+    // qLayer += log2(log2(std::min(way, p)));
     q = addLogs(q, qLayer);
+    if (q > target) {
+      return false;
+    }
+    double ub = addLogs(q, qLayer + log2(layer-lyr-1));
+    if (ub < target) {
+      return true;
+    }
     p /= way;
+
   }
-  return q;
+  return q < target;
 }
 
 static double IOCostOQSort(size_t N, size_t M, size_t layer, double recursive_ratio, double eps) {
@@ -199,16 +217,16 @@ static OQSortParams bestOQSortParams(int64_t &N, int64_t &M, double target = -60
         auto samplingSatisify = [&](double slack) {
           return binomLogSf(slack * M * alpha, M, alpha) + log2(ceil_divide(N, M)) < target - 4;
         };
-        double slack_sampling = lowerBound(1.0, 1.5, samplingSatisify);
+        double slack_sampling = lowerBound(1.0, 1.5, samplingSatisify, slack_sampling_prec);
         auto epsSatisfy = [&](double _eps) {
-          return failureProbOQPartition(N, M, layer, alpha, _eps) < target - 0.05;
+          return withinFailureProbOQPartition(N, M, layer, alpha, _eps, M, target-0.05);
         };
         double eps = lowerBound(0.0, 1.0, epsSatisfy, eps_prec);
         if (eps >= 1.0 - 2*eps_prec) {
           eps = lowerBound(0.0, 10.0, epsSatisfy, eps_prec*10);
         }
         params.gamma = eps;
-        params.beta = slack_sampling;
+        params.beta = slack_sampling; // alpha * beta -> sampling ratio
         double cost = TotalCostOQSort(N, M, layer, alpha * slack_sampling, eps);
         return cost;
       };
@@ -240,7 +258,3 @@ static OQSortParams bestOQSortParams(int64_t &N, int64_t &M, double target = -60
   bestParams.P = ceil(pow((1+bestParams.gamma)*N/M, 1.0/(bestParams.layer-0.2)));
   return bestParams;
 }
-
-
-// TODO: ADjust parameters, alpha, beta, gamma, M and P
-// TODO: Check if current layer is 1

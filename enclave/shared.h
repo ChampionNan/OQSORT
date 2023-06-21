@@ -40,7 +40,7 @@ typedef unsigned __int128 uint128_t;
 
 class EnclaveServer {
   public:
-    EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD);
+    EnclaveServer(int64_t N, int64_t M, int B, int sigma, EncMode encmode, int SSD);
     double getIOcost();
     double getIOtime();
     double getSwapNum();

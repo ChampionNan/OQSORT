@@ -49,41 +49,30 @@ void ODS::floydSampler(int64_t n, int64_t k, std::vector<int64_t> &x) {
 int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlock> &trustedM2, SortType sorttype) {
   printf("ODS::Sample\n");
   int64_t N_prime = sampleSize;
-  // double alpha = (!is_rec) ? ALPHA : _ALPHA;
   int64_t n_prime = ceil(1.0 * alpha * N_prime);
-  int64_t boundary = ceil(1.0 * N_prime / B);
-  int64_t j = 0, Msize;
   int is_tight = (sorttype == ODSTIGHT) ? 1 : 0;
-  EncOneBlock *trustedM1 = new EncOneBlock[B];
-  std::vector<int64_t> sampleIdx;
-  floydSampler(N_prime, n_prime, sampleIdx);
-  printf("After Floyd Sampler\n");
+  int64_t eachSecSize = is_tight ? M : B;
+  int64_t boundary = ceil(1.0 * N_prime / eachSecSize);
+  EncOneBlock *trustedM1 = new EncOneBlock[eachSecSize];
+  int64_t Msize, m, realNum = 0;
   for (int64_t i = 0; i < boundary; ++i) {
-    // printf("Sample process %ld / %ld \n", i, boundary);
-    if (is_tight) {
-      Msize = std::min((int64_t)B, N_prime - i * B);
-      eServer.opOneLinearScanBlock(i * B, trustedM1, Msize, inStructureId, 0, 0);
-      while ((j < n_prime) && (sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
-        trustedM2.push_back(trustedM1[sampleIdx[j] % B]);
-        j += 1;
-      }
-    } else if ((!is_tight) && (sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
-      Msize = std::min((int64_t)B, N_prime - i * B);
-      eServer.opOneLinearScanBlock(i * B, trustedM1, Msize, inStructureId, 0, 0);
-      while ((sampleIdx[j] >= i * B) && (sampleIdx[j] < (i+1) * B)) {
-        trustedM2.push_back(trustedM1[sampleIdx[j] % B]);
-        j += 1;
-        if (j >= n_prime) break;
-      }
-      if (j >= n_prime) break;
+    printf("Sample progress: %ld / %ld\n", i, boundary-1);
+    Msize = std::min(eachSecSize, N_prime - i * eachSecSize);
+    m = Hypergeometric(N_prime, Msize, n_prime);
+    if (!is_tight && m <= 0) continue;
+    eServer.opOneLinearScanBlock(i * eachSecSize, trustedM1, Msize, inStructureId, eServer.SSD, 0);
+    shuffle(trustedM1, Msize);
+    for (int64_t j = 0; j < m; ++j) {
+      trustedM2.push_back(trustedM1[j]);
     }
+    realNum += m;
   }
   delete [] trustedM1;
   // FIXME: Why cannot use internal sort
   // sort(trustedM2.begin(), trustedM2.end());
   QuickV qvsort(eServer);
   qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);
-  return n_prime;
+  return realNum;
 }
 
 int64_t ODS::Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
@@ -195,7 +184,6 @@ void ODS::ODSquantileCal(int sampleId, int64_t sampleSize, int64_t xDummySampleS
   for (int64_t i = 1; i < P; ++i) {
     quantileIdx.push_back(i * xDummySampleSize / P);
   }
-  printf("ODSquantileCal before sort\n");
   int64_t j = 0;
   int64_t k = 0, total = 0;
   for (int i = 0; i < sectionNum; ++i) {
@@ -288,7 +276,9 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
   if (n == 2) {
     bool flag = ((1 - M[left]) * M[left + 1]) ^ (z % 2);
     // if (flag) eServer.regswap(&D[left], &D[left + 1]);
-    eServer.oswap128((uint128_t*)&D[left], (uint128_t*)&D[left + 1], flag);
+    // TODO: Change for other element size
+    if (PAYLOAD == 29) eServer.oswap128((uint128_t*)&D[left], (uint128_t*)&D[left + 1], flag);
+    else eServer.oswap(&D[left], &D[left + 1], flag);
   } else if (n > 2) {
     OROffCompact(D, M, left, left + n2, z % n2);
     OROffCompact(D, M, left + n2, left + n, (z + m % n2) % n2);
@@ -299,7 +289,8 @@ void ODS::OROffCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right, int
       bool s3 = (i >= ((z + m) % n2)) ? 1 : 0;
       bool b = s ^ s3;
       // if (b) eServer.regswap(&D[left + i], &D[left + i + n2]);
-      eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n2], b);
+      if (PAYLOAD == 29) eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n2], b);
+      else eServer.oswap(&D[left + i], &D[left + i + n2], b);
     }
   }
 }
@@ -316,7 +307,8 @@ void ODS::ORCompact(EncOneBlock *D, bool *M, int64_t left, int64_t right) {
   for (int64_t i = 0; i < n2; ++i) { // not 2^k mix
     bool b = (i >= m) ? 1 : 0;
     // if (b) eServer.regswap(&D[left + i], &D[left + i + n1]);
-    eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n1], b);
+    if (PAYLOAD == 29) eServer.oswap128((uint128_t*)&D[left + i], (uint128_t*)&D[left + i + n1], b);
+    else eServer.oswap(&D[left + i], &D[left + i + n1], b);
   }
 }
 
@@ -462,7 +454,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
     resultId = inStructureId;
     resultN = inSize;
   }
-  // printf("In OneLevelPartition\n");
+  printf("In OneLevelPartition\n");
   int64_t hatN, M_prime, r, p0;
   calParams(inSize, p, hatN, M_prime, r, p0);
   // quantileCal(samples, 0, sampleSize, p0);
@@ -476,8 +468,6 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
   int64_t Msize1, index1, index2, writeBackNum;
   EncOneBlock *trustedM3 = new EncOneBlock[boundary2 * B];
   bool *indicator = new bool[boundary2 * B];
-  // memset(trustedM3, DUMMY<int>(), eServer.encOneBlockSize * boundary2 * B);
-  // Failure probability
   if (bucketSize0 > M) {
     printf("Each section size is greater than M, adjst parameters: %ld, %ld\n", bucketSize0, M);
   }
@@ -557,6 +547,7 @@ std::pair<int64_t, int> ODS::OneLevelPartition(int inStructureId, int64_t inSize
 void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outputId1, int outputId2) {
   printf("In ODS\n");
   EncOneBlock *trustedM;
+  double totalIOcost = 0;
   if (inSize < M) {
     trustedM = new EncOneBlock[M];
     eServer.opOneLinearScanBlock(0, trustedM, N, inputId, 0, 0);
@@ -573,20 +564,20 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   int64_t sampleSize, xDummySampleSize;
    // step1. get samples & pivots
   if ((int64_t)ceil(alpha * N) < M) {
-    printf("In memory samples\n");
+    // printf("In memory samples\n");
     startS = time(NULL);
     sampleSize = Sample(inputId, inSize, trustedM2, sorttype);
     quantileCal(inSize, trustedM2, sampleSize, P);
   } else {
     int64_t n_prime = ceil(1.0 * alpha * N);
-    printf("External memory samples\n");
+    // printf("External memory samples\n");
     startS = time(NULL);
     if (sorttype == ODSLOOSE) {
       sampleSize = eServer.Sample(inputId, sampleId, N, M, n_prime);
       xDummySampleSize = sampleSize;
     } else {
       xDummySampleSize = SampleEx(inputId, sampleId);
-      sampleSize = ceil(2 * alpha * M) * (N / M);
+      sampleSize = ceil(beta * alpha * M) * (N / M);
     }
     ODSquantileCal(sampleId, sampleSize, xDummySampleSize, sortedSampleId, trustedM2);
     freeAllocate(sampleId, sampleId, 0, eServer.SSD);
@@ -594,23 +585,23 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
   }
   // step2. partition
   startP = time(NULL);
-  printf("Sampling Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(startP-startS-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
+  printf("Sampling Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startP-startS-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  totalIOcost += eServer.getIOcost()*B/N;
   eServer.IOtime = 0;
   eServer.IOcost = 0;
-  eServer.countSwap = 0;
   std::pair<int64_t, int> section = OneLevelPartition(inputId, inSize, trustedM2, P, outputId1);
   int64_t sectionSize = section.first;
   int sectionNum = section.second;
   int64_t k;
   // step3. Final sort
   startF = time(NULL);
-  printf("Partition Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
+  printf("Partition Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(startF-startP-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  totalIOcost += eServer.getIOcost()*B/N;
   // printf("SecSize: %ld\n", sectionSize);
   eServer.IOtime = 0;
   eServer.IOcost = 0;
-  eServer.countSwap = 0;
   if (sorttype == ODSTIGHT) {
-    printf("In Tight Final\n");
+    // printf("In Tight Final\n");
     freeAllocate(outputId2, outputId2, inSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
     int64_t j = 0;
@@ -635,7 +626,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultId = outputId2;
     resultN = N;
   } else if (sorttype == ODSLOOSE) {
-    printf("In Loose Final\n");
+    // printf("In Loose Final\n");
     int64_t totalLevelSize = sectionNum * sectionSize;
     freeAllocate(outputId2, outputId2, totalLevelSize, eServer.SSD);
     trustedM = new EncOneBlock[M];
@@ -661,5 +652,7 @@ void ODS::ObliviousSort(int64_t inSize, SortType sorttype, int inputId, int outp
     resultN = totalLevelSize;
   }
   end = time(NULL);
-  printf("Final Computation Time: %lf, IOtime: %lf, IOcost: %lf, totalSwapNumber: %lf\n", (double)(end-startF-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N, eServer.getSwapNum());
+  printf("Final Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-startF-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+  totalIOcost += eServer.getIOcost()*B/N;
+  printf("Total IO cost: %lf\n", totalIOcost);
 }

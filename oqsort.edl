@@ -1,13 +1,14 @@
 enclave {
-  from "openenclave/edl/sgx/cpu.edl" import *;
+  from "openenclave/edl/syscall.edl" import *;
+  from "openenclave/edl/logging.edl" import *;
+  from "openenclave/edl/sgx/platform.edl" import *;
+
   trusted {
     public void callSort(
       [in, out, count=1]int *resId,
       [in, out, count=1]int *resN,
       [user_check]int *address,
-      [in, count=11]double *params,
-      [user_check]int *array2,
-      int size2);
+      [in, count=11]double *params);
   };
 
   untrusted {

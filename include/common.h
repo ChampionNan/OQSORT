@@ -12,7 +12,7 @@
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define PAYLOAD 29 // 1, 29
+#define PAYLOAD 29 // 1, 5, 13, 29, 61
 #define MIN_SIZE 1048576
 #define MAX_SIZE 419430400L
 #define RATIO 1.2

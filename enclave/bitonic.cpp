@@ -33,7 +33,8 @@ void Bitonic::smallBitonicMerge(EncOneBlock *a, int64_t start, int64_t size, boo
         eServer.gcm_encrypt(&num1, eServer.encOneBlockSize);
         eServer.gcm_encrypt(&num2, eServer.encOneBlockSize);
       }
-      eServer.oswap128((uint128_t*)&num1, (uint128_t*)&num2, swap);
+      if (PAYLOAD == 29) eServer.oswap128((uint128_t*)&num1, (uint128_t*)&num2, swap);
+      else eServer.oswap(&num1, &num2, swap);
       a[start + i] = num1;
       a[start + mid + i] = num2;
     }

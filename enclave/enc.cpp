@@ -17,7 +17,7 @@ void printfEnc(const char *fmt, ...)
     ocall_print_string(buf);
 }
 
-void callSort(int *resId, int *resN, int *address, double *params, int *array2, int size2) {
+void callSort(int *resId, int *resN, int *address, double *params) {
   int sortId = params[0];
   int inputId = params[1];
   int64_t N = params[2];
@@ -31,8 +31,9 @@ void callSort(int *resId, int *resN, int *address, double *params, int *array2, 
   int SSD = params[10];
   EncMode encmode = GCM; // GCM, OFB
   SecLevel seclevel = FULLY; // FULLY, PARTIAL
-  EnclaveServer eServer(N, M, B, encmode, SSD);
+  EnclaveServer eServer(N, M, B, sigma, encmode, SSD);
   eServer.nonEnc = 1;
+  clock_t start, end;
   if (sortId == 0) { // ODS-Tight
     ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel, inputId + 2);
     odsTight.ObliviousSort(N, ODSTIGHT, inputId, inputId + 1, inputId);
@@ -44,35 +45,23 @@ void callSort(int *resId, int *resN, int *address, double *params, int *array2, 
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
   } else if (sortId == 2) { // bucket oblivious sort
-    clock_t start, end;
-    Bucket bksort(eServer, inputId - 1);
+    printf("Bucket Oblivious Sort\n");
+    Bucket bksort(eServer, inputId);
     start = time(NULL);
     *resId = bksort.bucketOSort();
     end = time(NULL);
-    *resN = N;
     printfEnc("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
+    *resN = N;
   } else if (sortId == 3) {
     int64_t size = N / B;
     Bitonic bisort(eServer, inputId, 0, size);
+    start = time(NULL);
     bisort.bitonicSort(0, size, 0);
+    end = time(NULL);
+    printfEnc("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
     *resId = inputId;
     *resN = N;
   } else {
     // NOTE: Used for test
-    clock_t start, end;
-    int64_t sum1 = 0, sum2 = 0;
-    EncOneBlock *a = (EncOneBlock *)address;
-    for (int i = 0; i < size2; ++i) {
-      sum1 += a[array2[i]].sortKey;
-      sum2 += a[array2[i]].primaryKey;
-    }
-    printfEnc("Enclave sum1: %d, sum2: %d\n", sum1, sum2);
-    start = time(NULL);
-    Bitonic bisort(eServer);
-    bisort.smallBitonicSort(a, 0, N, 0, true);
-    end = time(NULL);
-    *resId = inputId;
-    *resN = N;
-    printfEnc("Time: %lf\n", (double)(end-start));
   }
 }

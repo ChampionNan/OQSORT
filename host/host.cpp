@@ -175,22 +175,27 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     gamma = vm["gamma"].as<double>();
     P = vm["P"].as<int>();*/
   } else if (inputtype == SETINMAIN) {
-    datatype = 128; // 16, 128
-    M = (128 << 20) / datatype; // (MB << 20) / 1 element bytes
+    // default N=100M, M=32MB, Ele-size=128 bytes, B=4KB
+    datatype = 128; // 16, 32, 64, 128, 256
+    M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
+    N = 100 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
     SSD = 0;
     OQSortParams bestParams;
     static int iter = 1;
-    printf("#Num:%d\n  N: %ld, M: %ld\n", iter++, N, M);
     if (sortId == 0 || sortId == 1) {
       bestParams = bestOQSortParams(N, M);
       alpha = bestParams.alpha;
-      beta = bestParams.beta;
+      beta = bestParams.beta; // slack_sampling
       gamma = bestParams.gamma;
       P = bestParams.P;
       assert(bestParams.layer == 1 && "layer should be 1");
+      assert(bestParams.alpha < 1 && "alpha should < 1");
+      assert(bestParams.gamma < 1 && "gamma should < 1");
+      std::cout << alpha << ", " << beta << ", " << gamma << ", " << P << std::endl;
     }
+    printf("#Num:%d\n  N: %ld, M: %ld, Params: ", iter++, N, M);
   }
 }
 
@@ -211,16 +216,19 @@ int main(int argc, const char* argv[]) {
   double alpha, beta, gamma;
   int array2[10000];
   int64_t sum1 = 0, sum2 = 0;
-  for (double factor = 1; factor <= MAX_SIZE/MIN_SIZE; factor *= RATIO) {
-    N = 40199887; // factor * MIN_SIZE;
+  result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
+  // MAX_SIZE/MIN_SIZE
+  for (double factor = 1; factor <= 1; factor *= RATIO) {
+    // N = 40199887; // factor * MIN_SIZE;
     std::random_device dev;
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> dist6(0,N-1);
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = -1;
+    sortId = 2;
     readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
+
     double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
-    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
+    // step1: init data
     if (sortId == 3 && (N % B) != 0) {
       int64_t addi = addi = ((N / B) + 1) * B - N;
       N += addi;
@@ -229,21 +237,15 @@ int main(int argc, const char* argv[]) {
     if (sortId == 2) {
       int64_t totalSize = calBucketSize(sigma, N, M, B);
       data.init(inputId, N);
-      data.init(inputId + 1, totalSize);
-      data.init(inputId + 2, totalSize);
+      arrayAddr[inputId + 1] = new EncOneBlock[totalSize];
+      arrayAddr[inputId + 2] = new EncOneBlock[totalSize];
+      data.delArray.push_back(inputId + 1);
+      data.delArray.push_back(inputId + 2);
     } else {
       data.init(inputId, N);
     }
-    EncOneBlock *array = (EncOneBlock*)(arrayAddr[inputId]);
-    for (int i = 0; i < 10000; i++) {
-      array2[i] = dist6(rng);
-      sum1 += array[array2[i]].sortKey;
-      sum2 += array[array2[i]].primaryKey;
-    }
-    printf("Host sum1: %d, sum2: %d\n", sum1, sum2, array2, 10000);
-    result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
     start = high_resolution_clock::now();    
-    callSort(enclave, resId, resN, (int*)(arrayAddr[inputId]), params, array2, 10000);
+    callSort(enclave, resId, resN, (int*)(arrayAddr[inputId]), params);
     end = high_resolution_clock::now();
     if (result != OE_OK) {
       fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
@@ -255,10 +257,9 @@ int main(int argc, const char* argv[]) {
     // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
     // data.test(*resId, *resN, FILEOUT, data.filepath);
     // data.print(*resId, *resN, TERMINAL, data.filepath);
-    if (enclave) {
-      oe_terminate_enclave(enclave);
-    }
-    break;
+  }
+  if (enclave) {
+    oe_terminate_enclave(enclave);
   }
   // step5: exix part
   exit:
@@ -266,39 +267,3 @@ int main(int argc, const char* argv[]) {
     delete resN;
     return ret;
 }
-
-/*
-po::variables_map read_options(int argc, const char *argv[]) {
-  int m, c;
-  po::variables_map vm;
-  try {
-    po::options_description desc("Allowed options");
-    desc.add_options()
-    ("help,H", "Show help message")
-    ("memory,M", po::value<int64_t>()->default_value(8), "Internal memory size (MB)")
-    ("c,c", po::value<int>()->default_value(16), "The value of N/M")
-    ("block_size,B", po::value<int>()->default_value(4), "Block size (in terms of elements)")
-    ("num_threads,T", po::value<int>()->default_value(4), "#threads, not suppoted in enclave yet")
-    ("sigma,s", po::value<int>()->default_value(40), "Failure probability upper bound: 2^(-sigma)")
-    ("alpha,a", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("beta,b", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("gamma,g", po::value<double>()->default_value(-1), "Parameter for ODS")
-    ("P,P", po::value<int>()->default_value(1), "Parameter for ODS")
-    ("sort_type,ST", po::value<int>()->default_value(1), "Selections for sorting type: 0: ODSTight, 1: ODSLoose, 2: bucketOSort, 3: bitonicSort, 4: mergeSort")
-    ("datatype,DT", po::value<int>()->default_value(4), "#bytes for this kind of datatype, normally int32_t or int64_t");
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-    if (vm.count("help") || vm.count("H")) {
-      cout << desc << endl;
-      exit(0);
-    }
-  } catch (exception &e) {
-    cerr << "Error: " << e.what() << endl;
-    exit(1);
-  } catch (...) {
-    cerr << "Exception of unknown type! \n";
-    exit(-1);
-  }
-  return vm;
-}
-*/
