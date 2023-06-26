@@ -57,7 +57,7 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
   int64_t Msize, m, realNum = 0;
   for (int64_t i = 0; i < boundary; ++i) {
     printf("Sample progress: %ld / %ld\n", i, boundary-1);
-    Msize = std::min(eachSecSize, N_prime - i * eachSecSize);
+    Msize = std::min(eachSecSize, sampleSize - i * eachSecSize);
     m = Hypergeometric(N_prime, Msize, n_prime);
     if (!is_tight && m <= 0) continue;
     eServer.opOneLinearScanBlock(i * eachSecSize, trustedM1, Msize, inStructureId, eServer.SSD, 0);
@@ -68,7 +68,7 @@ int64_t ODS::Sample(int inStructureId, int64_t sampleSize, std::vector<EncOneBlo
     realNum += m;
   }
   delete [] trustedM1;
-  // FIXME: Why cannot use internal sort
+  // FIXME: Why cannot use internal sort, add compare function at 3rd position
   // sort(trustedM2.begin(), trustedM2.end());
   QuickV qvsort(eServer);
   qvsort.quickSort(trustedM2, 0, trustedM2.size()-1);

@@ -234,7 +234,6 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
     return ;
   }
   int64_t boundary = ceil(1.0 * elementNum / B);
-  // printf("boundary: %d, remain: %d, B: %d\n", boundary, remain, B);
   int Msize;
   if (!write) { // read
     IOcost += boundary;

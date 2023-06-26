@@ -177,7 +177,7 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
   } else if (inputtype == SETINMAIN) {
     // default N=100M, M=32MB, Ele-size=128 bytes, B=4KB
     datatype = 128; // 16, 32, 64, 128, 256
-    M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
+    M = (32 << 20) / datatype; // (MB << 20) / 1 element bytes
     N = 100 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
@@ -193,9 +193,9 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
       assert(bestParams.layer == 1 && "layer should be 1");
       assert(bestParams.alpha < 1 && "alpha should < 1");
       assert(bestParams.gamma < 1 && "gamma should < 1");
+      printf("#Num:%d\n  N: %ld, M: %ld, Params: ", iter++, N, M);
       std::cout << alpha << ", " << beta << ", " << gamma << ", " << P << std::endl;
     }
-    printf("#Num:%d\n  N: %ld, M: %ld, Params: ", iter++, N, M);
   }
 }
 
@@ -224,7 +224,7 @@ int main(int argc, const char* argv[]) {
     std::mt19937 rng(dev());
     std::uniform_int_distribution<std::mt19937::result_type> dist6(0,N-1);
     // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 2;
+    sortId = 0;
     readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
 
     double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
