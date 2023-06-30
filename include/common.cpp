@@ -64,5 +64,3 @@ int64_t Hypergeometric(int64_t &N, int64_t M, int64_t &n) {
   }
   return m;
 }
-
-

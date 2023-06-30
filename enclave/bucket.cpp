@@ -166,6 +166,7 @@ int Bucket::bucketOSort() {
   int64_t each;
   int64_t avg = N / bucketNum;
   int64_t remainder = N % bucketNum;
+  printf("avg: %ld, Z: %ld\n", avg, Z);
   std::uniform_int_distribution<int64_t> dist{0, bucketNum-1};
   for (int64_t i = 0; i < bucketNum; ++i) {
     each = avg + ((i < remainder) ? 1 : 0);
@@ -184,12 +185,11 @@ int Bucket::bucketOSort() {
   }
   delete [] trustedMemory;
   delete [] inputTrustMemory;
-
+  printf("finish read %lf\n", eServer.getIOcost()*B/N);
   int64_t *inputId = new int64_t[FAN_OUT];
   int64_t *outputId = new int64_t[FAN_OUT];
   int64_t outIdx = 0, expo, tempk, jboundary, jjboundary;
   int64_t tempk_i, tempk_i1;
-  printf("Before RBA!\n");
   printf("Total bits: %f, each level solved %ld bits\n", log2(bucketNum), k1);
   for (int i = 0; i < ranBinAssignIters; ++i) {
     expo = std::min((int)k1, (int)(log2(bucketNum)-i*k1));
@@ -199,7 +199,7 @@ int Bucket::bucketOSort() {
     printf("level %d read&write %ld buckets\n", i, tempk);
     jboundary = (i != (ranBinAssignIters-1)) ? (bucketNum / tempk_i1) : 1;
     jjboundary = (i != (ranBinAssignIters-1)) ? tempk_i : (bucketNum/tempk);
-    printf("jboundary: %ld, jjboundary: %ld\n", jboundary, jjboundary);
+    // printf("jboundary: %ld, jjboundary: %ld\n", jboundary, jjboundary);
     if (i % 2 == 0) {
       for (int64_t j = 0; j < jboundary; ++j) {
         for (int64_t jj = 0; jj < jjboundary; ++jj) {
@@ -216,7 +216,7 @@ int Bucket::bucketOSort() {
         numRow1[n] = 0;
         count += numRow2[n];
       }
-      printf("after %dth merge split, we have %ld tuples\n", i, count);
+      printf("after %dth merge split, we have %ld tuples, IO: %lf\n", i, count, eServer.getIOcost()*B/N);
       outIdx = 0;
     } else {
       for (int64_t j = 0; j < jboundary; ++j) {
@@ -234,7 +234,7 @@ int Bucket::bucketOSort() {
         numRow2[n] = 0;
         count += numRow1[n];
       }
-      printf("after %dth merge split, we have %ld tuples\n", i, count);
+      printf("after %dth merge split, we have %ld tuples, IO: %lf\n", i, count, eServer.getIOcost()*B/N);
       outIdx = 0;
     }
     printf("----------------------------------------\n");
@@ -244,20 +244,23 @@ int Bucket::bucketOSort() {
   delete [] inputId;
   delete [] outputId;
   int resultId = 0;
-  printf("Finish RBA!\n");
+  printf("Finish RBA! %lf \n", eServer.getIOcost()*B/N);
   if (ranBinAssignIters % 2 == 0) {
     for (int64_t i = 0; i < bucketNum; ++i) {
       bucketSort(outId1, numRow1[i], bucketAddr[i]);
     }
+    printf("Finish bucketSort! %lf\n", eServer.getIOcost()*B/N);
     kWayMergeSort(outId1, outId2, numRow1, bucketAddr, bucketNum);
     resultId = outId2;
   } else {
     for (int64_t i = 0; i < bucketNum; ++i) {
       bucketSort(outId2, numRow2[i], bucketAddr[i]);
     }
+    printf("Finish bucketSort! %lf\n", eServer.getIOcost()*B/N);
     kWayMergeSort(outId2, outId1, numRow2, bucketAddr, bucketNum);
     resultId = outId1;
   }
+  printf("Finish kWayMergeSort!\n");
   delete [] numRow1;
   delete [] numRow2;
   return resultId;

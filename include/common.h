@@ -8,10 +8,14 @@
 #include <random>
 #include <cmath>
 #include <bitset>
+#include <cassert>
 
 #define NUM_STRUCTURES 10
 #define MEM_IN_ENCLAVE 5
-#define PAYLOAD 29 // 1, 29
+#define PAYLOAD 61 // 1, 5, 13, 29, 61
+#define MIN_SIZE 1048576
+#define MAX_SIZE 419430400L
+#define RATIO 1.2
 
 // FIXME: Why not able to contain common files
 template<typename T>
@@ -53,11 +57,20 @@ struct Bucket_x {
   int key;
 };
 
+struct OQSortParams {
+  double alpha;
+  double beta;
+  double gamma;
+  size_t P;
+  size_t M;
+  size_t layer;
+};
+
 struct EncOneBlock {
   int sortKey;    // used for sorting 
   int primaryKey; // tie-breaker when soryKey equals
   int payLoad[PAYLOAD];
-  int randomKey;  // bucket sort random key
+  int randomKey;  // salt for encryption, representative for iv
 
   EncOneBlock() {
     sortKey = DUMMY<int>();

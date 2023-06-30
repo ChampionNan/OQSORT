@@ -23,6 +23,8 @@
 #include <vector>
 #include <iostream>
 #include <exception>
+#include <stdarg.h>
+#include <stdio.h>
 
 #include <mbedtls/aes.h>
 #include <mbedtls/entropy.h>
@@ -35,12 +37,13 @@
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
+
 class EnclaveServer {
   public:
-    EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD);
+    EnclaveServer(int64_t N, int64_t M, int B, int sigma, EncMode encmode, int SSD);
     double getIOcost();
     double getIOtime();
-    int printf(const char *fmt, ...);
+    double getSwapNum();
     void ofb_encrypt(EncOneBlock* buffer, int blockSize);
     void ofb_decrypt(EncOneBlock* buffer, int blockSize);
     void gcm_encrypt(EncOneBlock* buffer, int blockSize);
@@ -69,6 +72,7 @@ class EnclaveServer {
     int B, sigma;
     double IOcost;
     double IOtime;
+    double countSwap;
     clock_t IOstart, IOend;
     int encOneBlockSize; // sizeof(EncOneBlock)
     int nonEnc; // no encryption

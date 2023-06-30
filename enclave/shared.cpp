@@ -67,10 +67,11 @@ void Heap::replaceRoot(HeapNode x) {
   Heapify(0);
 }
 
-EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, EncMode encmode, int SSD) : N{N}, M{M}, B{B}, encmode{encmode}, SSD{SSD} {
+EnclaveServer::EnclaveServer(int64_t N, int64_t M, int B, int sigma, EncMode encmode, int SSD) : N{N}, M{M}, B{B}, sigma{sigma}, encmode{encmode}, SSD{SSD} {
   encOneBlockSize = sizeof(EncOneBlock);
   IOcost = 0;
   IOtime = 0;
+  countSwap = 0;
   const char *pers = "aes generate keygcm generate key";
   int ret;
   mbedtls_entropy_init(&entropy);
@@ -89,16 +90,7 @@ double EnclaveServer::getIOcost() { return IOcost; }
 
 double EnclaveServer::getIOtime() { return IOtime; }
 
-// Invokes OCALL to display the enclave buffer to the terminal.
-int EnclaveServer::printf(const char *fmt, ...) {
-  char buf[BUFSIZ] = {'\0'};
-  va_list ap;
-  va_start(ap, fmt);
-  int ret = vsnprintf(buf, BUFSIZ, fmt, ap);
-  va_end(ap);
-  ocall_print_string(buf);
-  return ret;
-}
+double EnclaveServer::getSwapNum() { return countSwap; }
 
 // Assume encSize = 16 * k
 void EnclaveServer::ofb_encrypt(EncOneBlock* buffer, int encSize) {
@@ -190,16 +182,16 @@ void EnclaveServer::OcallReadPage(int64_t startIdx, EncOneBlock* buffer, int pag
   if (nonEnc) {
     // printf("Before Read nonEnc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   } else {
     // printf("Before Read Enc: \n");
     OcallRB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
         ofb_decrypt(buffer + i, encOneBlockSize);
       }
-    } else if (encmode ==GCM) {
+    } else if (encmode == GCM) {
       for (int i = 0; i < pageSize; ++i) {
         gcm_decrypt(buffer + i, encOneBlockSize);
       }
@@ -215,7 +207,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
   }
   if (nonEnc) {
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   } else {
     if (encmode == OFB) {
       for (int i = 0; i < pageSize; ++i) {
@@ -227,7 +219,7 @@ void EnclaveServer::OcallWritePage(int64_t startIdx, EncOneBlock* buffer, int pa
       }
     }
     OcallWB(startIdx, (int*)buffer, encOneBlockSize * pageSize, structureId, SSD);
-    IOcost += 1;
+    // IOcost += 1;
   }
 }
 // index: start index counted by elements (count from 0), elementNum: #elements
@@ -242,9 +234,9 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
     return ;
   }
   int64_t boundary = ceil(1.0 * elementNum / B);
-  // printf("boundary: %d, remain: %d, B: %d\n", boundary, remain, B);
   int Msize;
   if (!write) { // read
+    IOcost += boundary;
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min((int64_t)B, elementNum - i * B);
       // printf("in Op Read, B: %d\n", Msize);
@@ -256,6 +248,7 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
       }
     }
   } else { // write
+    IOcost += boundary;
     for (int64_t i = 0; i < boundary; ++i) {
        Msize = std::min((int64_t)B, elementNum - i * B);
       OcallWritePage(index + i * B, &block[i * B], Msize, structureId);
@@ -266,6 +259,7 @@ void EnclaveServer::opOneLinearScanBlock(int64_t index, EncOneBlock* block, int6
         junk[j].sortKey = DUMMY<int>();
       }
       int64_t dummyBoundary = ceil(1.0 * dummyNum / B);
+      IOcost += dummyBoundary;
       for (int64_t j = 0; j < dummyBoundary; ++j) {
         Msize = std::min((int64_t)B, dummyNum - j * B);
         OcallWritePage(index + elementNum + j * B, &junk[j * B], Msize, structureId);
@@ -282,12 +276,11 @@ bool EnclaveServer::cmpHelper(EncOneBlock *a, EncOneBlock *b) {
     return true;
   } else if (a->sortKey < b->sortKey) {
     return false;
-  } else if (a->primaryKey > b->primaryKey) {
+  } else if (a->primaryKey >= b->primaryKey) {
     return true;
   } else if (a->primaryKey < b->primaryKey) {
     return false;
   }
-  return true; // equal
 }
 
 int64_t EnclaveServer::moveDummy(EncOneBlock *a, int64_t size) {
@@ -339,7 +332,7 @@ void EnclaveServer::swap(std::vector<EncOneBlock> &arr, int64_t i, int64_t j) {
   delete temp;
 }
 
-inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
+void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
   int mask = ~((int)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);
@@ -347,6 +340,7 @@ inline void EnclaveServer::oswap(EncOneBlock *a, EncOneBlock *b, bool cond) {
 }
 
 void EnclaveServer::oswap128(uint128_t *a, uint128_t *b, bool cond) {
+  // countSwap += 1;
   uint128_t mask = ~((uint128_t)cond - 1);
   *a = *a ^ *b;
   *b = *b ^ (*a & mask);

@@ -7,7 +7,17 @@
 
 #include <ctime>
 
-void callSort(int *resId, int *resN, double *params) {
+void printfEnc(const char *fmt, ...)
+{
+    char buf[BUFSIZ] = {'\0'};
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(buf, BUFSIZ, fmt, ap);
+    va_end(ap);
+    ocall_print_string(buf);
+}
+
+void callSort(int *resId, int *resN, int *address, double *params) {
   int sortId = params[0];
   int inputId = params[1];
   int64_t N = params[2];
@@ -21,8 +31,9 @@ void callSort(int *resId, int *resN, double *params) {
   int SSD = params[10];
   EncMode encmode = GCM; // GCM, OFB
   SecLevel seclevel = FULLY; // FULLY, PARTIAL
-  EnclaveServer eServer(N, M, B, encmode, SSD);
-
+  EnclaveServer eServer(N, M, B, sigma, encmode, SSD);
+  eServer.nonEnc = 1;
+  clock_t start, end;
   if (sortId == 0) { // ODS-Tight
     ODS odsTight(eServer, alpha, beta, gamma, P, 1, seclevel, inputId + 2);
     odsTight.ObliviousSort(N, ODSTIGHT, inputId, inputId + 1, inputId);
@@ -34,17 +45,20 @@ void callSort(int *resId, int *resN, double *params) {
     *resId = odsLoose.resultId;
     *resN = odsLoose.resultN;
   } else if (sortId == 2) { // bucket oblivious sort
-    clock_t start, end;
-    Bucket bksort(eServer, inputId - 1);
+    printf("Bucket Oblivious Sort\n");
+    Bucket bksort(eServer, inputId);
     start = time(NULL);
     *resId = bksort.bucketOSort();
     end = time(NULL);
+    printfEnc("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
     *resN = N;
-    printf("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
   } else if (sortId == 3) {
     int64_t size = N / B;
     Bitonic bisort(eServer, inputId, 0, size);
+    start = time(NULL);
     bisort.bitonicSort(0, size, 0);
+    end = time(NULL);
+    printfEnc("Computation Time: %lf, IOtime: %lf, IOcost: %lf\n", (double)(end-start-eServer.getIOtime()), eServer.getIOtime(), eServer.getIOcost()*B/N);
     *resId = inputId;
     *resN = N;
   } else {

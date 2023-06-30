@@ -11,6 +11,7 @@
 
 #include "../include/DataStore.h"
 #include "../include/common.h"
+#include "../include/param_setting.hpp"
 
 #include "oqsort_u.h"
 
@@ -32,7 +33,7 @@ void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t 
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min(M, N - i * M);
       m = Hypergeometric(N_prime, Msize, n_prime);
-      printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      // printf("Sampling progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
       if (m > 0) {
         memcpy(trustedM1, arrayAddr[inStructureId] + readStart, Msize * sizeof(EncOneBlock));
         readStart += Msize;
@@ -49,7 +50,7 @@ void OcallSample(int inStructureId, int sampleId, int64_t N, int64_t M, int64_t 
     for (int64_t i = 0; i < boundary; ++i) {
       Msize = std::min(M, N - i * M);
       m = Hypergeometric(N_prime, Msize, n_prime);
-      printf("Sampling SSD progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
+      // printf("Sampling SSD progress: %ld / %ld, m: %ld\n", i, boundary-1, m);
       if (m > 0) {
         inFile.seekg(readStart * sizeof(EncOneBlock), ios::beg);
         inFile.read((char*)trustedM1, Msize * sizeof(EncOneBlock));
@@ -113,7 +114,7 @@ void freeAllocate(int structureIdM, int structureIdF, size_t size, int SSD) {
     EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
     memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
     // 3. assign malloc address to arrayAddr
-    arrayAddr[structureIdM] = addr;    
+    arrayAddr[structureIdM] = addr;
   } else {
     EncOneBlock *addr = (EncOneBlock*)malloc(size * sizeof(EncOneBlock));
     memset(addr, DUMMY<int>(), size * sizeof(EncOneBlock));
@@ -140,7 +141,7 @@ void fyShuffle(int structureId, size_t size, int B) {
   std::mt19937 rng{rd()};
   for (int64_t i = total_blocks-1; i >= 0; i--) {
     if (i % eachSec == 0) {
-      printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
+      // printf("Shuffle progress %ld / %ld\n", i, total_blocks-1);
     }
     std::uniform_int_distribution<int64_t> dist(0, i);
     k = dist(rng);
@@ -148,7 +149,7 @@ void fyShuffle(int structureId, size_t size, int B) {
     memcpy(arrayAddr[structureId] + k * B, arrayAddr[structureId] + i * B, swapSize);
     memcpy(arrayAddr[structureId] + i * B, trustedM3, swapSize);
   }
-  std::cout << "Finished floyd shuffle\n";
+  // std::cout << "Finished floyd shuffle\n";
 }
 
 void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int &B, int &sigma, int &sortId, double &alpha, double &beta, double &gamma, int &P, int &SSD, int &argc, const char* argv[]) {
@@ -156,18 +157,27 @@ void readParams(InputType inputtype, int &datatype, int64_t &N, int64_t &M, int 
     cout << "Need to be done." << endl;
     return;
   } else if (inputtype == SETINMAIN) {
-    datatype = 128; // 16, 128
-    M = (64 << 20) / datatype; // (MB << 20) / 1 element bytes
-    N = 200 * M;
+    // default N=100M, M=32MB, Ele-size=128 bytes, B=4KB
+    datatype = 128; // 16, 32, 64, 128, 256
+    M = (32 << 20) / datatype; // (MB << 20) / 1 element bytes
+    N = 100 * M;
     B = (4 << 10) / datatype; // 4KB pagesize
     sigma = 40;
-    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-    sortId = 0;
-    alpha = 0.02;
-    beta = 0.11;
-    gamma = 0.25;
-    P = 274;
-    SSD = 1;
+    SSD = 0;
+    OQSortParams bestParams;
+    static int iter = 1;
+    if (sortId == 0 || sortId == 1) {
+      bestParams = bestOQSortParams(N, M);
+      alpha = bestParams.alpha;
+      beta = bestParams.beta; // slack_sampling
+      gamma = bestParams.gamma;
+      P = bestParams.P;
+      assert(bestParams.layer == 1 && "layer should be 1");
+      assert(bestParams.alpha < 1 && "alpha should < 1");
+      assert(bestParams.gamma < 1 && "gamma should < 1");
+      printf("#Num:%d\n  N: %ld, M: %ld, Params: ", iter++, N, M);
+      std::cout << alpha << ", " << beta << ", " << gamma << ", " << P << std::endl;
+    }
   }
 }
 
@@ -186,40 +196,55 @@ int main(int argc, const char* argv[]) {
   int datatype, B, sigma, sortId, P, SSD;
   int64_t N, M;
   double alpha, beta, gamma;
-  readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
-  double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
-  // step2: Create the enclave
+  int array2[10000];
+  int64_t sum1 = 0, sum2 = 0;
   result = oe_create_oqsort_enclave(argv[1], OE_ENCLAVE_TYPE_SGX, 0, NULL, 0, &enclave);
-  // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
-  if (sortId == 3 && (N % B) != 0) {
-    int64_t addi = addi = ((N / B) + 1) * B - N;
-    N += addi;
+  // MAX_SIZE/MIN_SIZE
+  for (double factor = 1; factor <= 1; factor *= RATIO) {
+    // N = 40199887; // factor * MIN_SIZE;
+    std::random_device dev;
+    std::mt19937 rng(dev());
+    std::uniform_int_distribution<std::mt19937::result_type> dist6(0,N-1);
+    // 0: OQSORT-Tight, 1: OQSORT-Loose, 2: bucketOSort, 3: bitonicSort
+    sortId = 0;
+    readParams(inputtype, datatype, N, M, B, sigma, sortId, alpha, beta, gamma, P, SSD, argc, argv);
+
+    double params[11] = {(double)sortId, (double)inputId, (double)N, (double)M, (double)B, (double)sigma, alpha, beta, gamma, (double)P, (double)SSD};
+    // step1: init data
+    if (sortId == 3 && (N % B) != 0) {
+      int64_t addi = addi = ((N / B) + 1) * B - N;
+      N += addi;
+    }
+    DataStore data(arrayAddr, N, M, B, SSD);
+    if (sortId == 2) {
+      int64_t totalSize = calBucketSize(sigma, N, M, B);
+      data.init(inputId, N);
+      arrayAddr[inputId + 1] = new EncOneBlock[totalSize];
+      arrayAddr[inputId + 2] = new EncOneBlock[totalSize];
+      data.delArray.push_back(inputId + 1);
+      data.delArray.push_back(inputId + 2);
+    } else {
+      data.init(inputId, N);
+    }
+    start = high_resolution_clock::now();    
+    callSort(enclave, resId, resN, (int*)(arrayAddr[inputId]), params);
+    end = high_resolution_clock::now();
+    if (result != OE_OK) {
+      fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
+      ret = -1;
+    }
+    // step4: std::cout execution time
+    duration = duration_cast<seconds>(end - start);
+    std::cout << "  Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
+    // printf("IOcost: %f, %f\n", IOcost/N*B, IOcost);
+    // data.test(*resId, *resN, FILEOUT, data.filepath);
+    // data.print(*resId, *resN, TERMINAL, data.filepath);
   }
-  DataStore data(arrayAddr, N, M, B, SSD);
-  if (sortId == 2) {
-    int64_t totalSize = calBucketSize(sigma, N, M, B);
-    data.init(inputId, N);
-    data.init(inputId + 1, totalSize);
-    data.init(inputId + 2, totalSize);
-  } else {
-    data.init(inputId, N);
+  if (enclave) {
+    oe_terminate_enclave(enclave);
   }
-  start = high_resolution_clock::now();
-  callSort(enclave, resId, resN, params);
-  end = high_resolution_clock::now();
-  if (result != OE_OK) {
-    fprintf(stderr, "Calling into enclave_hello failed: result=%u (%s)\n", result, oe_result_str(result));
-    ret = -1;
-  }
-  // step4: std::cout execution time
-  duration = duration_cast<seconds>(end - start);
-  std::cout << "Time taken by sorting function: " << duration.count() << " seconds" << std::endl;
-  data.print(*resId, *resN, FILEOUT, data.filepath);
   // step5: exix part
   exit:
-    if (enclave) {
-      oe_terminate_enclave(enclave);
-    }
     delete resId;
     delete resN;
     return ret;
